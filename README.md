@@ -46,8 +46,6 @@ sudo apt-get update && sudo apt-get install -y \
   xdg-utils
 ```
 
-<!-- > **_NOTE:_** If use zsh, follow [this](https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH) to setup -->
-
 > :information_source: If use zsh, follow [this](https://github.com/ohmyzsh/ohmyzsh/wiki/Installing-ZSH) to setup
 
 ---

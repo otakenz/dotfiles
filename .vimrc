@@ -1,5 +1,5 @@
-" This config is targeted for Vim 8.1+ and expects you to have Plug installed.
 " -----------------------------------------------------------------------------
+" This config is targeted for Vim 8.1+ and expects you to have Plug installed.
 " -----------------------------------------------------------------------------
 
 " -----------------------------------------------------------------------------
@@ -28,7 +28,6 @@ Plug 'rakr/vim-one'
 " Gruvbox Community theme.
 Plug 'gruvbox-community/gruvbox'
 " Integrate fzf with Vim.
-" Plug '~/.fzf'
 Plug '$XDG_DATA_HOME/fzf'
 Plug 'junegunn/fzf.vim'
 " Better manage Vim sessions.
