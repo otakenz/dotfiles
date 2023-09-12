@@ -1,0 +1,13 @@
+{
+  "languageserver": {
+    "go": {
+      "command": "gopls",
+      "rootPatterns": ["go.mod"],
+      "trace.server": "verbose",
+      "filetypes": ["go"]
+    }
+  },
+  "coc.preferences.formatOnSave": true,
+  "pyright.inlayHints.variableTypes": false,
+  "flutter.sdk.flutter-lookup": "asdf which flutter"
+}

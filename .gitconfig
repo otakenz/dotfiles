@@ -1,0 +1,56 @@
+[core]
+	editor = nvim
+
+[init]
+	defaultBranch = main
+
+[color "diff"]
+	whitespace = red reverse
+
+[include]
+	path = ~/.gitconfig.user
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[http]
+	postBuffer = 1048576000
+	lowSpeedLimit = 0
+	lowSpeedTime = 999999
+	sslverify = false
+	; proxy = http://127.0.0.1:3128
+[https]
+	; proxy = https://127.0.0.1:3128
+[color]
+	ui = auto
+[url "https://"]
+	insteadOf = git://
+
+[url "git@github.com:"]
+	insteadOf = https://github.com/
+
+[alias]
+    # one-line log
+    l = log --pretty=format:"%C(yellow)%h\\ %ad%Cred%d\\ %Creset%s%Cblue\\ [%cn]" --decorate --date=short
+
+    a = add
+    ap = add -p
+    c = commit --verbose
+    ca = commit -a --verbose
+    cm = commit -m
+    cam = commit -a -m
+    m = commit --amend --verbose
+
+    d = diff
+    ds = diff --stat
+    dc = diff --cached
+
+    s = status -s
+    co = checkout
+    cob = checkout -b
+    # list branches sorted by last modified
+    b = "!git for-each-ref --sort='-authordate' --format='%(authordate)%09%(objectname:short)%09%(refname)' refs/heads | sed -e 's-refs/heads/--'"
+
+    # list aliases
+    la = "!git config -l | grep alias | cut -c 7-"
