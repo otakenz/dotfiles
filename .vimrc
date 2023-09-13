@@ -9,6 +9,8 @@
 " Specify a directory for plugins.
 call plug#begin('~/.vim/plugged')
 
+"github copilot ai pair programmer
+Plug 'github/copilot.vim'
 "delete brackets
 Plug 'tpope/vim-surround'
 "bitbake
