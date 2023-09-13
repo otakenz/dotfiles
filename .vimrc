@@ -906,3 +906,7 @@ let g:coc_global_extensions = [
     \ 'coc-prettier',
     \ 'coc-git'
     \ ]
+
+let g:copilot_node_command = "~/.asdf/installs/nodejs/17.9.1/bin/node"
+let g:copilot_proxy = "127.0.0.1:3128"
+let g:copilot_proxy_strict_ssl = v:false
