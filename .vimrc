@@ -908,3 +908,4 @@ let g:coc_global_extensions = [
     \ ]
 
 let g:copilot_node_command = "~/.asdf/installs/nodejs/17.9.1/bin/node"
+nnoremap <C-Space> :Copilot panel<CR>
