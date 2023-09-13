@@ -96,6 +96,7 @@ mkdir -p ~/.local/bin && mkdir -p ~/.vim/spell \
   && ln -fs ~/dotfiles/.vim/coc-settings.json ~/.config/nvim/coc-settings.json \
   && ln -fs ~/dotfiles/.config/nvim/init.vim ~/.config/nvim/init.vim \
   && ln -fs ~/dotfiles/.config/nvim/nvim.vim ~/.vim/nvim.vim \
+  && ln -fs ~/dotfiles/.vim/work.vim ~/.vim/work.vim \
   && ln -fs ~/dotfiles/.vim/after/plugin/treesitter.lua ~/.vim/after/plugin/treesitter.lua \
   && ln -fs ~/dotfiles/.gemrc ~/.gemrc \
   && ln -fs ~/dotfiles/.gitconfig ~/.gitconfig \
