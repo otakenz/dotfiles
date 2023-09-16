@@ -700,14 +700,14 @@ nmap <silent> t<C-v> :TestVisit<CR>
 "   augroup END
 " endif
 
-" autocomplete brackets
-inoremap " ""<left>
-inoremap ' ''<left>
-inoremap ( ()<left>
-inoremap [ []<left>
-inoremap { {}<left>
-inoremap {<CR> {<CR>}<ESC>O
-inoremap {;<CR> {<CR>};<ESC>O
+" " autocomplete brackets
+" inoremap " ""<left>
+" inoremap ' ''<left>
+" inoremap ( ()<left>
+" inoremap [ []<left>
+" inoremap { {}<left>
+" inoremap {<CR> {<CR>}<ESC>O
+" inoremap {;<CR> {<CR>};<ESC>O
 
 " Avoid issues after vim-8.2.0767 with terminals presumably too old
 " to handle t_TI and t_TE. See:
