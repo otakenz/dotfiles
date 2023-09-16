@@ -7,7 +7,16 @@
       "filetypes": ["go"]
     }
   },
+
   "coc.preferences.formatOnSave": true,
+
+  "prettier.printWidth": 120,
+
+  "python.formatting.autopep8Args": ["--max-line-length", "120"],
+
   "pyright.inlayHints.variableTypes": false,
-  "flutter.sdk.flutter-lookup": "asdf which flutter"
+
+  "flutter.sdk.flutter-lookup": "asdf which flutter",
+
+  "snippets.ultisnips.pythonPrompt": false
 }
