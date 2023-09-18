@@ -11,6 +11,8 @@ call plug#begin('~/.vim/plugged')
 
 "github copilot ai pair programmer
 Plug 'github/copilot.vim'
+" works on vim-surround
+Plug 'tpope/vim-repeat'
 "delete brackets
 Plug 'tpope/vim-surround'
 "bitbake
@@ -305,10 +307,10 @@ xnoremap p pgvy
 vmap y ygv<Esc>
 
 " Edit Vim config file in a new tab.
-map <Leader>ev :tabnew $MYVIMRC<CR>
+noremap <Leader>ev :tabnew $MYVIMRC<CR>
 
 " Source Vim config file.
-map <Leader>sv :source $MYVIMRC<CR>
+noremap <Leader>sv :source $MYVIMRC<CR>
 
 " Toggle spell check.
 map <Leader><F4> :setlocal spell!<CR>
@@ -880,13 +882,13 @@ set statusline^=%{coc#status()}%{get(b:,'coc_current_function','')}
 " Show all diagnostics
 nnoremap <silent><nowait> <leader>d  :<C-u>CocList diagnostics<cr>
 " Manage extensions
-nnoremap <silent><nowait> <leader>e  :<C-u>CocList extensions<cr>
+nnoremap <silent><nowait> <leader>x  :<C-u>CocList extensions<cr>
 " Show commands
 nnoremap <silent><nowait> <leader>m  :<C-u>CocList commands<cr>
 " Find symbol of current document
 nnoremap <silent><nowait> <leader>n  :<C-u>CocList outline<cr>
 " Search workspace symbols
-nnoremap <silent><nowait> <leader>s  :<C-u>CocList -I symbols<cr>
+nnoremap <silent><nowait> <leader>w  :<C-u>CocList -I symbols<cr>
 " Do default action for next item
 nnoremap <silent><nowait> <leader>j  :<C-u>CocNext<CR>
 " Do default action for previous item
