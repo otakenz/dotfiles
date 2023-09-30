@@ -4,7 +4,9 @@ set runtimepath+=~/.vim/after
 let &packpath=&runtimepath
 source ~/.vimrc
 
-let g:python3_host_prog = '~/.asdf/installs/python/3.8.10/bin/python'
+" Fix Treesitter syntax error highlighting
+" https://github.com/nvim-treesitter/nvim-treesitter/issues/78
+hi! link @error Normal
 
 " .............................................................................
 " nvim-treesitter/nvim-treesitter
