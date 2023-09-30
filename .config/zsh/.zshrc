@@ -95,6 +95,8 @@ bindkey '\e[4~' end-of-line
 bindkey '\e[F' end-of-line
 bindkey '\e[8~' end-of-line
 bindkey '\e[3~' delete-char
+bindkey '^[[1;5D' backward-word
+bindkey '^[[1;5C' forward-word
 
 # Enable FZF (this replaces needing ~/.fzf.zsh in your home directory).
 if [[ ! "${PATH}" == *${XDG_DATA_HOME}/fzf/bin* ]]; then

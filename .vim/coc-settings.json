@@ -18,5 +18,7 @@
 
   "flutter.sdk.flutter-lookup": "asdf which flutter",
 
-  "snippets.ultisnips.pythonPrompt": false
+  "snippets.ultisnips.pythonPrompt": false,
+
+  "clangd.compilationDatabaseCandidates": ["${workspaceFolder}/build/compile_commands.json"]
 }

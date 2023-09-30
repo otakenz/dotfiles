@@ -485,7 +485,7 @@ nnoremap gs :Git status<CR>
 let $FZF_DEFAULT_OPTS = '--bind ctrl-a:select-all'
 
 " if want to exclude stuff, do -path or -name xxx
-let $FZF_DEFAULT_COMMAND = "rg --files --no-ignore-vcs --hidden"
+let $FZF_DEFAULT_COMMAND = "rg --files --no-ignore-vcs --hidden --glob '!.cache' --glob '!*.o' --glob '!*.o.d' --glob '!*.git/'"
 
 " Customize fzf colors to match your color scheme.
 let g:fzf_colors =
