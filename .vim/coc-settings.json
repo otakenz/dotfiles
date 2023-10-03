@@ -10,9 +10,9 @@
 
   "coc.preferences.formatOnSave": true,
 
-  "prettier.printWidth": 120,
+  "prettier.printWidth": 80,
 
-  "python.formatting.autopep8Args": ["--max-line-length", "120"],
+  "python.formatting.autopep8Args": ["--max-line-length", "80"],
 
   "pyright.inlayHints.variableTypes": false,
 
