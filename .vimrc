@@ -513,20 +513,7 @@ let g:fzf_action = {
 " Launch fzf with CTRL+P.
 nnoremap <silent> <C-p> :Files<CR>
 
-
-"Redefine Rg command to allow rg arguments to pass through
-" such as `-tyaml` for yaml files or `-F` for literal strings
-command! -bang -nargs=* Rg
-  \ call fzf#vim#grep(
-  \   'rg --column --line-number --no-heading --color=always --smart-case '.(<q-args>), 1,
-  \   <bang>0 ? fzf#vim#with_preview('up:60%')
-  \           : fzf#vim#with_preview('right:50%:hidden', '?'),
-  \   <bang>0)
-
-" For finding content in specific files using FZF Rg
-" some files are not searched somehow? have to do rg <keyword> * to find all
-nnoremap <silent> <Leader>gr :Rg .<CR>
-
+nnoremap <silent> <Leader>gr :Rg<CR>
 
 " Map a few common things to do with FZF.
 nnoremap <silent> <Leader><Enter> :Buffers<CR>
