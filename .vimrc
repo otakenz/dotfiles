@@ -9,6 +9,8 @@
 " Specify a directory for plugins.
 call plug#begin('~/.vim/plugged')
 
+" good stuff
+Plug 'tpope/vim-abolish'
 "github copilot ai pair programmer
 Plug 'github/copilot.vim'
 " works on vim-surround
