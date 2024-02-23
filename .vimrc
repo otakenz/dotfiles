@@ -363,6 +363,10 @@ vnoremap <C-Down> :m '>+1<CR>gv=gv
 " Basic autocommands
 " -----------------------------------------------------------------------------
 
+" Toggle comment for custom filetype
+filetype plugin indent on
+autocmd FileType arduino setlocal commentstring=//\ %s
+
 " Auto-resize splits when Vim gets resized.
 autocmd VimResized * wincmd =
 
@@ -690,6 +694,18 @@ nmap <silent> t<C-v> :TestVisit<CR>
 "     autocmd TextYankPost * if v:event.operator ==# 'y' | call system(s:clip, @0) | endif
 "   augroup END
 " endif
+let g:clipboard = {
+  \ 'name': 'pbcopy',
+  \ 'copy': {
+  \    '+': 'pbcopy',
+  \    '*': 'pbcopy',
+  \  },
+  \ 'paste': {
+  \    '+': 'pbpaste',
+  \    '*': 'pbpaste',
+  \ },
+  \ 'cache_enabled': 0,
+  \ }
 
 " " autocomplete brackets
 " inoremap " ""<left>
