@@ -694,9 +694,19 @@ nmap <silent> t<C-v> :TestVisit<CR>
 "     autocmd TextYankPost * if v:event.operator ==# 'y' | call system(s:clip, @0) | endif
 "   augroup END
 " endif
-let g:clipboard = {
-  \ 'cache_enabled': 0,
-  \ }
+
+" let g:clipboard = {
+"       \   'name': 'myClipboard',
+"       \   'copy': {
+"       \      '+': ['tmux', 'load-buffer', '-'],
+"       \      '*': ['tmux', 'load-buffer', '-'],
+"       \    },
+"       \   'paste': {
+"       \      '+': ['tmux', 'save-buffer', '-'],
+"       \      '*': ['tmux', 'save-buffer', '-'],
+"       \   },
+"       \   'cache_enabled': 1,
+"       \ }
 
 " " autocomplete brackets
 " inoremap " ""<left>
