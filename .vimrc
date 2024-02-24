@@ -86,7 +86,7 @@ Plug 'janko/vim-test'
 Plug 'chrisbra/csv.vim'
 Plug 'ekalinin/dockerfile.vim'
 Plug 'godlygeek/tabular'
-Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install' }
+Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && npx --yes yarn install' }
 Plug 'jvirtanen/vim-hcl'
 Plug 'tmux-plugins/vim-tmux'
 
@@ -695,15 +695,6 @@ nmap <silent> t<C-v> :TestVisit<CR>
 "   augroup END
 " endif
 let g:clipboard = {
-  \ 'name': 'pbcopy',
-  \ 'copy': {
-  \    '+': 'pbcopy',
-  \    '*': 'pbcopy',
-  \  },
-  \ 'paste': {
-  \    '+': 'pbpaste',
-  \    '*': 'pbpaste',
-  \ },
   \ 'cache_enabled': 0,
   \ }
 
@@ -914,5 +905,8 @@ let g:coc_global_extensions = [
     \ 'coc-git'
     \ ]
 
-let g:copilot_node_command = "~/.asdf/installs/nodejs/17.9.1/bin/node"
+let g:copilot_node_command = "~/.asdf/installs/nodejs/20.9.0/bin/node"
+let $FZF_DEFAULT_COMMAND = "rg --files --no-ignore-vcs --hidden --glob '!.cache' --glob '!*.o' --glob '!*.o.d' --glob '!*.git/'"
+let $FZF_DEFAULT_COMMAND = "rg --files --no-ignore-vcs --hidden --glob '!.cache' --glob '!*.o' --glob '!*.o.d' --glob '!*.git/'"
+let $FZF_DEFAULT_COMMAND = "rg --files --no-ignore-vcs --hidden --glob '!.cache' --glob '!*.o' --glob '!*.o.d' --glob '!*.git/'"
 nnoremap <C-Space> :Copilot panel<CR>

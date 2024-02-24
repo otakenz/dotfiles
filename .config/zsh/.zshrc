@@ -143,6 +143,7 @@ ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 export PATH=${HOME}/Android/Sdk/platform-tools:$PATH
 export PATH=${HOME}/Android/Sdk/cmdline-tools:$PATH
 export PATH=${HOME}/Android/Sdk/build-tools:$PATH
+export PATH=${HOME}/.platformio/penv/bin:$PATH
 
 # source /opt/ros/noetic/setup.bash
 # export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
