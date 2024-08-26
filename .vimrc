@@ -916,8 +916,5 @@ let g:coc_global_extensions = [
     \ ]
 
 let g:copilot_node_command = "~/.asdf/installs/nodejs/18.17.0/bin/node"
-let $FZF_DEFAULT_COMMAND = "rg --files --no-ignore-vcs --hidden --glob '!.cache' --glob '!*.o' --glob '!*.o.d' --glob '!*.git/'"
-let $FZF_DEFAULT_COMMAND = "rg --files --no-ignore-vcs --hidden --glob '!.cache' --glob '!*.o' --glob '!*.o.d' --glob '!*.git/'"
-let $FZF_DEFAULT_COMMAND = "rg --files --no-ignore-vcs --hidden --glob '!.cache' --glob '!*.o' --glob '!*.o.d' --glob '!*.git/'"
 
 nnoremap <C-Space> :Copilot panel<CR>
