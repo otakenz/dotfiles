@@ -159,3 +159,4 @@ export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
 
 
 [ -f ~/.fzf.bash ] && source ~/.fzf.bash
+if [ -f "/home/uie55151/.config/fabric/fabric-bootstrap.inc" ]; then . "/home/uie55151/.config/fabric/fabric-bootstrap.inc"; fi

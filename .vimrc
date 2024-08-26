@@ -898,5 +898,5 @@ let g:coc_global_extensions = [
     \ 'coc-git'
     \ ]
 
-let g:copilot_node_command = "~/.asdf/installs/nodejs/17.9.1/bin/node"
+let g:copilot_node_command = "~/.asdf/installs/nodejs/18.17.0/bin/node"
 nnoremap <C-Space> :Copilot panel<CR>
