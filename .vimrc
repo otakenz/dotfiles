@@ -86,7 +86,7 @@ Plug 'janko/vim-test'
 Plug 'chrisbra/csv.vim'
 Plug 'ekalinin/dockerfile.vim'
 Plug 'godlygeek/tabular'
-Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && yarn install' }
+Plug 'iamcco/markdown-preview.nvim', { 'do': 'cd app && npx --yes yarn install' }
 Plug 'jvirtanen/vim-hcl'
 Plug 'tmux-plugins/vim-tmux'
 
@@ -362,6 +362,10 @@ vnoremap <C-Down> :m '>+1<CR>gv=gv
 " -----------------------------------------------------------------------------
 " Basic autocommands
 " -----------------------------------------------------------------------------
+
+" Toggle comment for custom filetype
+filetype plugin indent on
+autocmd FileType arduino setlocal commentstring=//\ %s
 
 " Auto-resize splits when Vim gets resized.
 autocmd VimResized * wincmd =
@@ -691,6 +695,19 @@ nmap <silent> t<C-v> :TestVisit<CR>
 "   augroup END
 " endif
 
+" let g:clipboard = {
+"       \   'name': 'myClipboard',
+"       \   'copy': {
+"       \      '+': ['tmux', 'load-buffer', '-'],
+"       \      '*': ['tmux', 'load-buffer', '-'],
+"       \    },
+"       \   'paste': {
+"       \      '+': ['tmux', 'save-buffer', '-'],
+"       \      '*': ['tmux', 'save-buffer', '-'],
+"       \   },
+"       \   'cache_enabled': 1,
+"       \ }
+
 " " autocomplete brackets
 " inoremap " ""<left>
 " inoremap ' ''<left>
@@ -899,4 +916,8 @@ let g:coc_global_extensions = [
     \ ]
 
 let g:copilot_node_command = "~/.asdf/installs/nodejs/18.17.0/bin/node"
+let $FZF_DEFAULT_COMMAND = "rg --files --no-ignore-vcs --hidden --glob '!.cache' --glob '!*.o' --glob '!*.o.d' --glob '!*.git/'"
+let $FZF_DEFAULT_COMMAND = "rg --files --no-ignore-vcs --hidden --glob '!.cache' --glob '!*.o' --glob '!*.o.d' --glob '!*.git/'"
+let $FZF_DEFAULT_COMMAND = "rg --files --no-ignore-vcs --hidden --glob '!.cache' --glob '!*.o' --glob '!*.o.d' --glob '!*.git/'"
+
 nnoremap <C-Space> :Copilot panel<CR>
