@@ -6,7 +6,7 @@
   "coc.preferences.silentAutoupdate": true,
   "coc.preferences.extensionUpdateCheck": "weekly",
   "coc.preferences.formatOnType": false,
-  "[c][css][scss][less][svg][dart][html][rust][typescript][javascript][typescriptreact][javascriptreact]": {
+  "[c][cpp][css][scss][less][svg][dart][html][rust][typescript][javascript][typescriptreact][javascriptreact]": {
     "coc.preferences.formatOnSave": true
   },
 
@@ -238,6 +238,8 @@
       "rootPatterns": ["go.mod", ".vim/", ".git/", ".hg/"],
       "filetypes": ["go"]
     }
-  }
+  },
+  "clangd.path": "~/.config/coc/extensions/coc-clangd-data/install/18.1.3/clangd_18.1.3/bin/clangd",
   // vim:ft=jsonc
+  // "clangd.path": "~/.config/coc/extensions/coc-clangd-data/install/17.0.3/clangd_17.0.3/bin/clangd",
 }
