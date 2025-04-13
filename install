@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# Usage:
+#   ./install          # Clone my dotfiles
+#   DEBUG=1 ./install  # Copy the local dotfiles directory instead of cloning
+#
+#   # Customize which dotfiles URL to clone from
+#   DOTFILES_URL="https://github.com/example/dotfiles" ./install
+
+set -o errexit
+
+SKIP_SYSTEM_PACKAGES="${1:-}"
+
+APT_PACKAGES="
+  curl
+  fd-find
+  git
+  gnupg
+  htop
+  inotify-tools
+  iproute2
+  jq
+  openssh-server
+  pass
+  pwgen
+  python3-pip
+  ripgrep
+  rsync
+  tmux
+  unzip
+  wl-clipboard
+  xz-utils
+  zsh
+"
+
+BREW_PACKAGES="
+  bash
+  diffutils
+  fd
+  fzf
+  git
+  gnupg
+  htop
+  jq
+  mise
+  nvim
+  openssh
+  pass
+  pwgen
+  python
+  ripgrep
+  rsync
+  shellcheck
+  shfmt
+  tmux
+  xz
+  zsh
+"
+
+INSTALL_NODE_VERSION="22.14"
+
+CPU_ARCH="$(uname -m)"
+OS_TYPE="$(uname | tr "[:upper:]" "[:lower:]")"
+OS_DISTRO=
+
+DOTFILES_URL="${DOTFILES_URL:-https://github.com/otakenz/dotfiles}"
+DOTFILES_PATH="${DOTFILES_PATH:-"${HOME}/dotfiles"}"
+
