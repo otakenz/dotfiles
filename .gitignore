@@ -19,3 +19,5 @@ tags
 [._]*.un~/
 
 .aliases.local
+.config/git/config.local
+.local/bin/local/
