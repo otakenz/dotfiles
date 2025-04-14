@@ -46,7 +46,7 @@ _fzf_compgen_dir() {
   fd --type=d --hidden --exclude .git . "$1"
 }
 
-#source ~/fzf-git.sh/fzf-git.sh
+source "${HOME}/.fzf-git.sh/fzf-git.sh"
 
 # Preview directory with eza, or preview file with bat
 show_file_or_dir_preview="if [ -d {} ]; then eza --tree --color=always {} | head -200; 

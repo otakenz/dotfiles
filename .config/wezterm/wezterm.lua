@@ -12,17 +12,14 @@ config.color_scheme = 'Tokyo Night Moon'
 config.font = wezterm.font 'MesloLGS Nerd Font Mono'
 config.font_size = 13
 
-config.enable_tab_bar = false
+--config.enable_tab_bar = false
 
 config.window_decorations = 'RESIZE'
 config.window_background_opacity = 0.90
--- config.macos_window_background_blur = 10
 
-if wezterm.target_triple:find("windows") == nil then
 config.keys = {
-  {key="g", mods="CTRL", action=wezterm.action{SpawnCommandInNewTab={args={"gitui"}}}},
+  {key="g", mods="CTRL", action=wezterm.action.SendString("gitui\n")},
 }
-end
 
 -- and finally, return the configuration to wezterm
 return config

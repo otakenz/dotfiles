@@ -5,6 +5,10 @@ Terminal Emulator
 
 2. Install Git
 
+3. Install fzf and fzf-git
+git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
+
+
 3. Install Zsh (https://ohmyz.sh/)
  - sudo apt install zsh
  - chsh -s $(which zsh)
@@ -46,6 +50,8 @@ Terminal Emulator
     - mise use -g bat@latest
     zoxide (cd replacement)
     - mise use -g zoxide@latest
+    delta
+    - mise use -g delta@latest
 
 5. Install Nerf Fonts (https://www.nerdfonts.com/)
  - use Meslo Nerd Font
@@ -77,6 +83,14 @@ Terminal Emulator
  Installation
  - https://www.lazyvim.org/installation
 
+bat theme
+mkdir -p "$(bat --config-dir)/themes"
+cd "$(bat --config-dir)/themes"
+# Replace _night in the lines below with _day, _moon, or _storm if needed.
+curl -O https://raw.githubusercontent.com/folke/tokyonight.nvim/main/extras/sublime/tokyonight_night.tmTheme
+bat cache --build
+bat --list-themes | grep tokyo # should output "tokyonight_night"
+echo '--theme="tokyonight_night"' >> "$(bat --config-dir)/config"
 
 
 

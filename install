@@ -12,7 +12,6 @@ SKIP_SYSTEM_PACKAGES="${1:-}"
 
 APT_PACKAGES="
   curl
-  fd-find
   git
   gnupg
   htop
@@ -25,6 +24,8 @@ APT_PACKAGES="
   python3-pip
   ripgrep
   rsync
+  thefuck
+  tldr
   tmux
   unzip
   wl-clipboard
@@ -57,6 +58,10 @@ BREW_PACKAGES="
 "
 
 INSTALL_NODE_VERSION="22.14"
+INSTALL_PYTHON_VERSION="3.13"
+INSTALL_GO_VERSION="1.23.8"
+INSTALL_LUA_VERSION="5.4.7"
+INSTALL_RUST_VERSION="1.86.0"
 
 CPU_ARCH="$(uname -m)"
 OS_TYPE="$(uname | tr "[:upper:]" "[:lower:]")"
@@ -64,4 +69,556 @@ OS_DISTRO=
 
 DOTFILES_URL="${DOTFILES_URL:-https://github.com/otakenz/dotfiles}"
 DOTFILES_PATH="${DOTFILES_PATH:-"${HOME}/dotfiles"}"
+
+# -----------------------------------------------------------------------------
+# Helper functions
+# -----------------------------------------------------------------------------
+
+_error() {
+  local message="${1:-}"
+
+  printf "\e[31;1mERROR:\e[0m %s\n\n" "${message}" >&2
+  exit 1
+}
+
+_info() {
+  local message="${1:-}"
+  printf "\n\n\e[36;1m%s:\e[0m\n\n" "${message}"
+}
+
+_no_system_packages() {
+  cat <<EOF
+System package installation isn't supported with your distro (${OS_DISTRO})
+
+Please install any comparable packages on your own, you can view the list at:
+
+    https://github.com/otakenz/dotfiles/blob/master/install
+
+Then re-run this script and explicitly skip installing system packages:
+
+    bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install) --skip-system-packages
+EOF
+
+  exit 1
+}
+
+_install_packages_apt() {
+  # Apt's packages typically have older versions since Debian and Ubuntu are
+  # stable distros. In most cases the version included is fine but we do want
+  # the latest and greatest versions for certain tools.
+
+  local version_nvim="v0.11.0"
+  local version_shellcheck="v0.10.0"
+  local version_shfmt="v3.11.0"
+
+  # shellcheck disable=SC2086
+  sudo apt-get update && sudo apt-get install -y ${APT_PACKAGES}
+
+  # Install Mise.
+  curl https://mise.run | sh
+
+  # Install fzf.
+  local fzf_path="${HOME}/.local/share/fzf"
+  rm -rf "${fzf_path}"
+  git clone --depth 1 https://github.com/junegunn/fzf.git "${fzf_path}" &&
+    yes | "${fzf_path}/install" --bin --no-update-rc
+
+  local original_cpu_arch="${CPU_ARCH}"
+
+  # ShellCheck uses a different file name than what uname -m may output. I have
+  # no idea if this will work since I have no arm64 Linux device to test on.
+  [[ "${CPU_ARCH}" =~ ^arm ]] && CPU_ARCH="aarch64"
+
+  # Install shellcheck
+  local shellcheck_install_path="/tmp/shellcheck"
+  local shellcheck_xz_path="/tmp/shellcheck.tar.xz"
+  rm -rf "${shellcheck_xz_path}" "${shellcheck_install_path}"
+  curl -s -o "${shellcheck_xz_path}" -L "https://github.com/koalaman/shellcheck/releases/download/${version_shellcheck}/shellcheck-${version_shellcheck}.${OS_TYPE}.${CPU_ARCH}.tar.xz"
+  mkdir -p "${shellcheck_install_path}"
+  tar -xJf "${shellcheck_xz_path}" -C "${shellcheck_install_path}" --strip-components=1
+  chmod +x "${shellcheck_install_path}/shellcheck"
+  mv "${_}" "${HOME}/.local/bin"
+
+  CPU_ARCH="${original_cpu_arch}"
+
+  # shfmt uses a different file name than what uname -m will output.
+  [[ "${CPU_ARCH}" == "x86_64" ]] && CPU_ARCH="amd64"
+
+  # Install shfmt
+  curl -s -o /tmp/shfmt -L "https://github.com/mvdan/sh/releases/download/${version_shfmt}/shfmt_${version_shfmt}_${OS_TYPE}_${CPU_ARCH}"
+  chmod +x /tmp/shfmt
+  mv "${_}" "${HOME}/.local/bin"
+
+  CPU_ARCH="${original_cpu_arch}"
+
+  # Install Nvim
+  local nvim_gz_path="/tmp/nvim.tar.gz"
+  rm -rf "${nvim_gz_path}"
+  curl -s -o "${nvim_gz_path}" -L "https://github.com/neovim/neovim/releases/download/${version_nvim}/nvim-${OS_TYPE}-${CPU_ARCH}.tar.gz"
+  tar -xzf "${nvim_gz_path}" -C "${HOME}/.local" --strip-components=1
+}
+
+_install_packages_brew() {
+  # Install brew itself.
+  [ -x "$(command -v brew &> /dev/null)" ] &&
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  # Ensure brew's paths are available for this script
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+
+  # shellcheck disable=SC2086
+  brew install ${BREW_PACKAGES}
+}
+
+_display_packages() {
+  if [ "${OS_TYPE}" == "linux" ]; then
+    if [ "${OS_DISTRO}" == "debian" ]; then
+      echo "${APT_PACKAGES}"
+    fi
+  else
+    echo "${BREW_PACKAGES}"
+  fi
+}
+
+# -----------------------------------------------------------------------------
+# Main functions
+# -----------------------------------------------------------------------------
+
+detect_env() {
+  case "${OS_TYPE}" in
+  linux)
+    if [ -r /etc/os-release ]; then
+      # shellcheck disable=SC1091
+      OS_DISTRO="$(. /etc/os-release && echo "${ID_LIKE:-${ID}}")"
+
+      # Technically ID_LIKE can have a space separated list of distros but
+      # we really only care that we have a Debian based system where apt is
+      # available to use.
+      [[ "${OS_DISTRO}" =~ (ubuntu|debian) ]] && OS_DISTRO="debian"
+    fi
+
+    # Only fully support these Linux distros.
+    if [[ -z "${OS_DISTRO}" || ! "ubuntu debian raspbian" =~ ${OS_DISTRO} ]]; then
+      [ -z "${SKIP_SYSTEM_PACKAGES}" ] && _no_system_packages
+    fi
+
+    ;;
+  darwin) ;;
+  *)
+    _error "'${OS_TYPE}' is not supported"
+
+    ;;
+  esac
+}
+
+create_initial_dirs() {
+  mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/git" "${HOME}/.config/zsh" "${HOME}/.config/bat/themes" \
+	  "${HOME}/.config/gitui" "${HOME}/.config/wezterm"
+  mkdir -p  "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share"
+}
+
+install_packages() {
+  _info "INSTALL PACKAGES"
+
+  if [ -n "${SKIP_SYSTEM_PACKAGES}" ]; then
+    echo "Skipping, you've chosen not to or your distro isn't fully supported"
+    return
+  fi
+
+  cat <<EOF
+If you choose y, all of the system packages below will be installed:
+
+$(_display_packages)
+
+
+If you choose no, the above packages will not be installed and this script
+will exit. This gives you a chance to edit the list of packages if you don't
+agree with any of the decisions.
+
+EOF
+
+  while true; do
+    read -rp "Do you want to install the above packages? (y/n) " yn
+    case "${yn}" in
+    [Yy]*)
+      if [ "${OS_TYPE}" == "linux" ]; then
+        if [ "${OS_DISTRO}" == "debian" ]; then
+          _install_packages_apt
+        fi
+      else
+        _install_packages_brew
+      fi
+
+      break
+      ;;
+    [Nn]*) exit ;;
+    *) printf "Please answer y or n\n\n" ;;
+    esac
+  done
+
+}
+
+clone_or_update_dotfiles() {
+  _info "CLONE OR UPDATE DOTFILES"
+
+  local local_zprofile="${HOME}/.config/zsh/.zprofile.local"
+
+  if [ -f "${local_zprofile}" ]; then
+    # shellcheck disable=SC1090
+    . "${local_zprofile}"
+  fi
+
+  read -rep "Where do you want to clone these dotfiles to [${DOTFILES_PATH}]? " dotfiles_path
+  echo
+
+  [[ -z "${dotfiles_path}" ]] && dotfiles_path="${DOTFILES_PATH}"
+
+  DOTFILES_PATH="${dotfiles_path//\~/"${HOME}"}"
+
+  # This is used to locally develop the install script.
+  if [ "${DEBUG}" == "1" ]; then
+    if [ "${PWD}" != "${DOTFILES_PATH}" ]; then
+      cp -R "${PWD}/." "${DOTFILES_PATH}"
+    fi
+
+    printf "They've been copied to '%s'\n" "${DOTFILES_PATH}"
+    return
+  fi
+
+  if [ -e "${DOTFILES_PATH}" ]; then
+    # Let's get the latest updates.
+    git -C "${DOTFILES_PATH}" pull
+  else
+    mkdir -p "$(dirname "${DOTFILES_PATH}")"
+    git clone "${DOTFILES_URL}" "${DOTFILES_PATH}"
+  fi
+}
+
+install_zsh_plugins() {
+  _info "INSTALL ZSH PLUGINS"
+
+  "${DOTFILES_PATH}/.local/bin/update-zsh-plugins"
+}
+
+create_symlinks() {
+  _info "CREATE SYMLINKS"
+
+  cat <<EOF
+-------------------------------------------------------------------------------
+
+ln -fs "${DOTFILES_PATH}/.zshenv" "${HOME}/.zshenv"
+ln -fs "${DOTFILES_PATH}/.config/zsh/.zshrc" "${HOME}/.config/zsh/.zshrc"
+ln -fs "${DOTFILES_PATH}/.config/zsh/.zshrc.local" "${HOME}/.config/zsh/.zshrc.local"
+ln -fs "${DOTFILES_PATH}/.config/zsh/.zprofile" "${HOME}/.config/zsh/.zprofile"
+ln -fs "${DOTFILES_PATH}/.config/zsh/.zprofile.local" "${HOME}/.config/zsh/.zprofile.local"
+ln -fs "${DOTFILES_PATH}/.config/zsh/.aliases" "${HOME}/.config/zsh/.aliases"
+ln -fs "${DOTFILES_PATH}/.config/zsh/.aliases.local" "${HOME}/.config/zsh/.aliases.local"
+ln -fs "${DOTFILES_PATH}/.config/tmux/tmux.conf" "${HOME}/.config/tmux/tmux.conf"
+ln -fs "${DOTFILES_PATH}/.config/zsh/themes" "${HOME}/.config/zsh/themes"
+ln -fs "${DOTFILES_PATH}/.config/tmux/themes" "${HOME}/.config/tmux/themes"
+ln -fs "${DOTFILES_PATH}/.config/git/config" "${HOME}/.config/git/config"
+ln -fs "${DOTFILES_PATH}/.config/git/config.local" "${HOME}/.config/git/config.local"
+ln -fs "${DOTFILES_PATH}/.config/gitui" "${HOME}/.config/gitui"
+ln -fs "${DOTFILES_PATH}/.config/nvim" "${HOME}/.config/nvim"
+ln -fs "${DOTFILES_PATH}/.local/bin/"* "${HOME}/.local/bin/"
+
+# And if you happen to be using WSL:
+sudo ln -fs "${DOTFILES_PATH}/etc/wsl.conf" /etc/wsl.conf
+
+-------------------------------------------------------------------------------
+
+A potentially dangerous action is about to happen. The above directories and
+files are going to get forcefully symlinked if you type y in the prompt below.
+
+What does that mean?
+
+Any config files you have on the right hand side of the paths are going to get
+overwritten with the files that come with these dotfiles (left side).
+
+Without these symlinks, these dotfiles will not work. If you plan to type y
+and have existing files now would be a good time to back them up.
+
+EOF
+
+  while true; do
+    read -rep "Ready to continue? Enter y to apply them all or n to skip (y/n) " yn
+    case "${yn}" in
+    [Yy]*)
+      # Avoid using ln -T flag since it doesn't exist on macOS. We're being
+      # extra careful here to only delete symlinks if they exist. Technically
+      # rm -f would work but that could delete real files potentially.
+      [ -L "${HOME}/.config/zsh/themes" ] && rm "${HOME}/.config/zsh/themes"
+      [ -L "${HOME}/.config/tmux/themes" ] && rm "${HOME}/.config/tmux/themes"
+      [ -L "${HOME}/.config/gitui" ] && rm "${HOME}/.config/gitui"
+      [ -L "${HOME}/.config/nvim" ] && rm "${HOME}/.config/nvim"
+
+      ln -fs "${DOTFILES_PATH}/.zshenv" "${HOME}/.zshenv" &&
+        ln -fs "${DOTFILES_PATH}/.config/zsh/.zshrc" "${HOME}/.config/zsh/.zshrc" &&
+        ln -fs "${DOTFILES_PATH}/.config/zsh/.zshrc.local" "${HOME}/.config/zsh/.zshrc.local" &&
+        ln -fs "${DOTFILES_PATH}/.config/zsh/.zprofile" "${HOME}/.config/zsh/.zprofile" &&
+        ln -fs "${DOTFILES_PATH}/.config/zsh/.zprofile.local" "${HOME}/.config/zsh/.zprofile.local" &&
+        ln -fs "${DOTFILES_PATH}/.config/zsh/.aliases" "${HOME}/.config/zsh/.aliases" &&
+        ln -fs "${DOTFILES_PATH}/.config/zsh/.aliases.local" "${HOME}/.config/zsh/.aliases.local" &&
+        ln -fs "${DOTFILES_PATH}/.config/tmux/tmux.conf" "${HOME}/.config/tmux/tmux.conf" &&
+        ln -fs "${DOTFILES_PATH}/.config/zsh/themes" "${HOME}/.config/zsh/themes" &&
+        ln -fs "${DOTFILES_PATH}/.config/tmux/themes" "${HOME}/.config/tmux/themes" &&
+        ln -fs "${DOTFILES_PATH}/.config/git/config" "${HOME}/.config/git/config" &&
+        ln -fs "${DOTFILES_PATH}/.config/git/config.local" "${HOME}/.config/git/config.local" &&
+        ln -fs "${DOTFILES_PATH}/.config/gitui" "${HOME}/.config/gitui" &&
+        ln -fs "${DOTFILES_PATH}/.config/nvim" "${HOME}/.config/nvim" &&
+        ln -fs "${DOTFILES_PATH}/.local/bin/"* "${HOME}/.local/bin/"
+
+      if grep -qE "(Microsoft|microsoft|WSL)" /proc/version &>/dev/null; then
+        sudo ln -fs "${DOTFILES_PATH}/etc/wsl.conf" /etc/wsl.conf
+      fi
+
+      break
+      ;;
+    [Nn]*)
+
+      break
+      ;;
+    *) echo "Please answer y or n" ;;
+    esac
+  done
+}
+
+configure_shell() {
+  _info "CONFIGURE SHELL"
+
+  local local_files=(".zshrc.local" ".zprofile.local" ".aliases.local")
+  local original_dotfiles_path="${DOTFILES_PATH}"
+
+  for file in "${local_files[@]}"; do
+    local file_path="${HOME}/.config/zsh/${file}"
+
+    if [ ! -f "${file_path}" ]; then
+      printf "# shellcheck shell=bash\n\n# Any settings defined here are gitignored\n" >"${file_path}"
+    fi
+  done
+
+  local zprofile_path="${DOTFILES_PATH}/.config/zsh/.zprofile.local"
+
+  if ! grep -q "^export DOTFILES_PATH=.*$" "${zprofile_path}" 2>/dev/null; then
+    printf '\nexport DOTFILES_PATH="%s"\n' "${DOTFILES_PATH}" >>"${zprofile_path}"
+  fi
+
+  if [ "${OS_TYPE}" == "darwin" ]; then
+    if ! grep -q "eval.*homebrew.*shellenv" "${zprofile_path}" 2>/dev/null; then
+      # shellcheck disable=SC2016
+      printf '\neval "$(/opt/homebrew/bin/brew shellenv)"\n' >>"${zprofile_path}"
+    fi
+  else
+    # Are we in WSL 2?
+    if grep -q "\-WSL2" /proc/version; then
+      if ! grep -q "^DISPLAY=.*route | awk.*$" "${zprofile_path}" 2>/dev/null; then
+        local display=
+        display=$(
+          cat <<'EOF'
+# Requires: https://sourceforge.net/projects/vcxsrv/ (or alternative)
+DISPLAY="$(/sbin/ip route | awk '/default/ { print $3 }'):0"
+export DISPLAY
+EOF
+        )
+
+        printf "\n%s" "${display}" >>"${zprofile_path}"
+      fi
+
+      # This only applies if you have Docker installed without Docker Desktop
+      # and you're not using systemd.
+      if command -v docker &> /dev/null; then
+        if [ ! -d "${HOME}/.docker/desktop" ]; then
+          if [ ! -d /run/systemd/system ]; then
+            if ! grep -q "^if service docker status.*$" "${zprofile_path}" 2>/dev/null; then
+              local docker=
+              docker=$(
+                cat <<'EOF'
+# Ensure Docker is running on WSL 2. This expects you've installed Docker and
+# Docker Compose directly within your WSL distro instead of Docker Desktop, such as:
+#   - https://nickjanetakis.com/blog/install-docker-in-wsl-2-without-docker-desktop
+if service docker status 2>&1 | grep -q "is not running"; then
+  wsl.exe --distribution "${WSL_DISTRO_NAME}" --user root \
+    --exec /usr/sbin/service docker start &> /dev/null
+fi
+EOF
+              )
+
+              printf "\n\n%s" "${docker}" >>"${zprofile_path}"
+            fi
+          fi
+        fi
+      fi
+    fi
+
+    # We only need this on Debian based systems.
+    if [ "${OS_DISTRO}" = "debian" ]; then
+      if ! grep -q "^.*\/fzf\/bin.*$" "${zprofile_path}" 2>/dev/null; then
+        local fzf=
+        fzf=$(
+          cat <<'EOF'
+# Add fzf to your PATH when it has been git installed.
+export PATH="${PATH}:${XDG_DATA_HOME}/fzf/bin"
+EOF
+        )
+
+        printf "\n\n%s" "${fzf}" >>"${zprofile_path}"
+      fi
+    fi
+
+    # This should happen on all Linux distros.
+    [ "${SHELL}" != "$(command -v zsh)" ] && chsh -s "$(command -v zsh)"
+  fi
+
+  # shellcheck disable=SC1091
+  . "${HOME}/.config/zsh/.zprofile"
+
+  # Given the above line sets this env var if it's defined, this ensures we
+  # always use the value that was set when running this script. This is mainly
+  # to make testing this script easier in Docker since the .local files are
+  # volume mounted and this value will be different in Docker.
+  DOTFILES_PATH="${original_dotfiles_path}"
+
+  echo "It has been configured in '${HOME}/.config.zsh/'"
+}
+
+configure_git() {
+  _info "CONFIGURE GIT"
+
+  local git_config_local_path="${DOTFILES_PATH}/.config/git/config.local"
+
+  if [ ! -f "${git_config_local_path}" ]; then
+    cat <<EOF >"${git_config_local_path}"
+[user]
+  name = Cody McCodePants
+  email = cody.mccodepants@example.com
+  # Uncomment the options below to auto-sign your git commits / tags using GPG.
+  # Learn more about how to set up a GPG key pair here:
+  #   https://nickjanetakis.com/blog/creating-and-managing-a-gpg-key-pair
+  #signingkey = cody.mccodepants@example.com
+
+#[commit]
+#  gpgsign = true
+
+# This option requires git 2.23+ to work and you must annotate your tags,
+# although -m "" works if you want an empty message.
+#[tag]
+#  gpgSign = true
+EOF
+  fi
+
+  echo "It has been configured in '$(dirname "${git_config_local_path}")'"
+}
+
+install_programming_runtimes() {
+  _info "INSTALL PROGRAMMING RUN-TIMES"
+
+  if node --version &> /dev/null; then
+    echo "Skipping Node, it's already installed, uninstall it first to upgrade"
+  else
+    printf "Installing Node %s...\n\n" "${INSTALL_NODE_VERSION}"
+
+    mise use --global "node@${INSTALL_NODE_VERSION}"
+  fi
+
+  if ! yarn --version &> /dev/null; then
+    npm install --unsafe-perm=true --allow-root --global yarn
+  fi
+
+  mise use --global "python@${INSTALL_PYTHON_VERSION}"
+  printf "Installing Python %s...\n\n" "${INSTALL_PYTHON_VERSION}"
+
+  mise use --global "go@${INSTALL_GO_VERSION}"
+  printf "Installing Golang %s...\n\n" "${INSTALL_GO_VERSION}"
+
+  mise use --global "lua@${INSTALL_LUA_VERSION}"
+  printf "Installing Lua %s...\n\n" "${INSTALL_LUA_VERSION}"
+
+  mise use --global "rust@${INSTALL_RUST_VERSION}"
+  printf "Installing Rust %s...\n\n" "${INSTALL_RUST_VERSION}"
+}
+
+install_tools() {
+  _info "INSTALL TOOLS WITH MISE"
+
+  # Simple terminal UI (TUI) for git commands
+  mise use --global gitui@latest
+  printf "Installing latest Gitui ...\n\n" 
+
+  # Blazing fast file finder, better find
+  mise use --global fd@latest
+  printf "Installing latest fdfind (better find) ...\n\n" 
+
+  # better ls 
+  mise use --global eza@latest
+  printf "Installing latest eza (better ls) ...\n\n" 
+
+  # better cat
+  mise use --global bat@latest
+  printf "Installing latest bat (better cat) ...\n\n" 
+
+  # better cd
+  mise use --global zoxide@latest
+  printf "Installing latest zoxide (better cd) ...\n\n" 
+
+  # syntax highlighting for git/diff/grep
+  mise use --global delta@latest
+  printf "Installing latest delta (git pager syntax highlighter) ...\n\n" 
+}
+
+install_tmux_plugins() {
+  _info "INSTALL TMUX PLUGINS"
+
+  local plugin_path="${HOME}/.config/tmux/plugins"
+  local tpm_path="${plugin_path}/tpm"
+
+  rm -rf "${tpm_path}"
+  git clone --depth 1 https://github.com/tmux-plugins/tpm "${tpm_path}"
+
+  "${tpm_path}/bin/install_plugins"
+}
+
+install_nvim_plugins() {
+  _info "INSTALL NEOVIM PLUGINS"
+
+  nvim +q
+
+  echo "They've been installed"
+}
+
+completed_message() {
+  _info "EVERYTHING WORKED"
+
+  cat <<EOF
+You can safely close this terminal.
+
+The next time you open your terminal everything will be ready to go!
+EOF
+
+  if [ "${OS_TYPE}" == "darwin" ]; then
+    cat <<EOF
+
+P.S., it looks like you're on macOS.
+
+If you're using iTerm2 as your terminal you'll want to goto Settings ->
+Profiles -> Keys (tab) and then change your ALT keys to use "Esc+" instead of
+"Normal", otherwise ALT+x keymaps in Neovim may not work.
+
+If you're not using iTerm2 you may still need to do similar steps.
+EOF
+  fi
+}
+
+detect_env
+create_initial_dirs
+install_packages
+install_tools
+clone_or_update_dotfiles
+install_zsh_plugins
+create_symlinks
+configure_shell
+configure_git
+install_programming_runtimes
+install_tmux_plugins
+install_nvim_plugins
+completed_message
 
