@@ -220,6 +220,22 @@ _install_tools_with_python() {
   #printf("Installing latest thefuck (autocorrect prompt) ... \n\n"
 }
 
+_backup_and_symlink() {
+    local target_file="$1"
+    local symlink_path="$2"
+    local backup_file="${BACKUP_DIR}/$(basename "$target_file")"
+
+    # Check if the file exists
+    if [ -e "$target_file" ]; then
+        echo "Backing up $target_file to $backup_file"
+        mv "$target_file" "$backup_file"   # Move the original file to the backup directory
+    fi
+    
+    # Create the symlink
+    ln -fs "$symlink_path" "$target_file"
+}
+
+
 # -----------------------------------------------------------------------------
 # Main functions
 # -----------------------------------------------------------------------------
@@ -253,8 +269,8 @@ detect_env() {
 
 create_initial_dirs() {
   mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/tmux/themes" "${HOME}/.config/git" \
-	  "${HOME}/.config/zsh"  "${HOME}/.config/bat/themes" "${HOME}/.config/gitui" \
-	  "${HOME}/.config/wezterm"
+	  "${HOME}/.config/zsh/themes/fzf" "${HOME}/.config/bat/themes" "${HOME}/.config/gitui" \
+	  "${HOME}/.config/wezterm" "${HOME}/.config/nvim"
 
   mkdir -p  "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share"
 }
@@ -285,6 +301,15 @@ EOF
     [Yy]*)
       if [ "${OS_TYPE}" == "linux" ]; then
         if [ "${OS_DISTRO}" == "debian" ]; then
+	  if [[ "$SHELL" == *zsh ]]; then
+	    echo "This install script requires Zsh as default shell"
+	    echo
+	    echo "💡 To make Zsh your default shell, run:"
+	    echo "    chsh -s $(which zsh)"
+	    echo
+	    echo "Then log out and log back in for the change to take effect."
+	    exit 1
+	  fi
           _install_packages_apt
         fi
       else
@@ -345,10 +370,17 @@ install_zsh_plugins() {
   "${DOTFILES_PATH}/.local/bin/update-zsh-plugins"
 }
 
+backup_symlinks() {
+  _info "BACKUP SYMLINKS"
+
+}
+
 create_symlinks() {
   _info "CREATE SYMLINKS"
 
   cat <<EOF
+-------------------------------------------------------------------------------
+The following files will be backed up to ${BACKUP_DIR} before symlinks are created:
 -------------------------------------------------------------------------------
 
 ln -fs "${DOTFILES_PATH}/.zshenv" "${HOME}/.zshenv"
@@ -361,6 +393,7 @@ ln -fs "${DOTFILES_PATH}/.config/zsh/.aliases.local" "${HOME}/.config/zsh/.alias
 ln -fs "${DOTFILES_PATH}/.config/tmux/tmux.conf" "${HOME}/.config/tmux/tmux.conf"
 ln -fs "${DOTFILES_PATH}/.config/zsh/themes" "${HOME}/.config/zsh/themes"
 ln -fs "${DOTFILES_PATH}/.config/tmux/themes" "${HOME}/.config/tmux/themes"
+ln -fs "${DOTFILES_PATH}/.config/bat/themes" "${HOME}/.config/bat/themes"
 ln -fs "${DOTFILES_PATH}/.config/git/config" "${HOME}/.config/git/config"
 ln -fs "${DOTFILES_PATH}/.config/git/config.local" "${HOME}/.config/git/config.local"
 ln -fs "${DOTFILES_PATH}/.config/gitui" "${HOME}/.config/gitui"
@@ -371,17 +404,7 @@ ln -fs "${DOTFILES_PATH}/.local/bin/"* "${HOME}/.local/bin/"
 sudo ln -fs "${DOTFILES_PATH}/etc/wsl.conf" /etc/wsl.conf
 
 -------------------------------------------------------------------------------
-
-A potentially dangerous action is about to happen. The above directories and
-files are going to get forcefully symlinked if you type y in the prompt below.
-
-What does that mean?
-
-Any config files you have on the right hand side of the paths are going to get
-overwritten with the files that come with these dotfiles (left side).
-
-Without these symlinks, these dotfiles will not work. If you plan to type y
-and have existing files now would be a good time to back them up.
+Backup complete. Now proceeding with symlinks...
 
 EOF
 
@@ -394,28 +417,35 @@ EOF
       # rm -f would work but that could delete real files potentially.
       [ -L "${HOME}/.config/zsh/themes" ] && rm "${HOME}/.config/zsh/themes"
       [ -L "${HOME}/.config/tmux/themes" ] && rm "${HOME}/.config/tmux/themes"
+      [ -L "${HOME}/.config/bat/themes" ] && rm "${HOME}/.config/bat/themes"
       [ -L "${HOME}/.config/gitui" ] && rm "${HOME}/.config/gitui"
       [ -L "${HOME}/.config/nvim" ] && rm "${HOME}/.config/nvim"
 
-      ln -fs "${DOTFILES_PATH}/.zshenv" "${HOME}/.zshenv" &&
-        ln -fs "${DOTFILES_PATH}/.config/zsh/.zshrc" "${HOME}/.config/zsh/.zshrc" &&
-        ln -fs "${DOTFILES_PATH}/.config/zsh/.zshrc.local" "${HOME}/.config/zsh/.zshrc.local" &&
-        ln -fs "${DOTFILES_PATH}/.config/zsh/.zprofile" "${HOME}/.config/zsh/.zprofile" &&
-        ln -fs "${DOTFILES_PATH}/.config/zsh/.zprofile.local" "${HOME}/.config/zsh/.zprofile.local" &&
-        ln -fs "${DOTFILES_PATH}/.config/zsh/.aliases" "${HOME}/.config/zsh/.aliases" &&
-        ln -fs "${DOTFILES_PATH}/.config/zsh/.aliases.local" "${HOME}/.config/zsh/.aliases.local" &&
-        ln -fs "${DOTFILES_PATH}/.config/tmux/tmux.conf" "${HOME}/.config/tmux/tmux.conf" &&
-        ln -fs "${DOTFILES_PATH}/.config/zsh/themes" "${HOME}/.config/zsh/themes" &&
-        ln -fs "${DOTFILES_PATH}/.config/tmux/themes" "${HOME}/.config/tmux/themes" &&
-        ln -fs "${DOTFILES_PATH}/.config/git/config" "${HOME}/.config/git/config" &&
-        ln -fs "${DOTFILES_PATH}/.config/git/config.local" "${HOME}/.config/git/config.local" &&
-        ln -fs "${DOTFILES_PATH}/.config/gitui" "${HOME}/.config/gitui" &&
-        ln -fs "${DOTFILES_PATH}/.config/nvim" "${HOME}/.config/nvim" &&
-        ln -fs "${DOTFILES_PATH}/.local/bin/"* "${HOME}/.local/bin/"
+      # Backup and create symlinks for each file
+	backup_and_symlink "${HOME}/.zshenv" "${DOTFILES_PATH}/.zshenv"
+	backup_and_symlink "${HOME}/.config/zsh/.zshrc" "${DOTFILES_PATH}/.config/zsh/.zshrc"
+	backup_and_symlink "${HOME}/.config/zsh/.zshrc.local" "${DOTFILES_PATH}/.config/zsh/.zshrc.local"
+	backup_and_symlink "${HOME}/.config/zsh/.zprofile" "${DOTFILES_PATH}/.config/zsh/.zprofile"
+	backup_and_symlink "${HOME}/.config/zsh/.zprofile.local" "${DOTFILES_PATH}/.config/zsh/.zprofile.local"
+	backup_and_symlink "${HOME}/.config/zsh/.aliases" "${DOTFILES_PATH}/.config/zsh/.aliases"
+	backup_and_symlink "${HOME}/.config/zsh/.aliases.local" "${DOTFILES_PATH}/.config/zsh/.aliases.local"
+	backup_and_symlink "${HOME}/.config/wezterm/wezterm.lua" "${DOTFILES_PATH}/.config/wezterm/wezterm.lua"
+	backup_and_symlink "${HOME}/.config/tmux/tmux.conf" "${DOTFILES_PATH}/.config/tmux/tmux.conf"
+	backup_and_symlink "${HOME}/.config/zsh/themes" "${DOTFILES_PATH}/.config/zsh/themes"
+	backup_and_symlink "${HOME}/.config/tmux/themes" "${DOTFILES_PATH}/.config/tmux/themes"
+	backup_and_symlink "${HOME}/.config/bat/themes" "${DOTFILES_PATH}/.config/bat/themes"
+	backup_and_symlink "${HOME}/.config/git/config" "${DOTFILES_PATH}/.config/git/config"
+	backup_and_symlink "${HOME}/.config/git/config.local" "${DOTFILES_PATH}/.config/git/config.local"
+	backup_and_symlink "${HOME}/.config/gitui" "${DOTFILES_PATH}/.config/gitui"
+	backup_and_symlink "${HOME}/.config/nvim" "${DOTFILES_PATH}/.config/nvim"
+	backup_and_symlink "${HOME}/.local/bin/"* "${DOTFILES_PATH}/.local/bin/"
+
 
       if grep -qE "(Microsoft|microsoft|WSL)" /proc/version &>/dev/null; then
         sudo ln -fs "${DOTFILES_PATH}/etc/wsl.conf" /etc/wsl.conf
       fi
+
+      echo "Symlinks created successfully."
 
       break
       ;;

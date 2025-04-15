@@ -3,24 +3,36 @@
 
 export XDG_DATA_HOME="${XDG_DATA_HOME:-"${HOME}/.local/share"}"
 
-function clone_or_pull {
-  local repo_path="${1}"
-  local project=
-  project="$(echo "${repo_path}" | cut -d"/" -f2)"
-  local project_path="${XDG_DATA_HOME}/${project}"
+clone_or_pull() {
+  local repo="$1"
+  local project="${repo##*/}"
+  local dest="${XDG_DATA_HOME}/${project}"
 
-  if cd "${project_path}" &> /dev/null; then
-    echo "Updating ${repo_path}..."
-    git pull
-    echo
-    cd - &> /dev/null || exit
+  if [[ -d "$dest/.git" ]]; then
+    echo "🔄 Updating $repo..."
+    git -C "$dest" fetch --quiet
+    if [[ $(git -C "$dest" rev-parse HEAD) != $(git -C "$dest" rev-parse @{u}) ]]; then
+      git -C "$dest" pull --quiet
+    else
+      echo "✔️  $repo is up to date."
+    fi
   else
-    echo "Installing ${repo_path}..."
-    git clone "https://github.com/${repo_path}" "${project_path}"
-    echo
+    echo "⬇️  Cloning $repo (shallow)..."
+    git clone --quiet --depth=1 "https://github.com/$repo" "$dest"
   fi
 }
 
+check_internet() {
+  if ! ping -q -c 1 -W 1 github.com &>/dev/null; then
+    echo "❌ Cannot reach github.com. Check your internet connection."
+    return 1
+  fi
+  return 0
+}
+
+check_internet || exit 1
+
 clone_or_pull "zdharma-continuum/fast-syntax-highlighting"
 clone_or_pull "zsh-users/zsh-autosuggestions"
-
+clone_or_pull "romkatv/zsh-defer"
+clone_or_pull "Aloxaf/fzf-tab"
