@@ -7,6 +7,8 @@ Terminal Emulator
 
 3. Install fzf and fzf-git
 git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
+C:\Users\YourName\Documents\PowerShell\Microsoft.PowerShell_profile.ps1
+AppData/Roaming/Microsoft/Windows/PowerShell/PSReadLine/ConsoleHost_history.txt
 
 
 3. Install Zsh (https://ohmyz.sh/)
