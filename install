@@ -24,8 +24,6 @@ APT_PACKAGES="
   python3-pip
   ripgrep
   rsync
-  thefuck
-  tldr
   tmux
   unzip
   wl-clipboard
@@ -180,6 +178,48 @@ _display_packages() {
   fi
 }
 
+_install_tools_with_mise() {
+  _info "INSTALLING TOOLS WITH MISE"
+
+  # Simple terminal UI (TUI) for git commands
+  mise use --global gitui@latest
+  printf "Installing latest Gitui ...\n\n" 
+
+  # Blazing fast file finder, better find
+  mise use --global fd@latest
+  printf "Installing latest fdfind (better find) ...\n\n" 
+
+  # better ls 
+  mise use --global eza@latest
+  printf "Installing latest eza (better ls) ...\n\n" 
+
+  # better cat
+  mise use --global bat@latest
+  printf "Installing latest bat (better cat) ...\n\n" 
+
+  # better cd
+  mise use --global zoxide@latest
+  printf "Installing latest zoxide (better cd) ...\n\n" 
+
+  # syntax highlighting for git/diff/grep
+  mise use --global delta@latest
+  printf "Installing latest delta (git pager syntax highlighter) ...\n\n" 
+}
+
+_install_tools_with_python() {
+  _info "INSTALLING TOOLS WITH PYTHON PIP"
+
+  pip install --upgrade pip
+
+  # tldr
+  pip install tldr --user
+  printf("Installing latest tldr (better man) ... \n\n"
+
+  # autocorrect previous command that entered wrongly
+  #pip3 install thefuck --user
+  #printf("Installing latest thefuck (autocorrect prompt) ... \n\n"
+}
+
 # -----------------------------------------------------------------------------
 # Main functions
 # -----------------------------------------------------------------------------
@@ -212,8 +252,10 @@ detect_env() {
 }
 
 create_initial_dirs() {
-  mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/git" "${HOME}/.config/zsh" "${HOME}/.config/bat/themes" \
-	  "${HOME}/.config/gitui" "${HOME}/.config/wezterm"
+  mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/tmux/themes" "${HOME}/.config/git" \
+	  "${HOME}/.config/zsh"  "${HOME}/.config/bat/themes" "${HOME}/.config/gitui" \
+	  "${HOME}/.config/wezterm"
+
   mkdir -p  "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share"
 }
 
@@ -256,6 +298,9 @@ EOF
     esac
   done
 
+  _install_tools_with_mise
+
+  _install_tools_with_python
 }
 
 clone_or_update_dotfiles() {
@@ -509,7 +554,7 @@ EOF
   echo "It has been configured in '$(dirname "${git_config_local_path}")'"
 }
 
-install_programming_runtimes() {
+install_programming_runtimes_with_mise() {
   _info "INSTALL PROGRAMMING RUN-TIMES"
 
   if node --version &> /dev/null; then
@@ -537,33 +582,6 @@ install_programming_runtimes() {
   printf "Installing Rust %s...\n\n" "${INSTALL_RUST_VERSION}"
 }
 
-install_tools() {
-  _info "INSTALL TOOLS WITH MISE"
-
-  # Simple terminal UI (TUI) for git commands
-  mise use --global gitui@latest
-  printf "Installing latest Gitui ...\n\n" 
-
-  # Blazing fast file finder, better find
-  mise use --global fd@latest
-  printf "Installing latest fdfind (better find) ...\n\n" 
-
-  # better ls 
-  mise use --global eza@latest
-  printf "Installing latest eza (better ls) ...\n\n" 
-
-  # better cat
-  mise use --global bat@latest
-  printf "Installing latest bat (better cat) ...\n\n" 
-
-  # better cd
-  mise use --global zoxide@latest
-  printf "Installing latest zoxide (better cd) ...\n\n" 
-
-  # syntax highlighting for git/diff/grep
-  mise use --global delta@latest
-  printf "Installing latest delta (git pager syntax highlighter) ...\n\n" 
-}
 
 install_tmux_plugins() {
   _info "INSTALL TMUX PLUGINS"
@@ -611,7 +629,6 @@ EOF
 detect_env
 create_initial_dirs
 install_packages
-install_tools
 clone_or_update_dotfiles
 install_zsh_plugins
 create_symlinks

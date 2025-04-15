@@ -15,7 +15,7 @@ config.font_size = 13
 --config.enable_tab_bar = false
 
 config.window_decorations = 'RESIZE'
-config.window_background_opacity = 0.90
+config.window_background_opacity = 0.8
 
 config.keys = {
   {key="g", mods="CTRL", action=wezterm.action.SendString("gitui\n")},
