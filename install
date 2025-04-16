@@ -218,13 +218,16 @@ _install_tools_with_python() {
   # autocorrect previous command that entered wrongly
   #pip3 install thefuck --user
   #printf("Installing latest thefuck (autocorrect prompt) ... \n\n"
+
+  # for neovim
+  pip install pynvim --user
 }
 
 _backup_and_symlink() {
     local target_file="$1"
     local symlink_path="$2"
     local backup_file="${BACKUP_DIR}/$(basename "$target_file")"
-
+j
     # Check if the file exists
     if [ -e "$target_file" ]; then
         echo "Backing up $target_file to $backup_file"
@@ -235,6 +238,16 @@ _backup_and_symlink() {
     ln -fs "$symlink_path" "$target_file"
 }
 
+_get_win_users_path() {
+  for base in /mnt/c/Users /c/Users; do
+    [ -d "$base" ] || continue
+    for path in "$base"/*; do
+      user=$path
+      [[ -d "$path" && ! "$user" =~ (Public|Default|All\ Users) ]] && echo "Found window user $user"
+    done
+    return
+  done
+}
 
 # -----------------------------------------------------------------------------
 # Main functions
@@ -443,6 +456,11 @@ EOF
 
       if grep -qE "(Microsoft|microsoft|WSL)" /proc/version &>/dev/null; then
         sudo ln -fs "${DOTFILES_PATH}/etc/wsl.conf" /etc/wsl.conf
+
+	for user_path in $(_get_win_users_path); do
+	  cp "${DOTFILES_PATH}/wezterm/wezterm.lua" "${user_path}/.wezterm.lua"
+	  echo "Copied wezterm.lua to window users"
+	done
       fi
 
       echo "Symlinks created successfully."

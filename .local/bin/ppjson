@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Usage:
+#   ppjson [file path] [jq args]
+#
+# Examples:
+#   ppjson myfile.json  Pretty print the contents of a file
+#   ppjson              Pretty print the contents of your clipboard
+#   ppjson --indent 4   Pretty print your clipboard with 4 spaces
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+file="${1:-}"
+
+if [ -f "${file}" ]; then
+  shift
+  # shellcheck disable=SC2068
+  jq ${@:-} <"${file}"
+else
+  # shellcheck disable=SC2068
+  if command -v pbpaste >/dev/null 2>&1; then pbpaste; else xclip -out -selection clipboard; fi | jq ${@:-}
+fi
