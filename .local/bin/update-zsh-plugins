@@ -29,7 +29,7 @@ check_internet() {
   fi
 
   echo "🌐 Checking connectivity to GitHub..."
-  curl -s --head https://github.com | grep -q "200 OK" && return 0
+  curl -s --head https://github.com | grep -q "^HTTP.*200" && return 0
 
   echo "❌ Cannot reach GitHub. Check your internet connection."
   return 1
