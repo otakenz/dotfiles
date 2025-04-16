@@ -21,7 +21,9 @@ source ~/powerlevel10k/powerlevel10k.zsh-theme
 [ -f "${HOME}/.fzf.zsh" ] && source "${HOME}/.fzf.zsh"
 # Setup FZF key bindings and fuzzy completion
 # shellcheck disable=SC1090
-eval "$(fzf --zsh)"
+# TODO test if this works, needed because using zsh-vi-mode
+# so that fzf will work properly in insert/normal mode
+zvm_after_init_commands+=(eval "$(fzf --zsh)")
 
 ## Configure FZF
 export FZF_DEFAULT_OPTS="--highlight-line --info=inline-right --ansi --layout=reverse --border=none"
@@ -111,7 +113,11 @@ source ${XDG_DATA_HOME}/fast-syntax-highlighting/fast-syntax-highlighting.plugin
 source ${XDG_DATA_HOME}/zsh-autosuggestions/zsh-autosuggestions.zsh
 export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 # shellcheck disable=SC1091
-#source ${XDG_DATA_HOME}/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+source ${XDG_DATA_HOME}/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+
+# zsh-vi-mode settings
+ZVM_LINE_INIT_MODE=$ZVM_MODE_INSERT
+ZVM_VI_INSERT_ESCAPE_BINDKEY='jk'
 
 ## Zsh completion system
 # Include dotfiles for compinit
