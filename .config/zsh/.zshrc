@@ -49,10 +49,10 @@ _fzf_compgen_dir() {
 source "${HOME}/.fzf-git.sh/fzf-git.sh"
 
 # Preview directory with eza, or preview file with bat
-show_file_or_dir_preview="if [ -d {} ]; then eza --tree --color=always {} | head -200; 
+show_file_or_dir_preview="if [ -d {} ]; then eza --tree --color=always {} | head -200;
 			  else bat -n --color=always --line-range :500 {}; fi"
 
-export FZF_CTRL_T_OPTS="--preview '$show_file_or_dir_preview' --bind pgup:preview-page-up,pgdn:preview-page-down" 
+export FZF_CTRL_T_OPTS="--preview '$show_file_or_dir_preview' --bind pgup:preview-page-up,pgdn:preview-page-down"
 export FZF_ALT_C_OPTS="--preview 'eza --tree --color=always {} | head -200'"
 
 # Advanced customization of fzf options via _fzf_comprun function
@@ -111,9 +111,9 @@ source ${XDG_DATA_HOME}/fast-syntax-highlighting/fast-syntax-highlighting.plugin
 source ${XDG_DATA_HOME}/zsh-autosuggestions/zsh-autosuggestions.zsh
 export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 # shellcheck disable=SC1091
-source ${XDG_DATA_HOME}/zsh-defer/zsh-defer.plugin.zsh
+#source ${XDG_DATA_HOME}/zsh-vi-mode/zsh-vi-mode.plugin.zsh
 
-## Zsh completion system 
+## Zsh completion system
 # Include dotfiles for compinit
 _comp_options+=(globdots)
 # Set default path for completion cache
@@ -148,6 +148,10 @@ zstyle ":completion:*" verbose true
 # Ctrl + left/right move a word in cli
 bindkey "^[[1;5D" backward-word  # Ctrl+Left
 bindkey "^[[1;5C" forward-word   # Ctrl+Right
+
+# Ctrl + n/p to search through history forward/backward
+#bindkey "^p" history-search-backward
+#bindkey "^n" history-search-forward
 
 ## Misc
 # Allows your gpg passphrase prompt to spawn (useful for signing commits)
