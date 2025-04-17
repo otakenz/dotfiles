@@ -158,6 +158,8 @@ bindkey "^[[1;5C" forward-word   # Ctrl+Right
 # Ctrl + n/p to search through history forward/backward
 bindkey "^p" history-search-backward
 bindkey "^n" history-search-forward
+bindkey "^k" history-search-backward
+bindkey "^j" history-search-forward
 
 ## Misc
 # Allows your gpg passphrase prompt to spawn (useful for signing commits)

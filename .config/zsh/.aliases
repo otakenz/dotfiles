@@ -29,6 +29,7 @@ alias ll="ls -alF"
 alias la="ls -A"
 alias gs="git status"
 alias gl="git log --oneline --graph --color=always --decorate=short"
+alias du="dust"
 
 alias follow="namei -om"
 alias diff="diff --color -u"
@@ -41,7 +42,6 @@ alias vdt="rm ${XDG_STATE_HOME}/nvim/swap/%*"
 # shellcheck disable=SC2139
 alias pf="fzf ${FZF_CTRL_T_OPTS}"
 
-
 # ---- Functions ----#
 # Git Branch Checkout (with preview)
 gco() {
@@ -50,7 +50,7 @@ gco() {
 
 # Git Worktree Switch (with preview)
 gswt() {
-  cd "$(_fzf_git_worktrees --no-multi)" 
+  cd "$(_fzf_git_worktrees --no-multi)"
 }
 
 gh() {
@@ -58,8 +58,8 @@ gh() {
 }
 
 glog() {
-  git log --oneline --graph --color=always --decorate=short | \
-  fzf --ansi --no-sort --reverse --tiebreak=index \
+  git log --oneline --graph --color=always --decorate=short |
+    fzf --ansi --no-sort --reverse --tiebreak=index \
       --preview "echo {} | grep -o '[a-f0-9]\\{7,\\}' | head -1 | \
                  xargs git show --color=always" \
       --bind "enter:execute:echo {} | grep -o '[a-f0-9]\\{7,\\}' | head -1 | \
@@ -67,9 +67,9 @@ glog() {
 }
 
 gsa() {
-  git status -s | \
-  awk '{status=""; if ($1 == "A" || $1 == "M") status="[Staged]"; else status="[Unstaged]"; print status, $1, $2}' | \
-  fzf --ansi --no-sort --reverse --tiebreak=index \
+  git status -s |
+    awk '{status=""; if ($1 == "A" || $1 == "M") status="[Staged]"; else status="[Unstaged]"; print status, $1, $2}' |
+    fzf --ansi --no-sort --reverse --tiebreak=index \
       --preview 'git diff --color=always {3}' \
       --bind 'enter:execute:git add {3}' \
       --bind 'ctrl-d:execute:git diff --color=always {3} | bat --paging=always --style=full' \
@@ -77,8 +77,8 @@ gsa() {
 }
 
 gr() {
-  git status -s | awk '$1 ~ /^[ ?M]/ {print "[Unstaged]", $1, $2}' | \
-  fzf --ansi --no-sort --reverse --multi \
+  git status -s | awk '$1 ~ /^[ ?M]/ {print "[Unstaged]", $1, $2}' |
+    fzf --ansi --no-sort --reverse --multi \
       --preview 'git diff --color=always {3}' \
       --bind 'enter:execute(git restore {3})+abort' \
       --bind 'ctrl-d:execute(git diff --color=always {3} | bat --paging=always --style=full)' \
@@ -86,11 +86,10 @@ gr() {
 }
 
 grs() {
-  git status -s | awk '$1 ~ /^[MARCD]/ {print "[Staged]", $1, $2}' | \
-  fzf --ansi --no-sort --reverse --multi \
+  git status -s | awk '$1 ~ /^[MARCD]/ {print "[Staged]", $1, $2}' |
+    fzf --ansi --no-sort --reverse --multi \
       --preview 'git diff --cached --color=always {3}' \
       --bind 'enter:execute(git restore --staged {3})+abort' \
       --bind 'ctrl-d:execute(git diff --cached --color=always {3} | bat --paging=always --style=full)' \
       --preview-window=right:60%:wrap
 }
-
