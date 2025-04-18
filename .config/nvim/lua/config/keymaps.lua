@@ -36,4 +36,7 @@ MAP(
   { desc = "Move Down" }
 )
 
---MAP("n", "<leader>nh", ":nohl<CR>", { desc = "Clear search highlights" })
+MAP({ "n", "x" }, "X", '"_x', { desc = "Delete Chars Into Void" })
+MAP({ "n", "x" }, "<Del>", '"_x', { desc = "Delete Chars Into Void" })
+
+MAP("n", "<leader>uW", ":set list!<CR>", { desc = "Toggle WhiteSpace" })

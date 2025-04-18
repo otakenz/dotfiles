@@ -11,7 +11,7 @@ clone_or_pull() {
   if [[ -d "$dest/.git" ]]; then
     echo "🔄 Updating $repo..."
     git -C "$dest" fetch --quiet
-    if [[ $(git -C "$dest" rev-parse HEAD) != $(git -C "$dest" rev-parse @{u}) ]]; then
+    if [[ $(git -C "$dest" rev-parse HEAD) != $(git -C "$dest" rev-parse "@{u}") ]]; then
       git -C "$dest" pull --quiet
     else
       echo "✔️  $repo is up to date."

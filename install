@@ -11,46 +11,47 @@ set -o errexit
 SKIP_SYSTEM_PACKAGES="${1:-}"
 
 APT_PACKAGES="
+  aspell
+  bc
+  build-essential
   curl
   git
   gnupg
   htop
   inotify-tools
   iproute2
-  jq
+  netcat-openbsd
   openssh-server
   pass
   pwgen
-  python3-pip
-  ripgrep
   rsync
   tmux
   unzip
+  wget
+  whois
   wl-clipboard
   xz-utils
+  zip
   zsh
 "
 
 BREW_PACKAGES="
+  aspell
   bash
+  gc
   diffutils
-  fd
-  fzf
   git
   gnupg
   htop
-  jq
+  inotify-tools
   mise
-  nvim
   openssh
   pass
   pwgen
-  python
-  ripgrep
   rsync
-  shellcheck
-  shfmt
   tmux
+  unzip
+  wget
   xz
   zsh
 "
@@ -61,7 +62,6 @@ INSTALL_GO_VERSION="1.23.8"
 INSTALL_LUA_VERSION="5.4.7"
 INSTALL_RUST_VERSION="1.86.0"
 
-CPU_ARCH="$(uname -m)"
 OS_TYPE="$(uname | tr "[:upper:]" "[:lower:]")"
 OS_DISTRO=
 
@@ -101,64 +101,16 @@ EOF
 }
 
 _install_packages_apt() {
-  # Apt's packages typically have older versions since Debian and Ubuntu are
-  # stable distros. In most cases the version included is fine but we do want
-  # the latest and greatest versions for certain tools.
-
-  local version_nvim="v0.11.0"
-  local version_shellcheck="v0.10.0"
-  local version_shfmt="v3.11.0"
-
   # shellcheck disable=SC2086
   sudo apt-get update && sudo apt-get install -y ${APT_PACKAGES}
 
   # Install Mise.
   curl https://mise.run | sh
-
-  # Install fzf.
-  local fzf_path="${HOME}/.local/share/fzf"
-  rm -rf "${fzf_path}"
-  git clone --depth 1 https://github.com/junegunn/fzf.git "${fzf_path}" &&
-    yes | "${fzf_path}/install" --bin --no-update-rc
-
-  local original_cpu_arch="${CPU_ARCH}"
-
-  # ShellCheck uses a different file name than what uname -m may output. I have
-  # no idea if this will work since I have no arm64 Linux device to test on.
-  [[ "${CPU_ARCH}" =~ ^arm ]] && CPU_ARCH="aarch64"
-
-  # Install shellcheck
-  local shellcheck_install_path="/tmp/shellcheck"
-  local shellcheck_xz_path="/tmp/shellcheck.tar.xz"
-  rm -rf "${shellcheck_xz_path}" "${shellcheck_install_path}"
-  curl -s -o "${shellcheck_xz_path}" -L "https://github.com/koalaman/shellcheck/releases/download/${version_shellcheck}/shellcheck-${version_shellcheck}.${OS_TYPE}.${CPU_ARCH}.tar.xz"
-  mkdir -p "${shellcheck_install_path}"
-  tar -xJf "${shellcheck_xz_path}" -C "${shellcheck_install_path}" --strip-components=1
-  chmod +x "${shellcheck_install_path}/shellcheck"
-  mv "${_}" "${HOME}/.local/bin"
-
-  CPU_ARCH="${original_cpu_arch}"
-
-  # shfmt uses a different file name than what uname -m will output.
-  [[ "${CPU_ARCH}" == "x86_64" ]] && CPU_ARCH="amd64"
-
-  # Install shfmt
-  curl -s -o /tmp/shfmt -L "https://github.com/mvdan/sh/releases/download/${version_shfmt}/shfmt_${version_shfmt}_${OS_TYPE}_${CPU_ARCH}"
-  chmod +x /tmp/shfmt
-  mv "${_}" "${HOME}/.local/bin"
-
-  CPU_ARCH="${original_cpu_arch}"
-
-  # Install Nvim
-  local nvim_gz_path="/tmp/nvim.tar.gz"
-  rm -rf "${nvim_gz_path}"
-  curl -s -o "${nvim_gz_path}" -L "https://github.com/neovim/neovim/releases/download/${version_nvim}/nvim-${OS_TYPE}-${CPU_ARCH}.tar.gz"
-  tar -xzf "${nvim_gz_path}" -C "${HOME}/.local" --strip-components=1
 }
 
 _install_packages_brew() {
   # Install brew itself.
-  [ -x "$(command -v brew &> /dev/null)" ] &&
+  [ -x "$(command -v brew &>/dev/null)" ] &&
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
   # Ensure brew's paths are available for this script
@@ -181,29 +133,53 @@ _display_packages() {
 _install_tools_with_mise() {
   _info "INSTALLING TOOLS WITH MISE"
 
+  # Neovim
+  mise use --global nvim@latest
+  printf "Installing latest neovim ...\n\n"
+
+  # Shellcheck
+  mise use --global shellcheck@latest
+  printf "Installing latest shellcheck ...\n\n"
+
+  # shfmt
+  mise use --global shfmt@latest
+  printf "Installing latest shfmt ...\n\n"
+
+  # Fzf (Fuzzy Finder) CLI
+  mise use --global fzf@latest
+  printf "Installing latest fzf ...\n\n"
+
+  # jq (json parser)
+  mise use --global jq@latest
+  printf "Installing latest jq ...\n\n"
+
+  # rg (better grep)
+  mise use --global rg@latest
+  printf "Installing latest rg ...\n\n"
+
   # Simple terminal UI (TUI) for git commands
   mise use --global gitui@latest
-  printf "Installing latest Gitui ...\n\n" 
+  printf "Installing latest Gitui ...\n\n"
 
   # Blazing fast file finder, better find
   mise use --global fd@latest
-  printf "Installing latest fdfind (better find) ...\n\n" 
+  printf "Installing latest fdfind (better find) ...\n\n"
 
-  # better ls 
+  # better ls
   mise use --global eza@latest
-  printf "Installing latest eza (better ls) ...\n\n" 
+  printf "Installing latest eza (better ls) ...\n\n"
 
   # better cat
   mise use --global bat@latest
-  printf "Installing latest bat (better cat) ...\n\n" 
+  printf "Installing latest bat (better cat) ...\n\n"
 
   # better cd
   mise use --global zoxide@latest
-  printf "Installing latest zoxide (better cd) ...\n\n" 
+  printf "Installing latest zoxide (better cd) ...\n\n"
 
   # syntax highlighting for git/diff/grep
   mise use --global delta@latest
-  printf "Installing latest delta (git pager syntax highlighter) ...\n\n" 
+  printf "Installing latest delta (git pager syntax highlighter) ...\n\n"
 }
 
 _install_tools_with_python() {
@@ -213,7 +189,7 @@ _install_tools_with_python() {
 
   # tldr
   pip install tldr --user
-  printf("Installing latest tldr (better man) ... \n\n"
+  printf "Installing latest tldr (better man) ... \n\n"
 
   # autocorrect previous command that entered wrongly
   #pip3 install thefuck --user
@@ -224,18 +200,19 @@ _install_tools_with_python() {
 }
 
 _backup_and_symlink() {
-    local target_file="$1"
-    local symlink_path="$2"
-    local backup_file="${BACKUP_DIR}/$(basename "$target_file")"
-j
-    # Check if the file exists
-    if [ -e "$target_file" ]; then
-        echo "Backing up $target_file to $backup_file"
-        mv "$target_file" "$backup_file"   # Move the original file to the backup directory
-    fi
-    
-    # Create the symlink
-    ln -fs "$symlink_path" "$target_file"
+  local target_file="$1"
+  local symlink_path="$2"
+  local backup_file
+  backup_file="${BACKUP_DIR}/$(basename "$target_file")"
+
+  # Check if the file exists
+  if [ -e "$target_file" ]; then
+    echo "Backing up $target_file to $backup_file"
+    mv "$target_file" "$backup_file" # Move the original file to the backup directory
+  fi
+
+  # Create the symlink
+  ln -fs "$symlink_path" "$target_file"
 }
 
 _get_win_users_path() {
@@ -282,10 +259,10 @@ detect_env() {
 
 create_initial_dirs() {
   mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/tmux/themes" "${HOME}/.config/git" \
-	  "${HOME}/.config/zsh/themes/fzf" "${HOME}/.config/bat/themes" "${HOME}/.config/gitui" \
-	  "${HOME}/.config/wezterm" "${HOME}/.config/nvim"
+    "${HOME}/.config/zsh/themes/fzf" "${HOME}/.config/bat/themes" "${HOME}/.config/gitui" \
+    "${HOME}/.config/wezterm" "${HOME}/.config/nvim"
 
-  mkdir -p  "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share"
+  mkdir -p "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share"
 }
 
 install_packages() {
@@ -314,15 +291,15 @@ EOF
     [Yy]*)
       if [ "${OS_TYPE}" == "linux" ]; then
         if [ "${OS_DISTRO}" == "debian" ]; then
-	  if [[ "$SHELL" == *zsh ]]; then
-	    echo "This install script requires Zsh as default shell"
-	    echo
-	    echo "💡 To make Zsh your default shell, run:"
-	    echo "    chsh -s $(which zsh)"
-	    echo
-	    echo "Then log out and log back in for the change to take effect."
-	    exit 1
-	  fi
+          if [[ "$SHELL" == *zsh ]]; then
+            echo "This install script requires Zsh as default shell"
+            echo
+            echo "💡 To make Zsh your default shell, run:"
+            echo "    chsh -s $(which zsh)"
+            echo
+            echo "Then log out and log back in for the change to take effect."
+            exit 1
+          fi
           _install_packages_apt
         fi
       else
@@ -362,6 +339,15 @@ clone_or_update_dotfiles() {
   if [ "${DEBUG}" == "1" ]; then
     if [ "${PWD}" != "${DOTFILES_PATH}" ]; then
       cp -R "${PWD}/." "${DOTFILES_PATH}"
+
+      # Ensure the containerized environment starts fresh.
+      if [[ -n "${IN_CONTAINER}" ]]; then
+        rm \
+          "${DOTFILES_PATH}/.config/zsh/.zsh_history" \
+          "${DOTFILES_PATH}/.config/zsh/.aliases.local" \
+          "${DOTFILES_PATH}/.config/zsh/.zprofile.local" \
+          "${DOTFILES_PATH}/.config/zsh/.zshrc.local"
+      fi
     fi
 
     printf "They've been copied to '%s'\n" "${DOTFILES_PATH}"
@@ -383,11 +369,6 @@ install_zsh_plugins() {
   "${DOTFILES_PATH}/.local/bin/update-zsh-plugins"
 }
 
-backup_symlinks() {
-  _info "BACKUP SYMLINKS"
-
-}
-
 create_symlinks() {
   _info "CREATE SYMLINKS"
 
@@ -403,6 +384,7 @@ ln -fs "${DOTFILES_PATH}/.config/zsh/.zprofile" "${HOME}/.config/zsh/.zprofile"
 ln -fs "${DOTFILES_PATH}/.config/zsh/.zprofile.local" "${HOME}/.config/zsh/.zprofile.local"
 ln -fs "${DOTFILES_PATH}/.config/zsh/.aliases" "${HOME}/.config/zsh/.aliases"
 ln -fs "${DOTFILES_PATH}/.config/zsh/.aliases.local" "${HOME}/.config/zsh/.aliases.local"
+ln -fs "${DOTFILES_PATH}/.config/wezterm/wezterm.lua" "${DOTFILES_PATH}/.config/wezterm/wezterm.lua"
 ln -fs "${DOTFILES_PATH}/.config/tmux/tmux.conf" "${HOME}/.config/tmux/tmux.conf"
 ln -fs "${DOTFILES_PATH}/.config/zsh/themes" "${HOME}/.config/zsh/themes"
 ln -fs "${DOTFILES_PATH}/.config/tmux/themes" "${HOME}/.config/tmux/themes"
@@ -435,32 +417,31 @@ EOF
       [ -L "${HOME}/.config/nvim" ] && rm "${HOME}/.config/nvim"
 
       # Backup and create symlinks for each file
-	backup_and_symlink "${HOME}/.zshenv" "${DOTFILES_PATH}/.zshenv"
-	backup_and_symlink "${HOME}/.config/zsh/.zshrc" "${DOTFILES_PATH}/.config/zsh/.zshrc"
-	backup_and_symlink "${HOME}/.config/zsh/.zshrc.local" "${DOTFILES_PATH}/.config/zsh/.zshrc.local"
-	backup_and_symlink "${HOME}/.config/zsh/.zprofile" "${DOTFILES_PATH}/.config/zsh/.zprofile"
-	backup_and_symlink "${HOME}/.config/zsh/.zprofile.local" "${DOTFILES_PATH}/.config/zsh/.zprofile.local"
-	backup_and_symlink "${HOME}/.config/zsh/.aliases" "${DOTFILES_PATH}/.config/zsh/.aliases"
-	backup_and_symlink "${HOME}/.config/zsh/.aliases.local" "${DOTFILES_PATH}/.config/zsh/.aliases.local"
-	backup_and_symlink "${HOME}/.config/wezterm/wezterm.lua" "${DOTFILES_PATH}/.config/wezterm/wezterm.lua"
-	backup_and_symlink "${HOME}/.config/tmux/tmux.conf" "${DOTFILES_PATH}/.config/tmux/tmux.conf"
-	backup_and_symlink "${HOME}/.config/zsh/themes" "${DOTFILES_PATH}/.config/zsh/themes"
-	backup_and_symlink "${HOME}/.config/tmux/themes" "${DOTFILES_PATH}/.config/tmux/themes"
-	backup_and_symlink "${HOME}/.config/bat/themes" "${DOTFILES_PATH}/.config/bat/themes"
-	backup_and_symlink "${HOME}/.config/git/config" "${DOTFILES_PATH}/.config/git/config"
-	backup_and_symlink "${HOME}/.config/git/config.local" "${DOTFILES_PATH}/.config/git/config.local"
-	backup_and_symlink "${HOME}/.config/gitui" "${DOTFILES_PATH}/.config/gitui"
-	backup_and_symlink "${HOME}/.config/nvim" "${DOTFILES_PATH}/.config/nvim"
-	backup_and_symlink "${HOME}/.local/bin/"* "${DOTFILES_PATH}/.local/bin/"
-
+      _backup_and_symlink "${HOME}/.zshenv" "${DOTFILES_PATH}/.zshenv"
+      _backup_and_symlink "${HOME}/.config/zsh/.zshrc" "${DOTFILES_PATH}/.config/zsh/.zshrc"
+      _backup_and_symlink "${HOME}/.config/zsh/.zshrc.local" "${DOTFILES_PATH}/.config/zsh/.zshrc.local"
+      _backup_and_symlink "${HOME}/.config/zsh/.zprofile" "${DOTFILES_PATH}/.config/zsh/.zprofile"
+      _backup_and_symlink "${HOME}/.config/zsh/.zprofile.local" "${DOTFILES_PATH}/.config/zsh/.zprofile.local"
+      _backup_and_symlink "${HOME}/.config/zsh/.aliases" "${DOTFILES_PATH}/.config/zsh/.aliases"
+      _backup_and_symlink "${HOME}/.config/zsh/.aliases.local" "${DOTFILES_PATH}/.config/zsh/.aliases.local"
+      _backup_and_symlink "${HOME}/.config/wezterm/wezterm.lua" "${DOTFILES_PATH}/.config/wezterm/wezterm.lua"
+      _backup_and_symlink "${HOME}/.config/tmux/tmux.conf" "${DOTFILES_PATH}/.config/tmux/tmux.conf"
+      _backup_and_symlink "${HOME}/.config/zsh/themes" "${DOTFILES_PATH}/.config/zsh/themes"
+      _backup_and_symlink "${HOME}/.config/tmux/themes" "${DOTFILES_PATH}/.config/tmux/themes"
+      _backup_and_symlink "${HOME}/.config/bat/themes" "${DOTFILES_PATH}/.config/bat/themes"
+      _backup_and_symlink "${HOME}/.config/git/config" "${DOTFILES_PATH}/.config/git/config"
+      _backup_and_symlink "${HOME}/.config/git/config.local" "${DOTFILES_PATH}/.config/git/config.local"
+      _backup_and_symlink "${HOME}/.config/gitui" "${DOTFILES_PATH}/.config/gitui"
+      _backup_and_symlink "${HOME}/.config/nvim" "${DOTFILES_PATH}/.config/nvim"
+      _backup_and_symlink "${HOME}/.local/bin/"* "${DOTFILES_PATH}/.local/bin/"
 
       if grep -qE "(Microsoft|microsoft|WSL)" /proc/version &>/dev/null; then
         sudo ln -fs "${DOTFILES_PATH}/etc/wsl.conf" /etc/wsl.conf
 
-	for user_path in $(_get_win_users_path); do
-	  cp "${DOTFILES_PATH}/wezterm/wezterm.lua" "${user_path}/.wezterm.lua"
-	  echo "Copied wezterm.lua to window users"
-	done
+        for user_path in $(_get_win_users_path); do
+          cp "${DOTFILES_PATH}/wezterm/wezterm.lua" "${user_path}/.wezterm.lua"
+          echo "Copied wezterm.lua to window users"
+        done
       fi
 
       echo "Symlinks created successfully."
@@ -501,6 +482,10 @@ configure_shell() {
       # shellcheck disable=SC2016
       printf '\neval "$(/opt/homebrew/bin/brew shellenv)"\n' >>"${zprofile_path}"
     fi
+
+    if ! grep -q "HOMEBREW_NO_ANALYTICS" "${zprofile_path}" 2>/dev/null; then
+      printf '\nexport HOMEBREW_NO_ANALYTICS=1\n' >>"${zprofile_path}"
+    fi
   else
     # Are we in WSL 2?
     if grep -q "\-WSL2" /proc/version; then
@@ -519,7 +504,7 @@ EOF
 
       # This only applies if you have Docker installed without Docker Desktop
       # and you're not using systemd.
-      if command -v docker &> /dev/null; then
+      if command -v docker &>/dev/null; then
         if [ ! -d "${HOME}/.docker/desktop" ]; then
           if [ ! -d /run/systemd/system ]; then
             if ! grep -q "^if service docker status.*$" "${zprofile_path}" 2>/dev/null; then
@@ -527,8 +512,7 @@ EOF
               docker=$(
                 cat <<'EOF'
 # Ensure Docker is running on WSL 2. This expects you've installed Docker and
-# Docker Compose directly within your WSL distro instead of Docker Desktop, such as:
-#   - https://nickjanetakis.com/blog/install-docker-in-wsl-2-without-docker-desktop
+# Docker Compose directly within your WSL distro instead of Docker Desktop.
 if service docker status 2>&1 | grep -q "is not running"; then
   wsl.exe --distribution "${WSL_DISTRO_NAME}" --user root \
     --exec /usr/sbin/service docker start &> /dev/null
@@ -540,21 +524,6 @@ EOF
             fi
           fi
         fi
-      fi
-    fi
-
-    # We only need this on Debian based systems.
-    if [ "${OS_DISTRO}" = "debian" ]; then
-      if ! grep -q "^.*\/fzf\/bin.*$" "${zprofile_path}" 2>/dev/null; then
-        local fzf=
-        fzf=$(
-          cat <<'EOF'
-# Add fzf to your PATH when it has been git installed.
-export PATH="${PATH}:${XDG_DATA_HOME}/fzf/bin"
-EOF
-        )
-
-        printf "\n\n%s" "${fzf}" >>"${zprofile_path}"
       fi
     fi
 
@@ -602,23 +571,26 @@ EOF
   echo "It has been configured in '$(dirname "${git_config_local_path}")'"
 }
 
-install_programming_runtimes_with_mise() {
-  _info "INSTALL PROGRAMMING RUN-TIMES"
+install_programming_languages() {
+  _info "INSTALL PROGRAMMING LANGUAGES"
 
-  if node --version &> /dev/null; then
-    echo "Skipping Node, it's already installed, uninstall it first to upgrade"
+  printf "Installing Node %s...\n\n" "${INSTALL_NODE_VERSION}"
+  if command -v "${HOME}/.local/share/mise/shims/node" 1>/dev/null; then
+    echo "Skipping Node, it's already installed, run 'mise upgrade node --bump' to upgrade"
   else
-    printf "Installing Node %s...\n\n" "${INSTALL_NODE_VERSION}"
-
     mise use --global "node@${INSTALL_NODE_VERSION}"
   fi
 
-  if ! yarn --version &> /dev/null; then
+  if ! yarn --version &>/dev/null; then
     npm install --unsafe-perm=true --allow-root --global yarn
   fi
 
-  mise use --global "python@${INSTALL_PYTHON_VERSION}"
-  printf "Installing Python %s...\n\n" "${INSTALL_PYTHON_VERSION}"
+  printf "\nInstalling Python %s...\n\n" "${INSTALL_PYTHON_VERSION}"
+  if command -v "${HOME}/.local/share/mise/shims/python3" 1>/dev/null; then
+    echo "Skipping Python, it's already installed, run 'mise upgrade python --bump' to upgrade"
+  else
+    mise use --global "python@${INSTALL_PYTHON_VERSION}"
+  fi
 
   mise use --global "go@${INSTALL_GO_VERSION}"
   printf "Installing Golang %s...\n\n" "${INSTALL_GO_VERSION}"
@@ -629,7 +601,6 @@ install_programming_runtimes_with_mise() {
   mise use --global "rust@${INSTALL_RUST_VERSION}"
   printf "Installing Rust %s...\n\n" "${INSTALL_RUST_VERSION}"
 }
-
 
 install_tmux_plugins() {
   _info "INSTALL TMUX PLUGINS"
@@ -682,8 +653,7 @@ install_zsh_plugins
 create_symlinks
 configure_shell
 configure_git
-install_programming_runtimes
+install_programming_languages
 install_tmux_plugins
 install_nvim_plugins
 completed_message
-

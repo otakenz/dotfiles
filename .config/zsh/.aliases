@@ -6,22 +6,22 @@ if command -v brew >/dev/null 2>&1; then
   alias egrep="egrep -G"
 else
   alias grep="grep --color=auto"
-  alias fgrep="fgrep --color=auto"
+  alias fgrep"fgrep --color=auto"
   alias egrep="egrep --color=auto"
 fi
 
-alias zshenv="nvim ${HOME}/.zshenv"
-alias zprofile="nvim ${XDG_CONFIG_HOME}/zsh/.zprofile"
-alias zshrc="nvim ${XDG_CONFIG_HOME}/zsh/.zshrc"
-alias zhistory="nvim ${XDG_CONFIG_HOME}/zsh/.zsh_history"
-alias aliases="nvim ${XDG_CONFIG_HOME}/zsh/.aliases"
+alias zshenv='nvim ${HOME}/.zshenv'
+alias zprofile='nvim ${XDG_CONFIG_HOME}/zsh/.zprofile'
+alias zshrc='nvim ${XDG_CONFIG_HOME}/zsh/.zshrc'
+alias zhistory='nvim ${XDG_CONFIG_HOME}/zsh/.zsh_history'
+alias aliases='nvim ${XDG_CONFIG_HOME}/zsh/.aliases'
 
-alias wez-conf="nvim ${XDG_CONFIG_HOME}/wezterm/wezterm.lua"
-alias gitui-conf="nvim ${XDG_CONFIG_HOME}/gitui/key_bindings.ron"
-alias git-conf="nvim ${XDG_CONFIG_HOME}/git/config"
-alias tmux-conf="nvim ${XDG_CONFIG_HOME}/tmux/tmux.conf"
+alias wez-conf='nvim ${XDG_CONFIG_HOME}/wezterm/wezterm.lua'
+alias gitui-conf='nvim ${XDG_CONFIG_HOME}/gitui/key_bindings.ron'
+alias git-conf='nvim ${XDG_CONFIG_HOME}/git/config'
+alias tmux-conf='nvim ${XDG_CONFIG_HOME}/tmux/tmux.conf'
 
-alias sz="source ${ZDOTDIR}/.zprofile && source ${ZDOTDIR}/.zshrc"
+alias sz='source ${ZDOTDIR}/.zprofile && source ${ZDOTDIR}/.zshrc'
 
 alias debug-zsh="zsh -xv 2> zsh.log"
 
@@ -34,10 +34,14 @@ alias du="dust"
 alias follow="namei -om"
 alias diff="diff --color -u"
 alias history="history -i"
+alias data='cd ${XDG_DATA_HOME}'
+alias config='cd ${XDG_CONFIG_HOME}'
+alias state='cd ${XDG_STATE_HOME}'
+alias cache='cd ${XDG_CACHE_HOME}'
 
 alias find="fd"
 
-alias vdt="rm ${XDG_STATE_HOME}/nvim/swap/%*"
+alias vdt='rm ${XDG_STATE_HOME}/nvim/swap/%*'
 
 # shellcheck disable=SC2139
 alias pf="fzf ${FZF_CTRL_T_OPTS}"
@@ -50,7 +54,10 @@ gco() {
 
 # Git Worktree Switch (with preview)
 gswt() {
-  cd "$(_fzf_git_worktrees --no-multi)"
+  cd "$(_fzf_git_worktrees --no-multi)" || {
+    echo "❌ Failed to switch to selected worktree"
+    return
+  }
 }
 
 gh() {

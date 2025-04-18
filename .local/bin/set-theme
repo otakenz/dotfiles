@@ -92,11 +92,9 @@ def active_theme():
 def change_terminal_theme(theme):
     terminal = TERMINALS["windows-terminal"]
     theme = THEMES[theme]["terminal"]
-    unknown = """SKIPPING [Terminal]: Terminal config path unknown / not found
-
-Please check the docs for this at:
-
-https://github.com/nickjj/dotfiles#how-to-get-theme-support-in-your-terminal"""
+    unknown = (
+        """SKIPPING [Terminal]: Terminal config path unknown / not found """
+    )
 
     if not os.path.exists(terminal["path"]):
         print(unknown)

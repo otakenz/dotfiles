@@ -19,5 +19,7 @@ tags
 [._]*.un~/
 
 .aliases.local
+.zprofile.local
 .config/git/config.local
 .local/bin/local/
+.zsh_history*

@@ -1,28 +1,31 @@
 # shellcheck shell=bash
 
+# shellcheck disable=SC2034
 zsh_start_time=$(date +%s%N) # nanoseconds
 
 # ---- P10K ---- #
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # Initialization code that may require console input (password prompts, [y/n]
 # confirmations, etc.) must go above this block; everything else may go below.
-if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+# shellcheck disable=SC2296
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-$(print -P %n).zsh" ]]; then
+  # shellcheck disable=SC1090
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-$(print -P %n).zsh"
 fi
 
+# shellcheck disable=SC1090
 source ~/powerlevel10k/powerlevel10k.zsh-theme
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+# shellcheck disable=SC1090
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 # ---- P10K ---- #
 
-
 # ---- FZF ---- #
-[ -f "${HOME}/.fzf.zsh" ] && source "${HOME}/.fzf.zsh"
 # Setup FZF key bindings and fuzzy completion
-# shellcheck disable=SC1090
 # TODO test if this works, needed because using zsh-vi-mode
 # so that fzf will work properly in insert/normal mode
+# shellcheck disable=SC1090
 zvm_after_init_commands+=(eval "$(fzf --zsh)")
 
 ## Configure FZF
@@ -33,7 +36,7 @@ export FZF_ALT_C_COMMAND="fd --type=d --hidden --strip-cwd-prefix --exclude .git
 
 # Setup FZF theme
 # shellcheck disable=SC1091
-source ${XDG_CONFIG_HOME}/zsh/themes/fzf/tokyonight-moon.sh
+source "${XDG_CONFIG_HOME}"/zsh/themes/fzf/tokyonight-moon.sh
 
 # Use fd (https://github.com/sharkdp/fd) for listing path candidates.
 # - The first argument to the function ($1) is the base path to start traversal
@@ -43,11 +46,12 @@ _fzf_compgen_path() {
   fd --hidden --exclude .git . "$1"
 }
 
- # Use fd to generate the list for directory completion
+# Use fd to generate the list for directory completion
 _fzf_compgen_dir() {
   fd --type=d --hidden --exclude .git . "$1"
 }
 
+# shellcheck disable=SC1091
 source "${HOME}/.fzf-git.sh/fzf-git.sh"
 
 # Preview directory with eza, or preview file with bat
@@ -65,14 +69,13 @@ _fzf_comprun() {
   shift
 
   case "$command" in
-    cd)           fzf --preview 'eza --tree --color=always {} | head -200' "$@" ;;
-    export|unset) fzf --preview "eval 'echo \${}'"         "$@" ;;
-    ssh)          fzf --preview 'dig {}'                   "$@" ;;
-    *)            fzf --preview "$show_file_or_dir_preview" "$@" ;;
+  cd) fzf --preview 'eza --tree --color=always {} | head -200' "$@" ;;
+  export | unset) fzf --preview "eval 'echo \${}'" "$@" ;;
+  ssh) fzf --preview 'dig {}' "$@" ;;
+  *) fzf --preview "$show_file_or_dir_preview" "$@" ;;
   esac
 }
 # ---- FZF ---- #
-
 
 # ---- Mise (better asdf) ---- #
 eval "$(/home/test/.local/bin/mise activate zsh)"
@@ -90,30 +93,29 @@ alias ls="eza --icons=always"
 eval "$(zoxide init zsh)"
 alias cd="z"
 
-
 # ---- Zsh settings ---- #
 ## History settings
 HISTFILE=${XDG_CACHE_HOME}/zsh/.zsh_history
 HISTTIMEFORMAT="%Y/%m/%d %H:%M:%S  "
-HISTSIZE=50000			# History lines stored in memory
-SAVEHIST=50000  		# History lines stored in disk
+HISTSIZE=50000 # History lines stored in memory
+SAVEHIST=50000 # History lines stored in disk
 setopt SHARE_HISTORY
 setopt HIST_VERIFY
-setopt INC_APPEND_HISTORY 	# Immediately append commands to history file
-setopt HIST_IGNORE_ALL_DUPS	# Never add duplicate entries
-setopt HIST_IGNORE_SPACE	# Ignore commands that start with a space
-setopt HIST_REDUCE_BLANKS	# Remove unnecessary blank lines
-setopt HIST_EXPIRE_DUPS_FIRST 	# Remove oldest history first
+setopt INC_APPEND_HISTORY     # Immediately append commands to history file
+setopt HIST_IGNORE_ALL_DUPS   # Never add duplicate entries
+setopt HIST_IGNORE_SPACE      # Ignore commands that start with a space
+setopt HIST_REDUCE_BLANKS     # Remove unnecessary blank lines
+setopt HIST_EXPIRE_DUPS_FIRST # Remove oldest history first
 
 ## Load Zsh plugins
 # Better at syntax highlighting than zsh-syntax-highlighting
 # shellcheck disable=SC1091
-source ${XDG_DATA_HOME}/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
+source "${XDG_DATA_HOME}"/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
 # shellcheck disable=SC1091
-source ${XDG_DATA_HOME}/zsh-autosuggestions/zsh-autosuggestions.zsh
+source "${XDG_DATA_HOME}"/zsh-autosuggestions/zsh-autosuggestions.zsh
 export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 # shellcheck disable=SC1091
-source ${XDG_DATA_HOME}/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+source "${XDG_DATA_HOME}"/zsh-vi-mode/zsh-vi-mode.plugin.zsh
 
 # zsh-vi-mode settings
 ZVM_LINE_INIT_MODE=$ZVM_MODE_INSERT
@@ -137,7 +139,7 @@ zstyle ":completion:*" group-name ""
 
 # dircolors set up filetype-based colorization in Zsh's complete menu
 # N/A in MacOS
-command -v dircolors &> /dev/null && eval "$(dircolors -b)"
+command -v dircolors &>/dev/null && eval "$(dircolors -b)"
 
 # Make tab-completion colorful and fuzzy
 # Improve suggestions with smart matching (case-insensitive,underscores vs dashes)
@@ -152,8 +154,8 @@ zstyle ":completion:*" verbose true
 
 ## Key bindings
 # Ctrl + left/right move a word in cli
-bindkey "^[[1;5D" backward-word  # Ctrl+Left
-bindkey "^[[1;5C" forward-word   # Ctrl+Right
+bindkey "^[[1;5D" backward-word # Ctrl+Left
+bindkey "^[[1;5C" forward-word  # Ctrl+Right
 
 # Ctrl + n/p to search through history forward/backward
 bindkey "^p" history-search-backward
@@ -177,7 +179,7 @@ setopt interactive_comments
 
 # Load aliases
 # shellcheck disable=SC1091
-[ -f "${XDG_CONFIG_HOME}/zsh/.aliases" ] && .  "${XDG_CONFIG_HOME}/zsh/.aliases"
+[ -f "${XDG_CONFIG_HOME}/zsh/.aliases" ] && . "${XDG_CONFIG_HOME}/zsh/.aliases"
 
 # Load local aliases if it exist
 # shellcheck disable=SC1091
@@ -185,5 +187,6 @@ if [ -f "${XDG_CONFIG_HOME}/zsh/.aliases.local" ]; then . "${XDG_CONFIG_HOME}/zs
 
 # ---- Zsh settings ---- #
 
+# shellcheck disable=SC2034
 zsh_end_time=$(date +%s%N)
 #echo ".zshrc startup time: $(( (zsh_end_time - zsh_start_time)/1000000 )) ms"
