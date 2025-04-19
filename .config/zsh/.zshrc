@@ -165,7 +165,7 @@ zstyle ":completion:*" verbose true
 # Ensure colors match by using FZF_DEFAULT_OPTS.
 # zstyle ":fzf-tab:*" use-fzf-default-opts yes
 # Preview file contents when tab completing directories.
-zstyle ":fzf-tab:complete:cd:*" fzf-preview 'eza --tree --color=always ${realpath} | head -n 200'
+zstyle ":fzf-tab:complete:cd:*" fzf-preview "eza --tree --color=always \${realpath} | head -n 200"
 # switch group using `<` and `>`
 zstyle ':fzf-tab:*' switch-group '<' '>'
 # Rebind to tab to select multiple results
