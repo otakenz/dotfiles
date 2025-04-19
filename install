@@ -56,6 +56,10 @@ BREW_PACKAGES="
   zsh
 "
 
+# Used to configure git
+NAME=
+EMAIL=
+
 INSTALL_NODE_VERSION="22.14"
 INSTALL_PYTHON_VERSION="3.13"
 INSTALL_GO_VERSION="1.23.8"
@@ -64,6 +68,7 @@ INSTALL_RUST_VERSION="1.86.0"
 
 OS_TYPE="$(uname | tr "[:upper:]" "[:lower:]")"
 OS_DISTRO=
+OS_IN_WSL=
 
 DOTFILES_URL="${DOTFILES_URL:-https://github.com/otakenz/dotfiles}"
 DOTFILES_PATH="${DOTFILES_PATH:-"${HOME}/dotfiles"}"
@@ -226,6 +231,18 @@ _get_win_users_path() {
   done
 }
 
+_check_shell_type() {
+  if [[ "$SHELL" != *zsh ]]; then
+    echo "This install script requires Zsh as default shell"
+    echo
+    echo "💡 To make Zsh your default shell, run:"
+    echo "    chsh -s $(which zsh)"
+    echo
+    echo "Then log out and log back in for the change to take effect."
+    exit 1
+  fi
+}
+
 # -----------------------------------------------------------------------------
 # Main functions
 # -----------------------------------------------------------------------------
@@ -246,6 +263,17 @@ detect_env() {
     # Only fully support these Linux distros.
     if [[ -z "${OS_DISTRO}" || ! "ubuntu debian raspbian" =~ ${OS_DISTRO} ]]; then
       [ -z "${SKIP_SYSTEM_PACKAGES}" ] && _no_system_packages
+    fi
+
+    # Are we in WSL2 ?
+    if grep -q "\-WSL2" /proc/version; then
+      OS_IN_WSL=1
+    fi
+
+    # Adjust packages depending on which display server is in use.
+    if [[ -z "${WAYLAND_DISPLAY}" ]]; then
+      APT_PACKAGES="${APT_PACKAGES//wl-clipboard/xclip}"
+      ARCH_PACKAGES="${ARCH_PACKAGES//wl-clipboard/xclip}"
     fi
 
     ;;
@@ -280,8 +308,8 @@ $(_display_packages)
 
 
 If you choose no, the above packages will not be installed and this script
-will exit. This gives you a chance to edit the list of packages if you don't
-agree with any of the decisions.
+will exit. This gives you a chance to edit the list of packages if you want
+to adjust them
 
 EOF
 
@@ -291,15 +319,6 @@ EOF
     [Yy]*)
       if [ "${OS_TYPE}" == "linux" ]; then
         if [ "${OS_DISTRO}" == "debian" ]; then
-          if [[ "$SHELL" == *zsh ]]; then
-            echo "This install script requires Zsh as default shell"
-            echo
-            echo "💡 To make Zsh your default shell, run:"
-            echo "    chsh -s $(which zsh)"
-            echo
-            echo "Then log out and log back in for the change to take effect."
-            exit 1
-          fi
           _install_packages_apt
         fi
       else
@@ -346,7 +365,8 @@ clone_or_update_dotfiles() {
           "${DOTFILES_PATH}/.config/zsh/.zsh_history" \
           "${DOTFILES_PATH}/.config/zsh/.aliases.local" \
           "${DOTFILES_PATH}/.config/zsh/.zprofile.local" \
-          "${DOTFILES_PATH}/.config/zsh/.zshrc.local"
+          "${DOTFILES_PATH}/.config/zsh/.zshrc.local" \
+          "${DOTFILES_PATH}/.config/git/config.local"
       fi
     fi
 
@@ -435,7 +455,7 @@ EOF
       _backup_and_symlink "${HOME}/.config/nvim" "${DOTFILES_PATH}/.config/nvim"
       _backup_and_symlink "${HOME}/.local/bin/"* "${DOTFILES_PATH}/.local/bin/"
 
-      if grep -qE "(Microsoft|microsoft|WSL)" /proc/version &>/dev/null; then
+      if [ -n "${OS_IN_WSL}" ]; then
         sudo ln -fs "${DOTFILES_PATH}/etc/wsl.conf" /etc/wsl.conf
 
         for user_path in $(_get_win_users_path); do
@@ -457,8 +477,15 @@ EOF
   done
 }
 
+install_misc_tools() {
+  _info "Installing miscellaneous tools"
+
+  git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
+  printf "Installing fzf-git.sh ...\n\n"
+}
+
 configure_shell() {
-  _info "CONFIGURE SHELL"
+  _info "CONFIGURE SHELL (ZSH)"
 
   local local_files=(".zshrc.local" ".zprofile.local" ".aliases.local")
   local original_dotfiles_path="${DOTFILES_PATH}"
@@ -478,17 +505,17 @@ configure_shell() {
   fi
 
   if [ "${OS_TYPE}" == "darwin" ]; then
+    if ! grep -q "HOMEBREW_NO_ANALYTICS" "${zprofile_path}" 2>/dev/null; then
+      printf '\nexport HOMEBREW_NO_ANALYTICS=1\n' >>"${zprofile_path}"
+    fi
+
     if ! grep -q "eval.*homebrew.*shellenv" "${zprofile_path}" 2>/dev/null; then
       # shellcheck disable=SC2016
       printf '\neval "$(/opt/homebrew/bin/brew shellenv)"\n' >>"${zprofile_path}"
     fi
-
-    if ! grep -q "HOMEBREW_NO_ANALYTICS" "${zprofile_path}" 2>/dev/null; then
-      printf '\nexport HOMEBREW_NO_ANALYTICS=1\n' >>"${zprofile_path}"
-    fi
   else
     # Are we in WSL 2?
-    if grep -q "\-WSL2" /proc/version; then
+    if [ -n "${OS_IN_WSL}" ]; then
       if ! grep -q "^DISPLAY=.*route | awk.*$" "${zprofile_path}" 2>/dev/null; then
         local display=
         display=$(
@@ -528,7 +555,7 @@ EOF
     fi
 
     # This should happen on all Linux distros.
-    [ "${SHELL}" != "$(command -v zsh)" ] && chsh -s "$(command -v zsh)"
+    [ "${SHELL: -3}" != "zsh" ] && chsh -s "/usr/bin/zsh"
   fi
 
   # shellcheck disable=SC1091
@@ -540,7 +567,61 @@ EOF
   # volume mounted and this value will be different in Docker.
   DOTFILES_PATH="${original_dotfiles_path}"
 
-  echo "It has been configured in '${HOME}/.config.zsh/'"
+  echo "It has been configured in '${HOME}/.config/zsh/'"
+}
+
+ask_for_name() {
+  _info "ASKING FOR YOUR NAME TO CONFIGURE GIT"
+
+  local name=
+
+  set +o errexit
+  name="$(git config user.name)"
+  set -o errexit
+
+  if [[ -n "${name}" ]]; then
+    echo "Skipping, since '${name}' was retrieved from your git config"
+  else
+    while true; do
+      printf "What is your full name (ie. Dade Murphy)? "
+      read -r name
+
+      if [[ ${name} =~ [^[:space:]]+ ]]; then
+        break
+      else
+        printf "Please enter at least your first name\n\n"
+      fi
+    done
+  fi
+
+  NAME="${name}"
+}
+
+ask_for_email() {
+  _info "ASKING FOR YOUR EMAIL TO CONFIGURE GIT"
+
+  local email=
+
+  set +o errexit
+  email="$(git config user.email)"
+  set -o errexit
+
+  if [[ -n "${email}" ]]; then
+    echo "Skipping, since '${email}' was retrieved from your git config"
+  else
+    while true; do
+      printf "What is your email address (ie. zerocool@example.com)? "
+      read -r email
+
+      if [[ ${email} =~ .+@.+ ]]; then
+        break
+      else
+        printf "Please enter a valid email address\n\n"
+      fi
+    done
+  fi
+
+  EMAIL="${email}"
 }
 
 configure_git() {
@@ -551,12 +632,12 @@ configure_git() {
   if [ ! -f "${git_config_local_path}" ]; then
     cat <<EOF >"${git_config_local_path}"
 [user]
-  name = Cody McCodePants
-  email = cody.mccodepants@example.com
+  name = ${NAME}
+  email = ${EMAIL}
   # Uncomment the options below to auto-sign your git commits / tags using GPG.
   # Learn more about how to set up a GPG key pair here:
   #   https://nickjanetakis.com/blog/creating-and-managing-a-gpg-key-pair
-  #signingkey = cody.mccodepants@example.com
+  #signingkey = ${EMAIL}
 
 #[commit]
 #  gpgsign = true
@@ -622,6 +703,37 @@ install_nvim_plugins() {
   echo "They've been installed"
 }
 
+healthcheck() {
+  _info "CHECK INFORMATION AND TOOL VERSIONS"
+
+  cat <<EOF
+:: Dotfiles path:
+
+${DOTFILES_PATH}
+
+:: Git user:
+
+$(git config --get-regex "user.(name|email)")
+
+:: zsh:
+
+$(zsh --version)
+
+:: tmux:
+
+$(tmux -V)
+
+:: Neovim:
+
+$(nvim --version)
+
+:: Programming languages:
+
+Node $(node --version)
+$(python --version)
+EOF
+}
+
 completed_message() {
   _info "EVERYTHING WORKED"
 
@@ -651,7 +763,10 @@ install_packages
 clone_or_update_dotfiles
 install_zsh_plugins
 create_symlinks
+install_misc_tools
 configure_shell
+ask_for_name
+ask_for_email
 configure_git
 install_programming_languages
 install_tmux_plugins

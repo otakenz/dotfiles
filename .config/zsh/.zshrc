@@ -23,10 +23,18 @@ source ~/powerlevel10k/powerlevel10k.zsh-theme
 
 # ---- FZF ---- #
 # Setup FZF key bindings and fuzzy completion
-# TODO test if this works, needed because using zsh-vi-mode
-# so that fzf will work properly in insert/normal mode
+# zsh-vi-mode-plugin sets a few key binds such as CTRL+r/p/n which may conflict
+# with other binds. This ensures fzf and our binds always win. If you choose
+# to remove this zsh plugin then each array item can exist normally in zshrc.
 # shellcheck disable=SC1090
-zvm_after_init_commands+=(eval "$(fzf --zsh)")
+zvm_after_init_commands+=(
+  ". <(fzf --zsh)"
+  # Ctrl + n/p to search through history forward/backward
+  "bindkey '^p' history-search-backward"
+  "bindkey '^n' history-search-forward"
+  "bindkey '^k' history-search-backward"
+  "bindkey '^j' history-search-forward"
+)
 
 ## Configure FZF
 export FZF_DEFAULT_OPTS="--highlight-line --info=inline-right --ansi --layout=reverse --border=none"
@@ -116,6 +124,8 @@ source "${XDG_DATA_HOME}"/zsh-autosuggestions/zsh-autosuggestions.zsh
 export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 # shellcheck disable=SC1091
 source "${XDG_DATA_HOME}"/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+# shellcheck disable=SC1091
+source "${XDG_DATA_HOME}"/fzf-tab/fzf-tab.plugin.zsh
 
 # zsh-vi-mode settings
 ZVM_LINE_INIT_MODE=$ZVM_MODE_INSERT
@@ -152,16 +162,22 @@ zstyle ':completion:*' select-prompt %SScrolling active: current selection at %p
 zstyle ":completion:*" use-compctl false
 zstyle ":completion:*" verbose true
 
+# Ensure colors match by using FZF_DEFAULT_OPTS.
+# zstyle ":fzf-tab:*" use-fzf-default-opts yes
+# Preview file contents when tab completing directories.
+zstyle ":fzf-tab:complete:cd:*" fzf-preview 'eza --tree --color=always ${realpath} | head -n 200'
+# switch group using `<` and `>`
+zstyle ':fzf-tab:*' switch-group '<' '>'
+# Rebind to tab to select multiple results
+zstyle ':fzf-tab:*' fzf-bindings 'tab:toggle'
+
 ## Key bindings
+# Use vi bindings for zsh
+bindkey -v
 # Ctrl + left/right move a word in cli
 bindkey "^[[1;5D" backward-word # Ctrl+Left
 bindkey "^[[1;5C" forward-word  # Ctrl+Right
-
-# Ctrl + n/p to search through history forward/backward
-bindkey "^p" history-search-backward
-bindkey "^n" history-search-forward
-bindkey "^k" history-search-backward
-bindkey "^j" history-search-forward
+bindkey '^F' toggle-fzf-tab # Ctrl+f
 
 ## Misc
 # Allows your gpg passphrase prompt to spawn (useful for signing commits)
