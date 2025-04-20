@@ -45,3 +45,10 @@ vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
   end,
 })
 
+-- Force these files to be markdown type
+vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+  pattern = { "LICENSE", "LICENSE.*", "README", "README.*" },
+  callback = function()
+    vim.bo.filetype = "markdown"
+  end,
+})

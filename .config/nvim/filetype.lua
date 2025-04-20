@@ -21,8 +21,16 @@ vim.filetype.add({
 -- since that can create a lot of unwanted false positives and side effects.
 vim.treesitter.language.register("bash", "dotenv")
 
--- Set git config variarts as "git_config".
+-- Set git config variants as "git_config".
 vim.filetype.add({ pattern = { [".*/git/config.*"] = "git_config" } })
 
 -- Set requirements-lock.txt or any variant as "requirements".
 vim.filetype.add({ pattern = { ["requirements.*.txt"] = "requirements" } })
+
+-- Set these as "markdown".
+vim.filetype.add({
+  pattern = {
+    ["LICENSE.*"] = "markdown",
+    ["README.*"] = "markdown",
+  },
+})

@@ -36,7 +36,20 @@ MAP(
   { desc = "Move Down" }
 )
 
+MAP({ "n", "x" }, "x", '"_x', { desc = "Delete Chars Into Void" })
 MAP({ "n", "x" }, "X", '"_x', { desc = "Delete Chars Into Void" })
 MAP({ "n", "x" }, "<Del>", '"_x', { desc = "Delete Chars Into Void" })
 
+MAP("x", "y", "ygv<Esc>", { desc = "Yank Preserve Cursor" })
+MAP("x", "p", "P", { desc = "Paste Without Override" })
+
 MAP("n", "<leader>uW", ":set list!<CR>", { desc = "Toggle WhiteSpace" })
+
+MAP("n", "<leader>bc", ":let @+ = expand('%:.')<CR>", { desc = "Copy Path" })
+
+MAP(
+  "x",
+  "gt",
+  "c<C-r>=system('tcc', getreg('\"'))[:-2]<CR>",
+  { desc = "Titleize Text" }
+)

@@ -5,11 +5,12 @@ local markdown_preview_css_path = data_path .. "/github-markdown.css"
 return {
   {
     "iamcco/markdown-preview.nvim",
+    ft = { "markdown" },
+    build = "cd app && yarn install",
     init = function()
       vim.g.mkdp_auto_close = false
       vim.g.mkdp_markdown_css = markdown_preview_css_path
     end,
-    build = "cd app && yarn install",
   },
   {
     "stevearc/conform.nvim",
