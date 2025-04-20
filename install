@@ -10,6 +10,45 @@ set -o errexit
 
 SKIP_SYSTEM_PACKAGES="${1:-}"
 
+ARCH_PACKAGES="
+  aspell
+  base
+  base-devel
+  bat
+  bc
+  curl
+  delta
+  eza
+  fastfetch
+  fd
+  fzf
+  git
+  gitui
+  gnupg
+  htop
+  inotify-tools
+  jq
+  less
+  mise
+  neovim
+  openbsd-netcat
+  openssh
+  pass
+  pwgen
+  ripgrep
+  rsync
+  shellcheck
+  shfmt
+  tmux
+  unzip
+  wget
+  whois
+  wl-clipboard
+  zip
+  zsh
+  zoxide
+"
+
 APT_PACKAGES="
   aspell
   bc
@@ -34,10 +73,25 @@ APT_PACKAGES="
   zip
   zsh
 "
+MISE_PACKAGES_DEBIAN_DISTROS_ONLY="
+  bat
+  delta
+  eza
+  fd
+  fzf
+  gitui
+  jq
+  neovim
+  ripgrep
+  shellcheck
+  shfmt
+  zoxide
+"
 
 BREW_PACKAGES="
   aspell
   bash
+  fastfetch
   gc
   diffutils
   git
@@ -105,12 +159,36 @@ EOF
   exit 1
 }
 
+_install_packages_arch() {
+  # shellcheck disable=SC2086
+  sudo pacman -Syu --noconfirm ${ARCH_PACKAGES}
+}
+
 _install_packages_apt() {
   # shellcheck disable=SC2086
   sudo apt-get update && sudo apt-get install -y ${APT_PACKAGES}
 
   # Install Mise.
   curl https://mise.run | sh
+
+  # Install Mise packages.
+  #
+  # Apt's packages typically have older versions since Debian and Ubuntu are
+  # stable distros. In most cases the version included is fine but we do want
+  # the latest and greatest versions for certain tools.
+  echo
+  # shellcheck disable=SC2086
+  mise use --global ${MISE_PACKAGES_DEBIAN_DISTROS_ONLY}
+
+  # Install packages manually since they don't exist elsewhere.
+  git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
+  printf "Installing fzf-git.sh ...\n\n"
+
+  # fastfetch, Debian 13 / Ubuntu 26.04 LTS will have it in apt by default.
+  echo
+  curl -fsSL https://github.com/fastfetch-cli/fastfetch/releases/latest/download/fastfetch-linux-amd64.deb -o /tmp/fastfetch.deb
+  sudo dpkg -i "${_}"
+  rm "${_}"
 }
 
 _install_packages_brew() {
@@ -127,64 +205,15 @@ _install_packages_brew() {
 
 _display_packages() {
   if [ "${OS_TYPE}" == "linux" ]; then
-    if [ "${OS_DISTRO}" == "debian" ]; then
+    if [ "${OS_DISTRO}" == "arch" ]; then
+      echo "${ARCH_PACKAGES}"
+    elif [ "${OS_DISTRO}" == "debian" ]; then
       echo "${APT_PACKAGES}"
+      echo "${MISE_PACKAGES_DEBIAN_DISTROS_ONLY}"
     fi
   else
     echo "${BREW_PACKAGES}"
   fi
-}
-
-_install_tools_with_mise() {
-  _info "INSTALLING TOOLS WITH MISE"
-
-  # Neovim
-  mise use --global nvim@latest
-  printf "Installing latest neovim ...\n\n"
-
-  # Shellcheck
-  mise use --global shellcheck@latest
-  printf "Installing latest shellcheck ...\n\n"
-
-  # shfmt
-  mise use --global shfmt@latest
-  printf "Installing latest shfmt ...\n\n"
-
-  # Fzf (Fuzzy Finder) CLI
-  mise use --global fzf@latest
-  printf "Installing latest fzf ...\n\n"
-
-  # jq (json parser)
-  mise use --global jq@latest
-  printf "Installing latest jq ...\n\n"
-
-  # rg (better grep)
-  mise use --global rg@latest
-  printf "Installing latest rg ...\n\n"
-
-  # Simple terminal UI (TUI) for git commands
-  mise use --global gitui@latest
-  printf "Installing latest Gitui ...\n\n"
-
-  # Blazing fast file finder, better find
-  mise use --global fd@latest
-  printf "Installing latest fdfind (better find) ...\n\n"
-
-  # better ls
-  mise use --global eza@latest
-  printf "Installing latest eza (better ls) ...\n\n"
-
-  # better cat
-  mise use --global bat@latest
-  printf "Installing latest bat (better cat) ...\n\n"
-
-  # better cd
-  mise use --global zoxide@latest
-  printf "Installing latest zoxide (better cd) ...\n\n"
-
-  # syntax highlighting for git/diff/grep
-  mise use --global delta@latest
-  printf "Installing latest delta (git pager syntax highlighter) ...\n\n"
 }
 
 _install_tools_with_python() {
@@ -261,7 +290,7 @@ detect_env() {
     fi
 
     # Only fully support these Linux distros.
-    if [[ -z "${OS_DISTRO}" || ! "ubuntu debian raspbian" =~ ${OS_DISTRO} ]]; then
+    if [[ -z "${OS_DISTRO}" || ! "arch ubuntu debian raspbian" =~ ${OS_DISTRO} ]]; then
       [ -z "${SKIP_SYSTEM_PACKAGES}" ] && _no_system_packages
     fi
 
@@ -318,8 +347,11 @@ EOF
     case "${yn}" in
     [Yy]*)
       if [ "${OS_TYPE}" == "linux" ]; then
-        if [ "${OS_DISTRO}" == "debian" ]; then
+        if [ "${OS_DISTRO}" == "arch" ]; then
+          _install_packages_arch
+        elif [ "${OS_DISTRO}" == "debian" ]; then
           _install_packages_apt
+          _install_tools_with_python
         fi
       else
         _install_packages_brew
@@ -331,10 +363,6 @@ EOF
     *) printf "Please answer y or n\n\n" ;;
     esac
   done
-
-  _install_tools_with_mise
-
-  _install_tools_with_python
 }
 
 clone_or_update_dotfiles() {
@@ -477,13 +505,6 @@ EOF
   done
 }
 
-install_misc_tools() {
-  _info "Installing miscellaneous tools"
-
-  git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
-  printf "Installing fzf-git.sh ...\n\n"
-}
-
 configure_shell() {
   _info "CONFIGURE SHELL (ZSH)"
 
@@ -540,6 +561,7 @@ EOF
                 cat <<'EOF'
 # Ensure Docker is running on WSL 2. This expects you've installed Docker and
 # Docker Compose directly within your WSL distro instead of Docker Desktop.
+#   - https://nickjanetakis.com/blog/install-docker-in-wsl-2-without-docker-desktop
 if service docker status 2>&1 | grep -q "is not running"; then
   wsl.exe --distribution "${WSL_DISTRO_NAME}" --user root \
     --exec /usr/sbin/service docker start &> /dev/null
@@ -624,8 +646,123 @@ ask_for_email() {
   EMAIL="${email}"
 }
 
+create_ssh_key() {
+  _info "CREATING SSH KEY"
+
+  local -r key_path="${HOME}/.ssh/id_ed25519"
+
+  if [[ -f "${key_path}" ]]; then
+    echo "Skipping, since a key already exists at '${key_path}'"
+  else
+    ssh-keygen -t ed25519 -C "${EMAIL}" -N "" -f "${key_path}"
+  fi
+
+  _info "SHOWING PUBLIC SSH KEY"
+
+  cat "${key_path}.pub"
+
+  cat <<EOF
+# ==============================================================================
+# 🔐 SSH Key Generated!
+# ------------------------------------------------------------------------------
+# To enable SSH access to GitHub, GitLab, or other Git servers:
+#
+# ➤ 1. Copy your public SSH key from above:
+#
+# ➤ 2. Go to your Git hosting account and add it:
+#
+#    • GitHub:
+#        https://github.com/settings/ssh/new
+#
+#    • GitLab:
+#        https://gitlab.com/-/profile/keys
+#
+# ➤ 3. Paste the key and give it a descriptive title (e.g. "dev laptop")
+#
+# ✅ You can now clone and push via SSH! Example:
+#     git clone git@github.com:user/repo.git
+# ==============================================================================
+EOF
+}
+
+create_gpg_key() {
+  _info "CREATING GPG KEY"
+
+  local gpg_home="${GNUPGHOME:-"${HOME}/.gnupg"}"
+  local gpg_key=
+
+  set +o errexit
+  gpg_key="$(gpg --export --armor "${EMAIL}" 2>/dev/null)"
+  set -o errexit
+
+  if [[ "${gpg_key}" =~ "PGP PUBLIC KEY" ]]; then
+    echo "Skipping, since a key already exists for '${EMAIL}'"
+  else
+    mkdir -p "${gpg_home}"
+    chmod 700 "${gpg_home}"
+
+    while true; do
+      printf "Please set a passphrase (password) for your key: "
+      read -sr passphrase
+
+      if [[ ! ${passphrase} =~ [^[:space:]]+ ]]; then
+        printf "\nPlease enter at least 1 non-space character\n\n"
+        continue
+      fi
+
+      printf "\n\nPlease confirm your passphrase: "
+      read -sr passphrase_confirm
+
+      [ "${passphrase}" = "${passphrase_confirm}" ] && break
+
+      printf "\nYour passphrase did not match, please try again\n\n"
+    done
+
+    printf "\n\nGenerating GPG key...\n\n"
+
+    gpg --batch --pinentry-mode loopback --gen-key <<EOF
+     Key-Type: default
+     Key-Length: 3072
+     Subkey-Type: default
+     Subkey-Length: 3072
+     Name-Real: ${NAME}
+     Name-Email: ${EMAIL}
+     Passphrase: ${passphrase}
+     Expire-Date: 1y
+EOF
+
+    gpg_key="$(gpg --export --armor "${EMAIL}" 2>/dev/null)"
+  fi
+
+  _info "SHOWING PUBLIC GPG KEY"
+
+  echo "${gpg_key}" | gpg --show-keys
+
+  cat <<EOF
+# ==============================================================================
+# 🛡️  Git Commit Signing with GPG: One More Step!
+# ------------------------------------------------------------------------------
+# To make your signed commits show up as "Verified" on GitHub or GitLab,
+# you need to upload your GPG public key as shown above to your account.
+#
+# ➤ 1. Copy the full key block, including:
+#     -----BEGIN PGP PUBLIC KEY BLOCK-----
+#     ...
+#     -----END PGP PUBLIC KEY BLOCK-----
+#
+# ➤ 2. Add the key on GitHub:
+#     https://github.com/settings/keys → New GPG key
+#
+# ✅ After that, your signed commits will be marked as Verified!
+# ==============================================================================
+EOF
+}
+
 configure_git() {
-  _info "CONFIGURE GIT"
+  _info "CONFIGURING GIT TO SIGN COMMITS"
+
+  local gpg_fingerprint
+  gpg_fingerprint=$(gpg --list-keys --with-colons "${EMAIL}" | awk -F: '/^fpr:/ { print $10; exit }')
 
   local git_config_local_path="${DOTFILES_PATH}/.config/git/config.local"
 
@@ -634,11 +771,12 @@ configure_git() {
 [user]
   name = ${NAME}
   email = ${EMAIL}
-  # Uncomment the options below to auto-sign your git commits / tags using GPG.
-  # Learn more about how to set up a GPG key pair here:
-  #   https://nickjanetakis.com/blog/creating-and-managing-a-gpg-key-pair
-  #signingkey = ${EMAIL}
+  signingkey = ${gpg_fingerprint}
 
+# Learn more about signing git commits here:
+#   https://nickjanetakis.com/blog/signing-and-verifying-git-commits-on-the-command-line-and-github
+
+# Uncomment the options below to auto-sign your git commits / tags using GPG.
 #[commit]
 #  gpgsign = true
 
@@ -646,10 +784,14 @@ configure_git() {
 # although -m "" works if you want an empty message.
 #[tag]
 #  gpgSign = true
+
+#[gpg]
+#  program = gpg
 EOF
   fi
-
   echo "It has been configured in '$(dirname "${git_config_local_path}")'"
+  echo "✅ Git is now set to sign commits using your GPG key. Uncomment them to use it"
+  echo "🔑 GPG Fingerprint: ${gpg_fingerprint}"
 }
 
 install_programming_languages() {
@@ -715,10 +857,6 @@ ${DOTFILES_PATH}
 
 $(git config --get-regex "user.(name|email)")
 
-:: zsh:
-
-$(zsh --version)
-
 :: tmux:
 
 $(tmux -V)
@@ -731,7 +869,12 @@ $(nvim --version)
 
 Node $(node --version)
 $(python --version)
+
+:: Fastfetch:
+
 EOF
+
+  fastfetch
 }
 
 completed_message() {
@@ -763,12 +906,14 @@ install_packages
 clone_or_update_dotfiles
 install_zsh_plugins
 create_symlinks
-install_misc_tools
 configure_shell
 ask_for_name
 ask_for_email
+create_ssh_key
+create_gpg_key
 configure_git
 install_programming_languages
 install_tmux_plugins
 install_nvim_plugins
+healthcheck
 completed_message

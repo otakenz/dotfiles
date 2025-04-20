@@ -32,8 +32,6 @@ zvm_after_init_commands+=(
   # Ctrl + n/p to search through history forward/backward
   "bindkey '^p' history-search-backward"
   "bindkey '^n' history-search-forward"
-  "bindkey '^k' history-search-backward"
-  "bindkey '^j' history-search-forward"
 )
 
 ## Configure FZF
@@ -177,7 +175,7 @@ bindkey -v
 # Ctrl + left/right move a word in cli
 bindkey "^[[1;5D" backward-word # Ctrl+Left
 bindkey "^[[1;5C" forward-word  # Ctrl+Right
-bindkey '^F' toggle-fzf-tab # Ctrl+f
+bindkey '^F' toggle-fzf-tab     # Ctrl+f
 
 ## Misc
 # Allows your gpg passphrase prompt to spawn (useful for signing commits)
