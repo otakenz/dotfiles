@@ -175,7 +175,10 @@ _install_packages_apt() {
   sudo apt-get update && sudo apt-get install -y ${APT_PACKAGES}
 
   # Install Mise.
-  curl https://mise.run | sh
+  sudo install -dm 755 /etc/apt/keyrings
+  curl -fsSL https://mise.jdx.dev/gpg-key.pub | gpg --dearmor | sudo tee /etc/apt/keyrings/mise-archive-keyring.gpg 1>/dev/null
+  echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.gpg arch=amd64] https://mise.jdx.dev/deb stable main" | sudo tee /etc/apt/sources.list.d/mise.list
+  sudo apt-get update && sudo apt-get install -y mise
 
   # Install Mise packages.
   #
@@ -187,7 +190,7 @@ _install_packages_apt() {
   mise use --global ${MISE_PACKAGES_DEBIAN_DISTROS_ONLY}
 
   # Install packages manually since they don't exist elsewhere.
-  git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
+  [ -d "$HOME/.fzf-git.sh" ] || git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
   printf "Installing fzf-git.sh ...\n\n"
 
   # fastfetch, Debian 13 / Ubuntu 26.04 LTS will have it in apt by default.
@@ -409,7 +412,6 @@ EOF
           _install_packages_arch
         elif [ "${OS_DISTRO}" == "debian" ]; then
           _install_packages_apt
-          _install_tools_with_python
         fi
       else
         _install_packages_brew
@@ -884,6 +886,8 @@ install_programming_languages() {
 
   mise use --global "rust@${INSTALL_RUST_VERSION}"
   printf "Installing Rust %s...\n\n" "${INSTALL_RUST_VERSION}"
+
+  _install_tools_with_python
 }
 
 install_tmux_plugins() {
@@ -966,6 +970,7 @@ warn_root
 check_prereqs
 create_initial_dirs
 install_packages
+install_programming_languages
 clone_or_update_dotfiles
 install_zsh_plugins
 create_symlinks
@@ -975,7 +980,6 @@ ask_for_email
 create_ssh_key
 create_gpg_key
 configure_git
-install_programming_languages
 install_tmux_plugins
 install_nvim_plugins
 healthcheck
