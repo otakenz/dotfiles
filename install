@@ -244,8 +244,21 @@ _install_tools_with_python() {
 _backup_and_symlink() {
   local target_file="$1"
   local symlink_path="$2"
+  local timestamp
   local backup_file
-  backup_file="${BACKUP_DIR}/$(basename "$target_file")"
+  local BACKUP_DIR="${HOME}/.dotfiles_backup"
+
+  # Generate a timestamp in YYYY-MM-DD_HH-MM-SS format
+  timestamp=$(date "+%Y-%m-%d_%H-%M-%S")
+
+  # Create a backup folder with the timestamp
+  local timestamped_backup_dir="${BACKUP_DIR}/backup_${timestamp}"
+
+  # Ensure the timestamped backup directory exists
+  mkdir -p "$timestamped_backup_dir"
+
+  # Create a backup file with the timestamp
+  backup_file="${timestamped_backup_dir}/$(basename "$target_file")"
 
   # Check if the file exists
   if [ -e "$target_file" ]; then
@@ -507,7 +520,6 @@ ln -fs "${DOTFILES_PATH}/.local/bin/"* "${HOME}/.local/bin/"
 sudo ln -fs "${DOTFILES_PATH}/etc/wsl.conf" /etc/wsl.conf
 
 -------------------------------------------------------------------------------
-Backup complete. Now proceeding with symlinks...
 
 EOF
 
@@ -542,6 +554,8 @@ EOF
       _backup_and_symlink "${HOME}/.config/gitui" "${DOTFILES_PATH}/.config/gitui"
       _backup_and_symlink "${HOME}/.config/nvim" "${DOTFILES_PATH}/.config/nvim"
       _backup_and_symlink "${HOME}/.local/bin/"* "${DOTFILES_PATH}/.local/bin/"
+
+      echo "Backup complete. Now proceeding with symlinks..."
 
       if [ -n "${OS_IN_WSL}" ]; then
         sudo ln -fs "${DOTFILES_PATH}/etc/wsl.conf" /etc/wsl.conf
