@@ -29,6 +29,8 @@ ARCH_PACKAGES="
   inotify-tools
   jq
   less
+  man-db
+  man-pages
   mise
   neovim
   openbsd-netcat
@@ -73,9 +75,11 @@ APT_PACKAGES="
   zip
   zsh
 "
+
 MISE_PACKAGES_DEBIAN_DISTROS_ONLY="
   bat
   delta
+  dust
   eza
   fd
   fzf
@@ -91,6 +95,7 @@ MISE_PACKAGES_DEBIAN_DISTROS_ONLY="
 BREW_PACKAGES="
   aspell
   bash
+  curl
   fastfetch
   gc
   diffutils
@@ -120,6 +125,7 @@ INSTALL_GO_VERSION="1.23.8"
 INSTALL_LUA_VERSION="5.4.7"
 INSTALL_RUST_VERSION="1.86.0"
 
+CPU_ARCH="$(uname -m)"
 OS_TYPE="$(uname | tr "[:upper:]" "[:lower:]")"
 OS_DISTRO=
 OS_IN_WSL=
@@ -192,12 +198,11 @@ _install_packages_apt() {
 }
 
 _install_packages_brew() {
-  # Install brew itself.
-  [ -x "$(command -v brew &>/dev/null)" ] &&
-    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  local prefix="/opt/homebrew"
+  [[ "${CPU_ARCH}" == "x86_64" ]] && prefix="/usr/local"
 
   # Ensure brew's paths are available for this script
-  eval "$(/opt/homebrew/bin/brew shellenv)"
+  eval "$("${prefix}/bin/brew shellenv")"
 
   # shellcheck disable=SC2086
   brew install ${BREW_PACKAGES}
@@ -311,6 +316,59 @@ detect_env() {
     _error "'${OS_TYPE}' is not supported"
 
     ;;
+  esac
+}
+
+warn_root() {
+  # Root will have an effective uid of 0, but it's ok if we're in a container.
+  [[ "${EUID}" != 0 || -n "${IN_CONTAINER}" ]] && return 0
+
+  cat <<EOF
+Here are details about this user:
+
+$(id)
+
+EOF
+
+  local msg="as root"
+  [[ -n "${SUDO_USER}" ]] && msg="with sudo as ${SUDO_USER}"
+
+  while true; do
+    read -rp "This script is meant to run as a non-root user, are you sure you want to run this ${msg}? (y/n) " yn
+    case "${yn}" in
+    [Yy]*) break ;;
+    [Nn]*) exit ;;
+    *) printf "Please answer y or n\n\n" ;;
+    esac
+  done
+}
+
+check_prereqs() {
+  _info "CHECKING SYSTEM COMPATABILITY"
+
+  local missing_packages=()
+
+  if ! command -v "sudo" 1>/dev/null; then missing_packages+=("sudo"); fi
+
+  if [[ -z "${missing_packages[*]}" ]]; then
+    echo "Everything is good to go"
+    return 0
+  fi
+
+  cat <<EOF
+This script is going to switch to the root user to install sudo then the rest
+of the script will run as your user and use sudo as needed.
+
+EOF
+
+  case "${OS_DISTRO}" in
+  arch)
+    su -c "pacman -Syu --noconfirm ${missing_packages[*]}"
+    ;;
+  debian)
+    su -c "apt-get update && apt-get install -y ${missing_packages[*]}"
+    ;;
+  *) ;;
   esac
 }
 
@@ -904,6 +962,8 @@ EOF
 }
 
 detect_env
+warn_root
+check_prereqs
 create_initial_dirs
 install_packages
 clone_or_update_dotfiles

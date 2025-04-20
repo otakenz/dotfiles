@@ -90,6 +90,7 @@ def active_theme():
 
 
 def change_terminal_theme(theme):
+    # TODO: implementation for wezterm terminal needed
     terminal = TERMINALS["windows-terminal"]
     theme = THEMES[theme]["terminal"]
     unknown = (
