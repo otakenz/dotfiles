@@ -21,3 +21,29 @@ jobs:
       - name: "Linting and testing"
         run: |
           ./run ci:test
+
+  integration_test:
+    name: "Test on Ubuntu"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, ubuntu-20.04]
+
+    steps:
+      - name: "Checkout repository"
+        uses: actions/checkout@v4
+
+      - name: "Update APT and Install Dependencies"
+        run: |
+          sudo apt-get update && sudo apt-get install -y curl
+
+      - name: "Run install script non-interactively"
+        run: |
+          yes | bash install
+
+      - name: "Test sourcing zsh configs"
+        shell: zsh {0}
+        run: |
+          source ~/.config/zsh/.zprofile
+          source ~/.config/zsh/.zshrc
+          echo "Zsh configs sourced successfully"
