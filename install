@@ -318,6 +318,12 @@ _check_shell_type() {
 # -----------------------------------------------------------------------------
 
 detect_env() {
+  if [[ ! -t 0 ]]; then
+    export NON_INTERACTIVE=true
+  else
+    export NON_INTERACTIVE=false
+  fi
+
   case "${OS_TYPE}" in
   linux)
     if [ -r /etc/os-release ]; then
@@ -502,7 +508,7 @@ clone_or_update_dotfiles() {
   fi
 
   # Detect non-interactive mode (no TTY = piped input like `yes |`)
-  if [ ! -t 0 ]; then
+  if [[ "$NON_INTERACTIVE" == "true" ]]; then
     dotfiles_path="${DOTFILES_PATH}"
     echo "Detected non-interactive mode, using default DOTFILES_PATH: ${DOTFILES_PATH}"
   else
@@ -760,7 +766,7 @@ ask_for_name() {
   if [[ -n "${name}" ]]; then
     echo "Skipping, since '${name}' was retrieved from your git config"
   else
-    if [[ ! -t 0 ]]; then
+    if [[ "$NON_INTERACTIVE" == "true" ]]; then
       # Non-interactive mode (e.g., yes | bash install)
       name="Default User"
       echo "Non-interactive mode detected. Using default name: '${name}'"
@@ -793,7 +799,7 @@ ask_for_email() {
   if [[ -n "${email}" ]]; then
     echo "Skipping, since '${email}' was retrieved from your git config"
   else
-    if [[ ! -t 0 ]]; then
+    if [[ "$NON_INTERACTIVE" == "true" ]]; then
       # Non-interactive mode (e.g., yes | bash install)
       email="default@example.com"
       echo "Non-interactive mode detected. Using default email: '${email}'"
@@ -980,7 +986,7 @@ install_tmux_plugins() {
 install_nvim_plugins() {
   _info "INSTALL NEOVIM PLUGINS"
 
-  nvim --headless "+lua require('lazy').sync()" +qa
+  nvim -c 'Lazy sync' -c 'qa!'
 
   echo "They've been installed"
 }
