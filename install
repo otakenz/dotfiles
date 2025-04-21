@@ -458,6 +458,39 @@ EOF
   done
 }
 
+install_programming_languages() {
+  _info "INSTALL PROGRAMMING LANGUAGES"
+
+  printf "Installing Node %s...\n\n" "${INSTALL_NODE_VERSION}"
+  if command -v "${HOME}/.local/share/mise/shims/node" 1>/dev/null; then
+    echo "Skipping Node, it's already installed, run 'mise upgrade node --bump' to upgrade"
+  else
+    mise use --global "node@${INSTALL_NODE_VERSION}"
+  fi
+
+  if ! yarn --version &>/dev/null; then
+    npm install --unsafe-perm=true --allow-root --global yarn
+  fi
+
+  printf "\nInstalling Python %s...\n\n" "${INSTALL_PYTHON_VERSION}"
+  if command -v "${HOME}/.local/share/mise/shims/python3" 1>/dev/null; then
+    echo "Skipping Python, it's already installed, run 'mise upgrade python --bump' to upgrade"
+  else
+    mise use --global "python@${INSTALL_PYTHON_VERSION}"
+  fi
+
+  mise use --global "go@${INSTALL_GO_VERSION}"
+  printf "Installing Golang %s...\n\n" "${INSTALL_GO_VERSION}"
+
+  mise use --global "lua@${INSTALL_LUA_VERSION}"
+  printf "Installing Lua %s...\n\n" "${INSTALL_LUA_VERSION}"
+
+  mise use --global "rust@${INSTALL_RUST_VERSION}"
+  printf "Installing Rust %s...\n\n" "${INSTALL_RUST_VERSION}"
+
+  mise reshim
+}
+
 clone_or_update_dotfiles() {
   _info "CLONE OR UPDATE DOTFILES"
 
@@ -727,16 +760,22 @@ ask_for_name() {
   if [[ -n "${name}" ]]; then
     echo "Skipping, since '${name}' was retrieved from your git config"
   else
-    while true; do
-      printf "What is your full name (ie. Dade Murphy)? "
-      read -r name
+    if [[ ! -t 0 ]]; then
+      # Non-interactive mode (e.g., yes | bash install)
+      name="Default User"
+      echo "Non-interactive mode detected. Using default name: '${name}'"
+    else
+      while true; do
+        printf "What is your full name (ie. Dade Murphy)? "
+        read -r name
 
-      if [[ ${name} =~ [^[:space:]]+ ]]; then
-        break
-      else
-        printf "Please enter at least your first name\n\n"
-      fi
-    done
+        if [[ ${name} =~ [^[:space:]]+ ]]; then
+          break
+        else
+          printf "Please enter at least your first name\n\n"
+        fi
+      done
+    fi
   fi
 
   NAME="${name}"
@@ -754,16 +793,22 @@ ask_for_email() {
   if [[ -n "${email}" ]]; then
     echo "Skipping, since '${email}' was retrieved from your git config"
   else
-    while true; do
-      printf "What is your email address (ie. zerocool@example.com)? "
-      read -r email
+    if [[ ! -t 0 ]]; then
+      # Non-interactive mode (e.g., yes | bash install)
+      email="default@example.com"
+      echo "Non-interactive mode detected. Using default email: '${email}'"
+    else
+      while true; do
+        printf "What is your email (ie. crash.override@example.com)? "
+        read -r email
 
-      if [[ ${email} =~ .+@.+ ]]; then
-        break
-      else
-        printf "Please enter a valid email address\n\n"
-      fi
-    done
+        if [[ ${email} =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+          break
+        else
+          printf "Please enter a valid email address\n\n"
+        fi
+      done
+    fi
   fi
 
   EMAIL="${email}"
@@ -918,39 +963,6 @@ EOF
   echo "It has been configured in '$(dirname "${git_config_local_path}")'"
   echo "✅ Git is now set to sign commits using your GPG key. Uncomment them to use it"
   echo "🔑 GPG Fingerprint: ${gpg_fingerprint}"
-}
-
-install_programming_languages() {
-  _info "INSTALL PROGRAMMING LANGUAGES"
-
-  printf "Installing Node %s...\n\n" "${INSTALL_NODE_VERSION}"
-  if command -v "${HOME}/.local/share/mise/shims/node" 1>/dev/null; then
-    echo "Skipping Node, it's already installed, run 'mise upgrade node --bump' to upgrade"
-  else
-    mise use --global "node@${INSTALL_NODE_VERSION}"
-  fi
-
-  if ! yarn --version &>/dev/null; then
-    npm install --unsafe-perm=true --allow-root --global yarn
-  fi
-
-  printf "\nInstalling Python %s...\n\n" "${INSTALL_PYTHON_VERSION}"
-  if command -v "${HOME}/.local/share/mise/shims/python3" 1>/dev/null; then
-    echo "Skipping Python, it's already installed, run 'mise upgrade python --bump' to upgrade"
-  else
-    mise use --global "python@${INSTALL_PYTHON_VERSION}"
-  fi
-
-  mise use --global "go@${INSTALL_GO_VERSION}"
-  printf "Installing Golang %s...\n\n" "${INSTALL_GO_VERSION}"
-
-  mise use --global "lua@${INSTALL_LUA_VERSION}"
-  printf "Installing Lua %s...\n\n" "${INSTALL_LUA_VERSION}"
-
-  mise use --global "rust@${INSTALL_RUST_VERSION}"
-  printf "Installing Rust %s...\n\n" "${INSTALL_RUST_VERSION}"
-
-  mise reshim
 }
 
 install_tmux_plugins() {
