@@ -43,6 +43,11 @@ jobs:
         run: |
           yes | bash install
 
+      - name: Install Neovim Plugins with LazyVim
+        run: |
+          # Run LazyVim plugin sync in headless mode
+          nvim --headless -c 'Lazy sync' -c 'qa!'
+
       - name: "Test sourcing zsh configs"
         shell: zsh {0}
         run: |

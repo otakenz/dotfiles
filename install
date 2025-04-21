@@ -986,9 +986,7 @@ install_tmux_plugins() {
 install_nvim_plugins() {
   _info "INSTALL NEOVIM PLUGINS"
 
-  if [[ "$NON_INTERACTIVE" == "true" ]]; then
-    nvim -u NONE -c 'Lazy sync' -c 'qa!'
-  else
+  if [[ "$NON_INTERACTIVE" == "false" ]]; then
     nvim +q
   fi
 
