@@ -980,7 +980,7 @@ install_tmux_plugins() {
 install_nvim_plugins() {
   _info "INSTALL NEOVIM PLUGINS"
 
-  nvim --headless "+Lazy! sync" +qa
+  nvim --headless "+lua require('lazy').sync()" +qa
 
   echo "They've been installed"
 }
