@@ -1,3 +1,16 @@
+Install Wezterm
+
+Install Powerlevel10k (Terminal Theme)
+
+Install Nerd Fonts (Font)
+
+- <https://www.nerdfonts.com/font-downloads>
+- I use MesloLGS Nerd Font Mono
+
+Run install script
+
+- bash install
+
 Mise by default uses unauthenticated requests to the GitHub API (60 request/hr)
 To increase the rate limit to 5000 requests/hr, you can set the `GITHUB_TOKEN`
 Generate one from here https://github.com/settings/tokens
@@ -6,14 +19,14 @@ Generate one from here https://github.com/settings/tokens
 
 ```sh
 # Start a Debian container, we're passing in an env var to be explicit we're in Docker.
-docker container run --rm -it -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app debian:stable-slim bash
+docker container run --rm -it --env-file .env -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app debian:stable-slim bash
 
 # Copy / paste all 3 lines into the container's prompt and run it.
 #
 # Since we can't open a new terminal in a container we'll need to manually
 # launch zsh and source a few files. That's what the last line is doing.
 apt-get update && apt-get install -y curl \
-  && yes | bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install) \
+  && bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install) \
   && zsh -c ". ~/.config/zsh/.zprofile && . ~/.config/zsh/.zshrc; zsh -i"
 ```
 
@@ -22,12 +35,11 @@ apt-get update && apt-get install -y curl \
 ```sh
 cd dotfiles/
 
-docker container run --rm -it -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app debian:stable-slim bash
-docker container run --rm -it -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app ubuntu:24.04 bash
+docker container run --rm -it --env-file .env -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app debian:stable-slim bash
 
 # Local test only
 apt-get update && apt-get install -y curl \
-  && yes | bash /app/install \
+  && bash install \
   && zsh -c ". ~/.config/zsh/.zprofile && . ~/.config/zsh/.zshrc; zsh -i"
 ```
 

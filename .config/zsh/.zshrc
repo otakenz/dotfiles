@@ -14,7 +14,7 @@ if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-$(print -P %n).zsh
 fi
 
 # shellcheck disable=SC1090
-source ~/powerlevel10k/powerlevel10k.zsh-theme
+[[ -f ~/powerlevel10k/powerlevel10k.zsh-theme ]] && source ~/powerlevel10k/powerlevel10k.zsh-theme
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 # shellcheck disable=SC1090
@@ -84,7 +84,7 @@ _fzf_comprun() {
 # ---- FZF ---- #
 
 # ---- Mise (better asdf) ---- #
-eval "$(/home/test/.local/bin/mise activate zsh)"
+eval "$("${HOME}"/.local/bin/mise activate zsh)"
 
 # ---- Bat (better cat) ---- #
 export BAT_THEME=tokyonight_night

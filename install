@@ -415,9 +415,8 @@ EOF
 }
 
 create_initial_dirs() {
-  mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/tmux/themes" "${HOME}/.config/git" \
-    "${HOME}/.config/zsh/themes/fzf" "${HOME}/.config/bat/themes" "${HOME}/.config/gitui" \
-    "${HOME}/.config/wezterm" "${HOME}/.config/nvim"
+  mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/git" "${HOME}/.config/gitui" \
+    "${HOME}/.config/wezterm" "${HOME}/.config/nvim" "${HOME}/.config/zsh" "${HOME}/.config/bat"
 
   mkdir -p "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share"
 }
@@ -493,8 +492,6 @@ install_programming_languages() {
 
   mise use --global "rust@${INSTALL_RUST_VERSION}"
   printf "Installing Rust %s...\n\n" "${INSTALL_RUST_VERSION}"
-
-  mise reshim
 }
 
 clone_or_update_dotfiles() {
@@ -740,10 +737,10 @@ EOF
 install_tools_with_python() {
   _info "INSTALLING TOOLS WITH PYTHON PIP"
 
-  pip install --upgrade pip --user
+  pip install --upgrade pip
 
   # tldr
-  pip install tldr --user
+  pip install --user tldr
   printf "Installing latest tldr (better man) ... \n\n"
 
   # autocorrect previous command that entered wrongly
@@ -751,7 +748,7 @@ install_tools_with_python() {
   #printf("Installing latest thefuck (autocorrect prompt) ... \n\n"
 
   # for neovim
-  pip install pynvim --user
+  pip install --user pynvim
 }
 
 ask_for_name() {
@@ -986,9 +983,7 @@ install_tmux_plugins() {
 install_nvim_plugins() {
   _info "INSTALL NEOVIM PLUGINS"
 
-  if [[ "$NON_INTERACTIVE" == "false" ]]; then
-    nvim +q
-  fi
+  nvim +q
 
   echo "They've been installed"
 }
@@ -1053,18 +1048,18 @@ warn_root
 check_prereqs
 create_initial_dirs
 install_packages
-install_programming_languages
 clone_or_update_dotfiles
 install_zsh_plugins
 create_symlinks
 configure_system_configs
 configure_shell
-install_tools_with_python
 ask_for_name
 ask_for_email
 create_ssh_key
 create_gpg_key
 configure_git
+install_programming_languages
+install_tools_with_python
 install_tmux_plugins
 install_nvim_plugins
 healthcheck
