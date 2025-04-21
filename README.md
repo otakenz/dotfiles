@@ -13,7 +13,7 @@ docker container run --rm -it -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app debia
 # Since we can't open a new terminal in a container we'll need to manually
 # launch zsh and source a few files. That's what the last line is doing.
 apt-get update && apt-get install -y curl \
-  && bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install) \
+  && yes | bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install) \
   && zsh -c ". ~/.config/zsh/.zprofile && . ~/.config/zsh/.zshrc; zsh -i"
 ```
 
@@ -23,10 +23,11 @@ apt-get update && apt-get install -y curl \
 cd dotfiles/
 
 docker container run --rm -it -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app debian:stable-slim bash
+docker container run --rm -it -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app ubuntu:24.04 bash
 
 # Local test only
 apt-get update && apt-get install -y curl \
-  && bash /app/install \
+  && yes | bash /app/install \
   && zsh -c ". ~/.config/zsh/.zprofile && . ~/.config/zsh/.zshrc; zsh -i"
 ```
 

@@ -35,6 +35,7 @@ ARCH_PACKAGES="
   neovim
   openbsd-netcat
   openssh
+  pacman-contrib
   pass
   pwgen
   ripgrep
@@ -176,9 +177,11 @@ _install_packages_apt() {
 
   # Install Mise.
   sudo install -dm 755 /etc/apt/keyrings
-  curl -fsSL https://mise.jdx.dev/gpg-key.pub | gpg --dearmor | sudo tee /etc/apt/keyrings/mise-archive-keyring.gpg 1>/dev/null
+  curl -fsSL https://mise.jdx.dev/gpg-key.pub | sudo gpg --dearmor -o /etc/apt/keyrings/mise-archive-keyring.gpg
   echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.gpg arch=amd64] https://mise.jdx.dev/deb stable main" | sudo tee /etc/apt/sources.list.d/mise.list
-  sudo apt-get update && sudo apt-get install -y mise
+  # shellcheck disable=SC2086
+  sudo apt-get update && sudo apt-get install -y ${APT_PACKAGES} mise
+  # sudo apt-get update && sudo apt-get install -y mise
 
   # Install Mise packages.
   #
@@ -205,7 +208,7 @@ _install_packages_brew() {
   [[ "${CPU_ARCH}" == "x86_64" ]] && prefix="/usr/local"
 
   # Ensure brew's paths are available for this script
-  eval "$("${prefix}/bin/brew shellenv")"
+  eval "$(${prefix}/bin/brew shellenv)"
 
   # shellcheck disable=SC2086
   brew install ${BREW_PACKAGES}
@@ -224,50 +227,67 @@ _display_packages() {
   fi
 }
 
-_install_tools_with_python() {
-  _info "INSTALLING TOOLS WITH PYTHON PIP"
-
-  pip install --upgrade pip
-
-  # tldr
-  pip install tldr --user
-  printf "Installing latest tldr (better man) ... \n\n"
-
-  # autocorrect previous command that entered wrongly
-  #pip3 install thefuck --user
-  #printf("Installing latest thefuck (autocorrect prompt) ... \n\n"
-
-  # for neovim
-  pip install pynvim --user
-}
-
 _backup_and_symlink() {
-  local target_file="$1"
-  local symlink_path="$2"
+  local src_path="$1"
+  local dest_path="$2"
+  local use_sudo="$3"
   local timestamp
-  local backup_file
   local BACKUP_DIR="${HOME}/.dotfiles_backup"
+  local backup_dirname
+  local relative_path
+  local backup_path
 
-  # Generate a timestamp in YYYY-MM-DD_HH-MM-SS format
+  # Generate timestamp for backup directory
   timestamp=$(date "+%Y-%m-%d_%H-%M-%S")
-
-  # Create a backup folder with the timestamp
   local timestamped_backup_dir="${BACKUP_DIR}/backup_${timestamp}"
 
-  # Ensure the timestamped backup directory exists
-  mkdir -p "$timestamped_backup_dir"
+  # Create backup directory
+  mkdir -p "$timestamped_backup_dir" || {
+    echo "❌ Error: Unable to create backup directory."
+    return 1
+  }
 
-  # Create a backup file with the timestamp
-  backup_file="${timestamped_backup_dir}/$(basename "$target_file")"
+  # Determine relative path of destination for backup
+  relative_path="${dest_path#"${HOME}/"}"
+  backup_path="${timestamped_backup_dir}/${relative_path}"
+  backup_dirname=$(dirname "$backup_path")
 
-  # Check if the file exists
-  if [ -e "$target_file" ]; then
-    echo "Backing up $target_file to $backup_file"
-    mv "$target_file" "$backup_file" # Move the original file to the backup directory
+  # Ensure parent directories exist for backup
+  mkdir -p "$backup_dirname" || {
+    echo "❌ Error: Unable to create parent directory for backup: $backup_dirname"
+    return 1
+  }
+
+  # Backup existing file if it exists
+  if [ -e "$dest_path" ] || [ -L "$dest_path" ]; then
+    echo "📦 Backing up $dest_path to $backup_path"
+    mv "$dest_path" "$backup_path" || {
+      echo "❌ Error: Failed to move $dest_path to backup."
+      return 1
+    }
+  else
+    echo "⚠️  Warning: $dest_path does not exist, no backup made."
   fi
 
+  # Ensure absolute path for source
+  local src_abs
+  src_abs=$(realpath "$src_path") || {
+    echo "❌ Error: Could not resolve absolute path for $src_path"
+    return 1
+  }
+
   # Create the symlink
-  ln -fs "$symlink_path" "$target_file"
+  echo "🔗 Creating symlink: ln -fs \"$src_abs\" \"$dest_path\""
+  if ${use_sudo:+sudo} ln -fs "$src_abs" "$dest_path"; then
+    if [ -L "$dest_path" ] && [ -e "$dest_path" ]; then
+      echo "✅ Symlink created successfully."
+    else
+      echo "⚠️  Symlink created but points to a non-existent target."
+    fi
+  else
+    echo "❌ Error: Failed to create symlink."
+    return 1
+  fi
 }
 
 _get_win_users_path() {
@@ -448,8 +468,14 @@ clone_or_update_dotfiles() {
     . "${local_zprofile}"
   fi
 
-  read -rep "Where do you want to clone these dotfiles to [${DOTFILES_PATH}]? " dotfiles_path
-  echo
+  # Detect non-interactive mode (no TTY = piped input like `yes |`)
+  if [ ! -t 0 ]; then
+    dotfiles_path="${DOTFILES_PATH}"
+    echo "Detected non-interactive mode, using default DOTFILES_PATH: ${DOTFILES_PATH}"
+  else
+    read -rep "Where do you want to clone these dotfiles to [${DOTFILES_PATH}]? " dotfiles_path
+    echo
+  fi
 
   [[ -z "${dotfiles_path}" ]] && dotfiles_path="${DOTFILES_PATH}"
 
@@ -493,33 +519,54 @@ install_zsh_plugins() {
 create_symlinks() {
   _info "CREATE SYMLINKS"
 
+  local symlinks=(
+    "${DOTFILES_PATH}/.zshenv ${HOME}/.zshenv"
+    "${DOTFILES_PATH}/.config/zsh/.zshrc ${HOME}/.config/zsh/.zshrc"
+    "${DOTFILES_PATH}/.config/zsh/.zshrc.local ${HOME}/.config/zsh/.zshrc.local"
+    "${DOTFILES_PATH}/.config/zsh/.zprofile ${HOME}/.config/zsh/.zprofile"
+    "${DOTFILES_PATH}/.config/zsh/.zprofile.local ${HOME}/.config/zsh/.zprofile.local"
+    "${DOTFILES_PATH}/.config/zsh/.aliases ${HOME}/.config/zsh/.aliases"
+    "${DOTFILES_PATH}/.config/zsh/.aliases.local ${HOME}/.config/zsh/.aliases.local"
+    "${DOTFILES_PATH}/.config/wezterm/wezterm.lua ${HOME}/.config/wezterm/wezterm.lua"
+    "${DOTFILES_PATH}/.config/tmux/tmux.conf ${HOME}/.config/tmux/tmux.conf"
+    "${DOTFILES_PATH}/.config/zsh/themes ${HOME}/.config/zsh/themes"
+    "${DOTFILES_PATH}/.config/tmux/themes ${HOME}/.config/tmux/themes"
+    "${DOTFILES_PATH}/.config/bat/themes ${HOME}/.config/bat/themes"
+    "${DOTFILES_PATH}/.config/git/config ${HOME}/.config/git/config"
+    "${DOTFILES_PATH}/.config/git/config.local ${HOME}/.config/git/config.local"
+    "${DOTFILES_PATH}/.config/gitui ${HOME}/.config/gitui"
+    "${DOTFILES_PATH}/.config/nvim ${HOME}/.config/nvim"
+    "${DOTFILES_PATH}/.local/bin/* ${HOME}/.local/bin/"
+  )
+
+  local symlinks_system=()
+
+  # And if you happen to be using WSL:
+  if [ -n "${OS_IN_WSL}" ]; then
+    symlinks_system+=(
+      "${DOTFILES_PATH}/etc/wsl.conf /etc/wsl.conf"
+    )
+    for user_path in $(_get_win_users_path); do
+      cp "${DOTFILES_PATH}/wezterm/wezterm.lua" "${user_path}/.wezterm.lua"
+      echo "Copied wezterm.lua to window users"
+    done
+  fi
+
+  if [ "${OS_DISTRO}" = "arch" ]; then
+    symlinks_system+=("${DOTFILES_PATH}/etc/pacman.d/01-options.conf /etc/pacman.d/01-options.conf")
+
+    if [ -f "etc/pacman.d/02-ignore.conf" ]; then
+      symlinks_system+=("${DOTFILES_PATH}/etc/pacman.d/02-ignore.conf /etc/pacman.d/02-ignore.conf")
+    else
+      sudo rm -f "/etc/pacman.d/02-ignore.conf"
+    fi
+  fi
+
   cat <<EOF
--------------------------------------------------------------------------------
-The following files will be backed up to ${BACKUP_DIR} before symlinks are created:
--------------------------------------------------------------------------------
 
-ln -fs "${DOTFILES_PATH}/.zshenv" "${HOME}/.zshenv"
-ln -fs "${DOTFILES_PATH}/.config/zsh/.zshrc" "${HOME}/.config/zsh/.zshrc"
-ln -fs "${DOTFILES_PATH}/.config/zsh/.zshrc.local" "${HOME}/.config/zsh/.zshrc.local"
-ln -fs "${DOTFILES_PATH}/.config/zsh/.zprofile" "${HOME}/.config/zsh/.zprofile"
-ln -fs "${DOTFILES_PATH}/.config/zsh/.zprofile.local" "${HOME}/.config/zsh/.zprofile.local"
-ln -fs "${DOTFILES_PATH}/.config/zsh/.aliases" "${HOME}/.config/zsh/.aliases"
-ln -fs "${DOTFILES_PATH}/.config/zsh/.aliases.local" "${HOME}/.config/zsh/.aliases.local"
-ln -fs "${DOTFILES_PATH}/.config/wezterm/wezterm.lua" "${DOTFILES_PATH}/.config/wezterm/wezterm.lua"
-ln -fs "${DOTFILES_PATH}/.config/tmux/tmux.conf" "${HOME}/.config/tmux/tmux.conf"
-ln -fs "${DOTFILES_PATH}/.config/zsh/themes" "${HOME}/.config/zsh/themes"
-ln -fs "${DOTFILES_PATH}/.config/tmux/themes" "${HOME}/.config/tmux/themes"
-ln -fs "${DOTFILES_PATH}/.config/bat/themes" "${HOME}/.config/bat/themes"
-ln -fs "${DOTFILES_PATH}/.config/git/config" "${HOME}/.config/git/config"
-ln -fs "${DOTFILES_PATH}/.config/git/config.local" "${HOME}/.config/git/config.local"
-ln -fs "${DOTFILES_PATH}/.config/gitui" "${HOME}/.config/gitui"
-ln -fs "${DOTFILES_PATH}/.config/nvim" "${HOME}/.config/nvim"
-ln -fs "${DOTFILES_PATH}/.local/bin/"* "${HOME}/.local/bin/"
-
-# And if you happen to be using WSL:
-sudo ln -fs "${DOTFILES_PATH}/etc/wsl.conf" /etc/wsl.conf
-
--------------------------------------------------------------------------------
+  -----------------------------------------------------------------------------------
+  The following symlinks will be created:
+  -----------------------------------------------------------------------------------
 
 EOF
 
@@ -537,36 +584,19 @@ EOF
       [ -L "${HOME}/.config/nvim" ] && rm "${HOME}/.config/nvim"
 
       # Backup and create symlinks for each file
-      _backup_and_symlink "${HOME}/.zshenv" "${DOTFILES_PATH}/.zshenv"
-      _backup_and_symlink "${HOME}/.config/zsh/.zshrc" "${DOTFILES_PATH}/.config/zsh/.zshrc"
-      _backup_and_symlink "${HOME}/.config/zsh/.zshrc.local" "${DOTFILES_PATH}/.config/zsh/.zshrc.local"
-      _backup_and_symlink "${HOME}/.config/zsh/.zprofile" "${DOTFILES_PATH}/.config/zsh/.zprofile"
-      _backup_and_symlink "${HOME}/.config/zsh/.zprofile.local" "${DOTFILES_PATH}/.config/zsh/.zprofile.local"
-      _backup_and_symlink "${HOME}/.config/zsh/.aliases" "${DOTFILES_PATH}/.config/zsh/.aliases"
-      _backup_and_symlink "${HOME}/.config/zsh/.aliases.local" "${DOTFILES_PATH}/.config/zsh/.aliases.local"
-      _backup_and_symlink "${HOME}/.config/wezterm/wezterm.lua" "${DOTFILES_PATH}/.config/wezterm/wezterm.lua"
-      _backup_and_symlink "${HOME}/.config/tmux/tmux.conf" "${DOTFILES_PATH}/.config/tmux/tmux.conf"
-      _backup_and_symlink "${HOME}/.config/zsh/themes" "${DOTFILES_PATH}/.config/zsh/themes"
-      _backup_and_symlink "${HOME}/.config/tmux/themes" "${DOTFILES_PATH}/.config/tmux/themes"
-      _backup_and_symlink "${HOME}/.config/bat/themes" "${DOTFILES_PATH}/.config/bat/themes"
-      _backup_and_symlink "${HOME}/.config/git/config" "${DOTFILES_PATH}/.config/git/config"
-      _backup_and_symlink "${HOME}/.config/git/config.local" "${DOTFILES_PATH}/.config/git/config.local"
-      _backup_and_symlink "${HOME}/.config/gitui" "${DOTFILES_PATH}/.config/gitui"
-      _backup_and_symlink "${HOME}/.config/nvim" "${DOTFILES_PATH}/.config/nvim"
-      _backup_and_symlink "${HOME}/.local/bin/"* "${DOTFILES_PATH}/.local/bin/"
+      for link in "${symlinks[@]}"; do
+        read -r src dest <<<"$link"
+        # _backup_and_symlink "$src" "$dest"
+        ln -fs "$src" "$dest"
+      done
 
-      echo "Backup complete. Now proceeding with symlinks..."
+      for link in "${symlinks_system[@]}"; do
+        read -r src dest <<<"$link"
+        # _backup_and_symlink "$src" "$dest" sudo
+        ln -fs "$src" "$dest"
+      done
 
-      if [ -n "${OS_IN_WSL}" ]; then
-        sudo ln -fs "${DOTFILES_PATH}/etc/wsl.conf" /etc/wsl.conf
-
-        for user_path in $(_get_win_users_path); do
-          cp "${DOTFILES_PATH}/wezterm/wezterm.lua" "${user_path}/.wezterm.lua"
-          echo "Copied wezterm.lua to window users"
-        done
-      fi
-
-      echo "Symlinks created successfully."
+      echo "🌟 All symlinks created successfully."
 
       break
       ;;
@@ -577,6 +607,19 @@ EOF
     *) echo "Please answer y or n" ;;
     esac
   done
+}
+
+configure_system_configs() {
+  _info "CONFIGURE SYSTEM CONFIGS"
+
+  if [ "${OS_DISTRO}" = "arch" ]; then
+    local etc_pacman_conf_path="/etc/pacman.conf"
+    if ! grep -q "Include = /etc/pacman\.d/\*\.conf" "${etc_pacman_conf_path}" 2>/dev/null; then
+      printf "\nInclude = /etc/pacman.d/*.conf\n" | sudo tee --append "${etc_pacman_conf_path}" 1>/dev/null
+    fi
+  fi
+
+  echo "Everything that required updating was updated"
 }
 
 configure_shell() {
@@ -605,25 +648,14 @@ configure_shell() {
     fi
 
     if ! grep -q "eval.*homebrew.*shellenv" "${zprofile_path}" 2>/dev/null; then
+      local prefix="/opt/homebrew"
+      [[ "${CPU_ARCH}" == "x86_64" ]] && prefix="/usr/local"
       # shellcheck disable=SC2016
-      printf '\neval "$(/opt/homebrew/bin/brew shellenv)"\n' >>"${zprofile_path}"
+      printf "\neval \"\$(%s/bin/brew shellenv)\"\n" "${prefix}" >>"${zprofile_path}"
     fi
   else
     # Are we in WSL 2?
     if [ -n "${OS_IN_WSL}" ]; then
-      if ! grep -q "^DISPLAY=.*route | awk.*$" "${zprofile_path}" 2>/dev/null; then
-        local display=
-        display=$(
-          cat <<'EOF'
-# Requires: https://sourceforge.net/projects/vcxsrv/ (or alternative)
-DISPLAY="$(/sbin/ip route | awk '/default/ { print $3 }'):0"
-export DISPLAY
-EOF
-        )
-
-        printf "\n%s" "${display}" >>"${zprofile_path}"
-      fi
-
       # This only applies if you have Docker installed without Docker Desktop
       # and you're not using systemd.
       if command -v docker &>/dev/null; then
@@ -664,6 +696,23 @@ EOF
   DOTFILES_PATH="${original_dotfiles_path}"
 
   echo "It has been configured in '${HOME}/.config/zsh/'"
+}
+
+install_tools_with_python() {
+  _info "INSTALLING TOOLS WITH PYTHON PIP"
+
+  pip install --upgrade pip --user
+
+  # tldr
+  pip install tldr --user
+  printf "Installing latest tldr (better man) ... \n\n"
+
+  # autocorrect previous command that entered wrongly
+  #pip3 install thefuck --user
+  #printf("Installing latest thefuck (autocorrect prompt) ... \n\n"
+
+  # for neovim
+  pip install pynvim --user
 }
 
 ask_for_name() {
@@ -901,7 +950,7 @@ install_programming_languages() {
   mise use --global "rust@${INSTALL_RUST_VERSION}"
   printf "Installing Rust %s...\n\n" "${INSTALL_RUST_VERSION}"
 
-  _install_tools_with_python
+  mise reshim
 }
 
 install_tmux_plugins() {
@@ -988,7 +1037,9 @@ install_programming_languages
 clone_or_update_dotfiles
 install_zsh_plugins
 create_symlinks
+configure_system_configs
 configure_shell
+install_tools_with_python
 ask_for_name
 ask_for_email
 create_ssh_key

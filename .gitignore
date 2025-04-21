@@ -25,3 +25,5 @@ tags
 .local/bin/local/
 .zsh_history*
 *.spl
+etc/pacman.d/02-ignore.conf.example
+.env
