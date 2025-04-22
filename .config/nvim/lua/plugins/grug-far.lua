@@ -1,6 +1,9 @@
 return {
   "MagicDuck/grug-far.nvim",
+
+  -- Commands that trigger lazy loading
   cmd = { "GrugFar", "GrugFarWithin" },
+
   config = function()
     vim.api.nvim_create_autocmd("FileType", {
       pattern = { "grug-far" },
@@ -25,28 +28,45 @@ return {
       end,
     })
   end,
-  init = function()
-    MAP(
-      "x",
+
+  -- Keys are lazy loaded
+  keys = {
+    {
       "<leader>sRa",
-      ":lua require('grug-far').with_visual_selection()<CR>",
-      { desc = "All Files" }
-    )
-
-    MAP(
-      "n",
+      mode = { "v" },
+      function()
+        require("grug-far").with_visual_selection()
+      end,
+      desc = "All Files",
+    },
+    {
       "<leader>sRc",
-      ":lua require('grug-far').open({ prefills = { paths = vim.fn.expand('%') } })<CR>",
-      { desc = "Current File" }
-    )
-
-    MAP(
-      "x",
+      function()
+        require("grug-far").open({
+          prefills = { paths = vim.fn.expand("%") },
+        })
+      end,
+      desc = "Current File",
+    },
+    {
       "<leader>sRc",
-      ":lua require('grug-far').with_visual_selection({ prefills = { paths = vim.fn.expand('%') } })<CR>",
-      { desc = "Current File" }
-    )
-
-    MAP("x", "<leader>sRw", "<Cmd>GrugFarWithin<CR>", { desc = "Within Range" })
-  end,
+      mode = { "v" },
+      function()
+        require("grug-far").with_visual_selection({
+          prefills = { paths = vim.fn.expand("%") },
+        })
+      end,
+      desc = "Current File",
+    },
+    {
+      "<leader>sRw",
+      mode = { "v" },
+      function()
+        require("grug-far").open({
+          visualSelectionUsage = "operate-within-range",
+        })
+      end,
+      desc = "Within Range",
+    },
+  },
 }
