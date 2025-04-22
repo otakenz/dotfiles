@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Usage:
 #   ./install          # Clone my dotfiles
-#   DEBUG=1 ./install  # Copy the local dotfiles directory instead of cloning
+#   LOCAL=1 ./install  # Copy the local dotfiles directory instead of cloning
 #
 #   # Customize which dotfiles URL to clone from
 #   DOTFILES_URL="https://github.com/example/dotfiles" ./install
@@ -10,7 +10,7 @@ set -o errexit
 
 SKIP_SYSTEM_PACKAGES="${1:-}"
 
-ARCH_PACKAGES="
+PACMAN_PACKAGES="
   aspell
   base
   base-devel
@@ -52,7 +52,7 @@ ARCH_PACKAGES="
   zoxide
 "
 
-APT_PACKAGES="
+DEBIAN_PACKAGES="
   aspell
   bc
   build-essential
@@ -77,22 +77,6 @@ APT_PACKAGES="
   zsh
 "
 
-MISE_PACKAGES_DEBIAN_DISTROS_ONLY="
-  bat
-  delta
-  dust
-  eza
-  fd
-  fzf
-  gitui
-  jq
-  neovim
-  ripgrep
-  shellcheck
-  shfmt
-  zoxide
-"
-
 BREW_PACKAGES="
   aspell
   bash
@@ -115,16 +99,38 @@ BREW_PACKAGES="
   xz
   zsh
 "
+MISE_PACKAGES_ARCH=""
+
+MISE_PACKAGES_DEBIAN="
+  bat
+  delta
+  dust
+  eza
+  fd
+  fzf
+  gitui
+  jq
+  neovim
+  ripgrep
+  shellcheck
+  shfmt
+  zoxide
+"
+
+MISE_PACKAGES_MACOS=""
 
 # Used to configure git
 NAME=
 EMAIL=
 
-INSTALL_NODE_VERSION="22.14"
-INSTALL_PYTHON_VERSION="3.13"
-INSTALL_GO_VERSION="1.23.8"
-INSTALL_LUA_VERSION="5.4.7"
-INSTALL_RUST_VERSION="1.86.0"
+declare -A MISE_LANGUAGES
+MISE_LANGUAGES=(
+  ["node"]="node@22.14"
+  ["python"]="python@3.13"
+  ["go"]="go@1.23.8"
+  ["lua"]="lua@5.4.7"
+  ["rust"]="rust@1.86.0"
+)
 
 CPU_ARCH="$(uname -m)"
 OS_TYPE="$(uname | tr "[:upper:]" "[:lower:]")"
@@ -168,19 +174,26 @@ EOF
 
 _install_packages_arch() {
   # shellcheck disable=SC2086
-  sudo pacman -Syu --noconfirm ${ARCH_PACKAGES}
+  sudo pacman -Syu --noconfirm ${PACMAN_PACKAGES}
+
+  # Install Mise packages.
+  echo
+  # shellcheck disable=SC2086
+  if [[ -n "${MISE_PACKAGES_ARCH}" ]]; then
+    mise use --global ${MISE_PACKAGES_ARCH}
+  fi
 }
 
-_install_packages_apt() {
+_install_packages_debian() {
   # shellcheck disable=SC2086
-  sudo apt-get update && sudo apt-get install -y ${APT_PACKAGES}
+  sudo apt-get update && sudo apt-get install -y ${DEBIAN_PACKAGES}
 
   # Install Mise.
   sudo install -dm 755 /etc/apt/keyrings
   curl -fsSL https://mise.jdx.dev/gpg-key.pub | sudo gpg --dearmor -o /etc/apt/keyrings/mise-archive-keyring.gpg
   echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.gpg arch=amd64] https://mise.jdx.dev/deb stable main" | sudo tee /etc/apt/sources.list.d/mise.list
   # shellcheck disable=SC2086
-  sudo apt-get update && sudo apt-get install -y ${APT_PACKAGES} mise
+  sudo apt-get update && sudo apt-get install -y ${DEBIAN_PACKAGES} mise
   # sudo apt-get update && sudo apt-get install -y mise
 
   # Install Mise packages.
@@ -190,7 +203,9 @@ _install_packages_apt() {
   # the latest and greatest versions for certain tools.
   echo
   # shellcheck disable=SC2086
-  mise use --global ${MISE_PACKAGES_DEBIAN_DISTROS_ONLY}
+  if [[ -n "${MISE_PACKAGES_DEBIAN}" ]]; then
+    mise use --global ${MISE_PACKAGES_DEBIAN}
+  fi
 
   # Install packages manually since they don't exist elsewhere.
   [ -d "$HOME/.fzf-git.sh" ] || git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
@@ -203,7 +218,7 @@ _install_packages_apt() {
   rm "${_}"
 }
 
-_install_packages_brew() {
+_install_packages_macos() {
   local prefix="/opt/homebrew"
   [[ "${CPU_ARCH}" == "x86_64" ]] && prefix="/usr/local"
 
@@ -212,18 +227,39 @@ _install_packages_brew() {
 
   # shellcheck disable=SC2086
   brew install ${BREW_PACKAGES}
+
+  # Install Mise packages.
+  echo
+  # shellcheck disable=SC2086
+  if [[ -n "${MISE_PACKAGES_BREW}" ]]; then
+    mise use --global ${MISE_PACKAGES_BREW}
+  fi
+}
+
+_display_packages_output() {
+  local packages="${1:-}"
+  local mise="${3:-}"
+
+  if [ -n "${packages}" ]; then
+    echo ":: Packages (default)"
+    echo -n "${packages}"
+  fi
+
+  if [ -n "${mise}" ]; then
+    echo ":: Mise (default)"
+    echo -n "${mise}"
+  fi
 }
 
 _display_packages() {
   if [ "${OS_TYPE}" == "linux" ]; then
     if [ "${OS_DISTRO}" == "arch" ]; then
-      echo "${ARCH_PACKAGES}"
+      _display_packages_output "${PACMAN_PACKAGES}" "${MISE_PACKAGES_ARCH}"
     elif [ "${OS_DISTRO}" == "debian" ]; then
-      echo "${APT_PACKAGES}"
-      echo "${MISE_PACKAGES_DEBIAN_DISTROS_ONLY}"
+      _display_packages_output "${DEBIAN_PACKAGES}" "${MISE_PACKAGES_DEBIAN}"
     fi
   else
-    echo "${BREW_PACKAGES}"
+    _display_packages_output "${BREW_PACKAGES}" "${MISE_PACKAGES_MACOS}"
   fi
 }
 
@@ -348,8 +384,8 @@ detect_env() {
 
     # Adjust packages depending on which display server is in use.
     if [[ -z "${WAYLAND_DISPLAY}" ]]; then
-      APT_PACKAGES="${APT_PACKAGES//wl-clipboard/xclip}"
-      ARCH_PACKAGES="${ARCH_PACKAGES//wl-clipboard/xclip}"
+      DEBIAN_PACKAGES="${DEBIAN_PACKAGES//wl-clipboard/xclip}"
+      PACMAN_PACKAGES="${PACMAN_PACKAGES//wl-clipboard/xclip}"
     fi
 
     ;;
@@ -449,10 +485,10 @@ EOF
         if [ "${OS_DISTRO}" == "arch" ]; then
           _install_packages_arch
         elif [ "${OS_DISTRO}" == "debian" ]; then
-          _install_packages_apt
+          _install_packages_debian
         fi
       else
-        _install_packages_brew
+        _install_packages_macos
       fi
 
       break
@@ -466,32 +502,23 @@ EOF
 install_programming_languages() {
   _info "INSTALL PROGRAMMING LANGUAGES"
 
-  printf "Installing Node %s...\n\n" "${INSTALL_NODE_VERSION}"
-  if command -v "${HOME}/.local/share/mise/shims/node" 1>/dev/null; then
-    echo "Skipping Node, it's already installed, run 'mise upgrade node --bump' to upgrade"
-  else
-    mise use --global "node@${INSTALL_NODE_VERSION}"
-  fi
+  for lang in "${!MISE_LANGUAGES[@]}"; do
+    [ -z "${MISE_LANGUAGES[${lang}]}" ] && continue
 
-  if ! yarn --version &>/dev/null; then
-    npm install --unsafe-perm=true --allow-root --global yarn
-  fi
+    printf "\nInstalling %s...\n\n" "${MISE_LANGUAGES[${lang}]}"
+    if command -v "${HOME}/.local/share/mise/shims/${lang}" 1>/dev/null; then
+      echo "Skipping, it's already installed, run 'mise upgrade ${lang} --bump' to upgrade"
+    else
+      mise use --global "${MISE_LANGUAGES[${lang}]}"
+    fi
 
-  printf "\nInstalling Python %s...\n\n" "${INSTALL_PYTHON_VERSION}"
-  if command -v "${HOME}/.local/share/mise/shims/python3" 1>/dev/null; then
-    echo "Skipping Python, it's already installed, run 'mise upgrade python --bump' to upgrade"
-  else
-    mise use --global "python@${INSTALL_PYTHON_VERSION}"
-  fi
-
-  mise use --global "go@${INSTALL_GO_VERSION}"
-  printf "Installing Golang %s...\n\n" "${INSTALL_GO_VERSION}"
-
-  mise use --global "lua@${INSTALL_LUA_VERSION}"
-  printf "Installing Lua %s...\n\n" "${INSTALL_LUA_VERSION}"
-
-  mise use --global "rust@${INSTALL_RUST_VERSION}"
-  printf "Installing Rust %s...\n\n" "${INSTALL_RUST_VERSION}"
+    # Also install Yarn for Node.
+    if [ "${lang}" = "node" ]; then
+      if ! yarn --version >/dev/null 2>&1; then
+        npm install --unsafe-perm=true --allow-root --global yarn
+      fi
+    fi
+  done
 }
 
 clone_or_update_dotfiles() {
@@ -518,7 +545,7 @@ clone_or_update_dotfiles() {
   DOTFILES_PATH="${dotfiles_path//\~/"${HOME}"}"
 
   # This is used to locally develop the install script.
-  if [ "${DEBUG}" == "1" ]; then
+  if [ "${LOCAL}" == "1" ]; then
     if [ "${PWD}" != "${DOTFILES_PATH}" ]; then
       cp -R "${PWD}/." "${DOTFILES_PATH}"
 
@@ -989,7 +1016,7 @@ install_nvim_plugins() {
 }
 
 healthcheck() {
-  _info "CHECK INFORMATION AND TOOL VERSIONS"
+  _info "CHECK INFORMATION AND VERSIONS"
 
   cat <<EOF
 :: Dotfiles path:
@@ -1007,11 +1034,6 @@ $(tmux -V)
 :: Neovim:
 
 $(nvim --version)
-
-:: Programming languages:
-
-Node $(node --version)
-$(python --version)
 
 :: Fastfetch:
 
