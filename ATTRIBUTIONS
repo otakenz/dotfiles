@@ -1,6 +1,12 @@
-MIT License
+### Third-party code acknowledgement
 
-Copyright (c) 2021 Lee Jhun Hong
+Portions of this project are adapted from:
+
+**dotfiles** by Nick Janetakis
+https://github.com/nickjj/dotfiles
+Licensed under the MIT License (included below).
+
+Copyright (c) 2018 Nick Janetakis <nick.janetakis@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
