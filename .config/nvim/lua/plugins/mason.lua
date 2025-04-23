@@ -6,7 +6,6 @@ return {
         "shellcheck",
         "shfmt",
         "stylua",
-        "html",
         "clangd",
         "cmakelint",
       },

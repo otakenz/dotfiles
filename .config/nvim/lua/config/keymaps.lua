@@ -53,3 +53,20 @@ MAP(
   "c<C-r>=system('tcc', getreg('\"'))[:-2]<CR>",
   { desc = "Titleize Text" }
 )
+
+MAP("v", ">", ">gv<ESC>", { desc = "Indent right and exit visual" })
+MAP("v", "<", "<gv<ESC>", { desc = "Indent left and exit visual" })
+
+MAP(
+  { "n" },
+  "<leader>r",
+  ":%s///g<Left><Left>",
+  { desc = "Search and replace" }
+)
+
+MAP(
+  { "x" },
+  "<leader>r",
+  ":s///g<Left><Left>",
+  { desc = "Search and replace (Visual)" }
+)

@@ -39,7 +39,7 @@ docker container run --rm -it --env-file .env -e "IN_CONTAINER=1" -v "${PWD}:/ap
 
 # Local test only
 apt-get update && apt-get install -y curl \
-  && bash install \
+  && LOCAL=1 bash install \
   && zsh -c ". ~/.config/zsh/.zprofile && . ~/.config/zsh/.zshrc; zsh -i"
 ```
 

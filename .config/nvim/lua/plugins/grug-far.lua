@@ -72,8 +72,22 @@ return {
       "<leader>sRw",
       mode = { "v" },
       function()
+        local search = vim.fn.getreg("/")
+        -- Remove \V prefix if present
+        if search and vim.startswith(search, "\\V") then
+          search = search:sub(3)
+        end
+        -- Remove surround if "word" search (such as when pressing `*`)
+        if
+          search
+          and vim.startswith(search, "\\<")
+          and vim.endswith(search, "\\>")
+        then
+          search = "\\b" .. search:sub(3, -3) .. "\\b"
+        end
         require("grug-far").open({
           visualSelectionUsage = "operate-within-range",
+          prefills = { search = search },
         })
       end,
       desc = "Within Range",
