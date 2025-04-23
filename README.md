@@ -1,8 +1,29 @@
 Install Wezterm
+https://wezterm.org/installation.html
+
+Install this script
 
 Install Powerlevel10k (Terminal Theme)
 
-Install Nerd Fonts (Font)
+- https://github.com/romkatv/powerlevel10k
+- git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k
+- echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
+- source ~/.zshrc
+  Reconfigure
+  - p10k configure
+
+Install Nerf Fonts (https://www.nerdfonts.com/)
+
+- use Meslo Nerd Font
+  Ubuntu
+  Download Meslo Nerd Font
+- mkdir -p ~/.local/share/fonts
+- cd ~/.local/share/fonts
+- wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/Meslo.zip
+- unzip Meslo.zip
+- rm Meslo.zip
+  Refresh font cache (make system aware of the new fonts)
+- fc-cache -fv
 
 - <https://www.nerdfonts.com/font-downloads>
 - I use MesloLGS Nerd Font Mono

@@ -142,6 +142,12 @@ OS_IN_WSL=
 DOTFILES_URL="${DOTFILES_URL:-https://github.com/otakenz/dotfiles}"
 DOTFILES_PATH="${DOTFILES_PATH:-}"
 
+SSH_INSTRUCTIONS=
+SSH_PUBKEY=
+
+GPG_INSTRUCTIONS=
+GPG_PUBKEY=
+
 # -----------------------------------------------------------------------------
 # Helper functions
 # -----------------------------------------------------------------------------
@@ -759,11 +765,20 @@ install_mise_packages() {
   echo
   # shellcheck disable=SC2086
   if [[ -n "${MISE_PACKAGES_DEBIAN}" ]]; then
-    mise use --global ${MISE_PACKAGES_DEBIAN}
+    for package in ${MISE_PACKAGES_DEBIAN}; do
+      mise use --global "$package@latest"
+      sleep 1
+    done
   elif [[ -n "${MISE_PACKAGES_ARCH}" ]]; then
-    mise use --global ${MISE_PACKAGES_ARCH}
+    for package in ${MISE_PACKAGES_ARCH}; do
+      mise use --global "$package@latest"
+      sleep 1
+    done
   elif [[ -n "${MISE_PACKAGES_BREW}" ]]; then
-    mise use --global ${MISE_PACKAGES_BREW}
+    for package in ${MISE_PACKAGES_BREW}; do
+      mise use --global "$package@latest"
+      sleep 1
+    done
   fi
   sleep 5
 }
@@ -890,11 +905,10 @@ create_ssh_key() {
   eval "$(ssh-agent -s)"
   ssh-add "${key_path}"
 
-  _info "SHOWING PUBLIC SSH KEY"
+  SSH_PUBKEY=$(<"${key_path}.pub")
 
-  cat "${key_path}.pub"
-
-  cat <<EOF
+  SSH_INSTRUCTIONS=$(
+    cat <<EOF
 # ==============================================================================
 # 🔐 SSH Key Generated!
 # ------------------------------------------------------------------------------
@@ -916,6 +930,7 @@ create_ssh_key() {
 #     git clone git@github.com:user/repo.git
 # ==============================================================================
 EOF
+  )
 }
 
 create_gpg_key() {
@@ -967,11 +982,10 @@ EOF
     gpg_key="$(gpg --export --armor "${EMAIL}" 2>/dev/null)"
   fi
 
-  _info "SHOWING PUBLIC GPG KEY"
+  GPG_PUBKEY="${gpg_key}"
 
-  echo "${gpg_key}" | gpg --show-keys
-
-  cat <<EOF
+  GPG_INSTRUCTIONS=$(
+    cat <<EOF
 # ==============================================================================
 # 🛡️  Git Commit Signing with GPG: One More Step!
 # ------------------------------------------------------------------------------
@@ -989,6 +1003,7 @@ EOF
 # ✅ After that, your signed commits will be marked as Verified!
 # ==============================================================================
 EOF
+  )
 }
 
 configure_git() {
@@ -1075,6 +1090,16 @@ EOF
 }
 
 completed_message() {
+  _info "SHOWING SSH PUBKEY"
+  echo "$SSH_PUBKEY"
+  echo
+  echo "$SSH_INSTRUCTIONS"
+
+  _info "SHOWING GPG PUBKEY"
+  echo "$GPG_PUBKEY"
+  echo
+  echo "$GPG_INSTRUCTIONS"
+
   _info "EVERYTHING WORKED"
 
   cat <<EOF
@@ -1143,7 +1168,7 @@ create_ssh_key
 create_gpg_key
 configure_git
 install_mise_packages
-# install_programming_languages
+install_programming_languages
 install_tools_with_python
 install_tmux_plugins
 install_nvim_plugins
