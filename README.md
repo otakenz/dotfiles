@@ -4,6 +4,10 @@ https://wezterm.org/installation.html
 Install this script
 - sudo apt-get update && sudo apt-get install -y curl \
   && bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install) 
+  - If you install this way, and later wants to push to github using ssh key, you have to edit your local git config
+  - git config --local --config
+  - under [remote "origin"] edit "url", https:// -> git@ and .com/ -> .com:
+
 - sudo apt-get update && sudo apt-get install -y curl \
   && LOCAL=1 bash ~/dotfiles/install
 
