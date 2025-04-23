@@ -18,7 +18,7 @@ fi
 
 # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
 # shellcheck disable=SC1090
-[[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+[[ ! -f ~/.config/zsh/.p10k.zsh ]] || source ~/.config/zsh/.p10k.zsh
 # ---- P10K ---- #
 
 # ---- FZF ---- #
@@ -101,7 +101,7 @@ alias cd="z"
 
 # ---- Zsh settings ---- #
 ## History settings
-HISTFILE=${XDG_CACHE_HOME}/zsh/.zsh_history
+HISTFILE=${XDG_CONFIG_HOME}/zsh/.zsh_history
 HISTTIMEFORMAT="%Y/%m/%d %H:%M:%S  "
 HISTSIZE=50000 # History lines stored in memory
 SAVEHIST=50000 # History lines stored in disk

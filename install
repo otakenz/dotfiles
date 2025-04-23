@@ -780,6 +780,8 @@ install_mise_packages() {
       sleep 1
     done
   fi
+
+  bat cache --build
   sleep 5
 }
 

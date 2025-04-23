@@ -2,12 +2,15 @@ Install Wezterm
 https://wezterm.org/installation.html
 
 Install this script
+- sudo apt-get update && sudo apt-get install -y curl \
+  && bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install) 
+- sudo apt-get update && sudo apt-get install -y curl \
+  && LOCAL=1 bash ~/dotfiles/install
 
 Install Powerlevel10k (Terminal Theme)
 
 - https://github.com/romkatv/powerlevel10k
 - git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k
-- echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >>~/.zshrc
 - source ~/.zshrc
   Reconfigure
   - p10k configure
@@ -28,9 +31,11 @@ Install Nerf Fonts (https://www.nerdfonts.com/)
 - <https://www.nerdfonts.com/font-downloads>
 - I use MesloLGS Nerd Font Mono
 
-Run install script
+Bat
+bat cache --build
+bat --list-themes | grep tokyo # should output "tokyonight_night"
+echo '--theme="tokyonight_night"' >> "$(bat --config-dir)/config"
 
-- bash install
 
 Mise by default uses unauthenticated requests to the GitHub API (60 request/hr)
 To increase the rate limit to 5000 requests/hr, you can set the `GITHUB_TOKEN`
