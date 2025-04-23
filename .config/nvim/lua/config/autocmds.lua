@@ -52,3 +52,13 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
     vim.bo.filetype = "markdown"
   end,
 })
+
+-- Retrigger filetype detection on write if the filetype is empty or text
+vim.api.nvim_create_autocmd("BufWritePost", {
+  pattern = "*",
+  callback = function()
+    if vim.bo.filetype == "" or vim.bo.filetype == "text" then
+      vim.cmd("filetype detect")
+    end
+  end,
+})

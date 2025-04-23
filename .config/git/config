@@ -1,9 +1,9 @@
 [core]
   editor = nvim
-  pager = delta --diff-so-fancy
+  pager = delta
 
 [interactive]
-  diffFilter = delta --color-only --diff-so-fancy
+  diffFilter = delta --color-only
 
 [color "diff"]
   whitespace = red reverse
