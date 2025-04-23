@@ -4,24 +4,12 @@ return {
     init = function()
       vim.api.nvim_set_hl(0, "SnacksPicker", { link = "GruvboxBg0" })
       vim.api.nvim_set_hl(0, "SnacksPickerBorder", { link = "GruvboxBlue" })
-      vim.api.nvim_set_hl(
-        0,
-        "SnacksPickerPathIgnored",
-        { link = "GruvboxBg3" }
-      )
+      vim.api.nvim_set_hl(0, "SnacksPickerPathIgnored", { link = "GruvboxBg3" })
       vim.api.nvim_set_hl(0, "SnacksPicker", { link = "GruvboxBg0" })
       vim.api.nvim_set_hl(0, "SnacksPickerBorder", { link = "GruvboxBlue" })
       vim.api.nvim_set_hl(0, "SnacksPickerDir", { link = "GruvboxGray" })
-      vim.api.nvim_set_hl(
-        0,
-        "SnacksPickerPathHidden",
-        { link = "GruvboxGray" }
-      )
-      vim.api.nvim_set_hl(
-        0,
-        "SnacksPickerPathIgnored",
-        { link = "GruvboxBg3" }
-      )
+      vim.api.nvim_set_hl(0, "SnacksPickerPathHidden", { link = "GruvboxGray" })
+      vim.api.nvim_set_hl(0, "SnacksPickerPathIgnored", { link = "GruvboxBg3" })
       vim.api.nvim_set_hl(
         0,
         "SnacksPickerGitStatusUntracked",

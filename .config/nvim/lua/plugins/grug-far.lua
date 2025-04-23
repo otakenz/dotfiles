@@ -4,23 +4,33 @@ return {
   -- Commands that trigger lazy loading
   cmd = { "GrugFar", "GrugFarWithin" },
 
-  config = function()
+  config = function(_, opts)
+    require("grug-far").setup(opts)
+
     vim.api.nvim_create_autocmd("FileType", {
       pattern = { "grug-far" },
       callback = function()
         MAP({ "i", "n", "x" }, "<A-h>", function()
           local state = unpack(
-            require("grug-far").toggle_flags({ "--hidden", "--glob !.git/" })
+            require("grug-far")
+              .get_instance(0)
+              :toggle_flags({ "--hidden", "--glob !.git/" })
           )
           vim.notify(
             "grug-far: toggled --hidden --glob !.git/ "
               .. (state and "ON" or "OFF")
           )
         end, { desc = "Toggle Hidden Files", buffer = true })
+      end,
+    })
 
+    vim.api.nvim_create_autocmd("FileType", {
+      pattern = { "grug-far" },
+      callback = function()
         MAP({ "i", "n", "x" }, "<A-i>", function()
-          local state =
-            unpack(require("grug-far").toggle_flags({ "--no-ignore" }))
+          local state = unpack(
+            require("grug-far").get_instance(0):toggle_flags({ "--no-ignore" })
+          )
           vim.notify(
             "grug-far: toggled --no-ignore " .. (state and "ON" or "OFF")
           )

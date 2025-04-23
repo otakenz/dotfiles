@@ -10,6 +10,8 @@ set -o errexit
 
 SKIP_SYSTEM_PACKAGES="${1:-}"
 
+ONLY_UPDATE=
+
 PACMAN_PACKAGES="
   aspell
   base
@@ -138,7 +140,7 @@ OS_DISTRO=
 OS_IN_WSL=
 
 DOTFILES_URL="${DOTFILES_URL:-https://github.com/otakenz/dotfiles}"
-DOTFILES_PATH="${DOTFILES_PATH:-"${HOME}/dotfiles"}"
+DOTFILES_PATH="${DOTFILES_PATH:-}"
 
 # -----------------------------------------------------------------------------
 # Helper functions
@@ -154,6 +156,30 @@ _error() {
 _info() {
   local message="${1:-}"
   printf "\n\n\e[36;1m%s:\e[0m\n\n" "${message}"
+}
+
+_local_only() {
+  [ -z "${LOCAL}" ] && return 1
+
+  if [ "${PWD}" != "${DOTFILES_PATH}" ]; then
+    cp -R "${PWD}/." "${DOTFILES_PATH}"
+
+    # Ensure the containerized environment starts fresh.
+    if [ -n "${IN_CONTAINER}" ]; then
+      rm \
+        "${DOTFILES_PATH}/.config/zsh/.zsh_history" \
+        "${DOTFILES_PATH}/.config/zsh/.aliases.local" \
+        "${DOTFILES_PATH}/.config/zsh/.zprofile.local" \
+        "${DOTFILES_PATH}/.config/zsh/.zshrc.local" \
+        "${DOTFILES_PATH}/.config/git/config.local"
+
+      if grep -q "git@github.com:" "${DOTFILES_PATH}/.git/config"; then
+        sed -i "s|git@github.com:|https://github.com/|g" "${DOTFILES_PATH}/.git/config"
+      fi
+    fi
+  fi
+
+  printf "They've been locally copied to '%s'\n" "${DOTFILES_PATH}"
 }
 
 _no_system_packages() {
@@ -421,6 +447,35 @@ EOF
   done
 }
 
+update_dotfiles() {
+  _info "UPDATE DOTFILES"
+
+  if [ -z "${DOTFILES_PATH:-}" ]; then
+    echo "Skipping, since this is the first time you've run this script"
+    return 0
+  fi
+
+  _local_only && return 0
+
+  git -C "${DOTFILES_PATH}" fetch origin
+
+  local new_commit_count=
+  new_commit_count="$(git -C "${DOTFILES_PATH}" rev-list ..origin --count)"
+
+  if [ "${new_commit_count}" = "0" ]; then
+    echo "Skipping, since your local dotfiles already have the latest updates"
+  else
+    # Let's merge the latest updates.
+    git -C "${DOTFILES_PATH}" merge origin
+
+    # Re-run this script because if an update happened, it's possible new
+    # packages are meant to be installed which means reading in their env vars.
+    exec "${0}" "${@}"
+  fi
+
+  cp -n "${DOTFILES_PATH}/install-config.example" "${DOTFILES_PATH}/install-config"
+}
+
 check_prereqs() {
   _info "CHECKING SYSTEM COMPATABILITY"
 
@@ -499,78 +554,34 @@ EOF
   done
 }
 
-install_programming_languages() {
-  _info "INSTALL PROGRAMMING LANGUAGES"
+clone_dotfiles() {
+  _info "CLONE DOTFILES"
 
-  for lang in "${!MISE_LANGUAGES[@]}"; do
-    [ -z "${MISE_LANGUAGES[${lang}]}" ] && continue
-
-    printf "\nInstalling %s...\n\n" "${MISE_LANGUAGES[${lang}]}"
-    if command -v "${HOME}/.local/share/mise/shims/${lang}" 1>/dev/null; then
-      echo "Skipping, it's already installed, run 'mise upgrade ${lang} --bump' to upgrade"
-    else
-      mise use --global "${MISE_LANGUAGES[${lang}]}"
-    fi
-
-    # Also install Yarn for Node.
-    if [ "${lang}" = "node" ]; then
-      if ! yarn --version >/dev/null 2>&1; then
-        npm install --unsafe-perm=true --allow-root --global yarn
-      fi
-    fi
-  done
-}
-
-clone_or_update_dotfiles() {
-  _info "CLONE OR UPDATE DOTFILES"
-
-  local local_zprofile="${HOME}/.config/zsh/.zprofile.local"
-
-  if [ -f "${local_zprofile}" ]; then
-    # shellcheck disable=SC1090
-    . "${local_zprofile}"
+  if [ -d "${DOTFILES_PATH:-}" ]; then
+    echo "Skipping, since DOTFILES_PATH already exists at '${DOTFILES_PATH}'"
+    return 0
   fi
+
+  local default_dotfiles_path="${HOME}/dotfiles"
 
   # Detect non-interactive mode (no TTY = piped input like `yes |`)
   if [[ "$NON_INTERACTIVE" == "true" ]]; then
-    dotfiles_path="${DOTFILES_PATH}"
-    echo "Detected non-interactive mode, using default DOTFILES_PATH: ${DOTFILES_PATH}"
+    dotfiles_path="${default_dotfiles_path}"
+    echo "Detected non-interactive mode, using default DOTFILES_PATH: ${default_dotfiles_path}"
   else
-    read -rep "Where do you want to clone these dotfiles to [${DOTFILES_PATH}]? " dotfiles_path
+    read -rep "Where do you want to clone these dotfiles to [${default_dotfiles_path}]? " dotfiles_path
     echo
   fi
 
-  [[ -z "${dotfiles_path}" ]] && dotfiles_path="${DOTFILES_PATH}"
+  [[ -z "${dotfiles_path}" ]] && dotfiles_path="${default_dotfiles_path}"
 
   DOTFILES_PATH="${dotfiles_path//\~/"${HOME}"}"
 
-  # This is used to locally develop the install script.
-  if [ "${LOCAL}" == "1" ]; then
-    if [ "${PWD}" != "${DOTFILES_PATH}" ]; then
-      cp -R "${PWD}/." "${DOTFILES_PATH}"
+  _local_only && return 0
 
-      # Ensure the containerized environment starts fresh.
-      if [[ -n "${IN_CONTAINER}" ]]; then
-        rm \
-          "${DOTFILES_PATH}/.config/zsh/.zsh_history" \
-          "${DOTFILES_PATH}/.config/zsh/.aliases.local" \
-          "${DOTFILES_PATH}/.config/zsh/.zprofile.local" \
-          "${DOTFILES_PATH}/.config/zsh/.zshrc.local" \
-          "${DOTFILES_PATH}/.config/git/config.local"
-      fi
-    fi
+  git clone "${DOTFILES_URL}" "${DOTFILES_PATH}"
 
-    printf "They've been copied to '%s'\n" "${DOTFILES_PATH}"
-    return
-  fi
-
-  if [ -e "${DOTFILES_PATH}" ]; then
-    # Let's get the latest updates.
-    git -C "${DOTFILES_PATH}" pull
-  else
-    mkdir -p "$(dirname "${DOTFILES_PATH}")"
-    git clone "${DOTFILES_URL}" "${DOTFILES_PATH}"
-  fi
+  cp -n "${DOTFILES_PATH}/install-config.example" "${DOTFILES_PATH}/install-config"
 }
 
 install_zsh_plugins() {
@@ -759,6 +770,28 @@ EOF
   DOTFILES_PATH="${original_dotfiles_path}"
 
   echo "It has been configured in '${HOME}/.config/zsh/'"
+}
+
+install_programming_languages() {
+  _info "INSTALL PROGRAMMING LANGUAGES"
+
+  for lang in "${!MISE_LANGUAGES[@]}"; do
+    [ -z "${MISE_LANGUAGES[${lang}]}" ] && continue
+
+    printf "\nInstalling %s...\n\n" "${MISE_LANGUAGES[${lang}]}"
+    if command -v "${HOME}/.local/share/mise/shims/${lang}" 1>/dev/null; then
+      echo "Skipping, it's already installed, run 'mise upgrade ${lang} --bump' to upgrade"
+    else
+      mise use --global "${MISE_LANGUAGES[${lang}]}"
+    fi
+
+    # Also install Yarn for Node.
+    if [ "${lang}" = "node" ]; then
+      if ! yarn --version >/dev/null 2>&1; then
+        npm install --unsafe-perm=true --allow-root --global yarn
+      fi
+    fi
+  done
 }
 
 install_tools_with_python() {
@@ -1065,12 +1098,42 @@ EOF
   fi
 }
 
+case "${1:-}" in
+--update | -u)
+  ONLY_UPDATE=1
+  ;;
+--skip-system-packages | -S) ;;
+--help | -h)
+  cat <<EOF
+Usage examples:
+
+# Pull in remote updates and run the script to update your dotfiles.
+./install
+
+# Only pull in remote updates and exit early.
+./install --update
+
+# Update your dotfiles with whatever version of this script that exists locally.
+LOCAL=1 ./install
+
+# Show this help menu.
+./install --help
+EOF
+  exit
+  ;;
+*)
+  [ -n "${1:-}" ] && _error "'${1}' is not a supported flag"
+
+  ;;
+esac
+
 detect_env
 warn_root
+update_dotfiles "${@}" && [ -n "${ONLY_UPDATE}" ] && exit
 check_prereqs
 create_initial_dirs
 install_packages
-clone_or_update_dotfiles
+clone_dotfiles
 install_zsh_plugins
 create_symlinks
 configure_system_configs

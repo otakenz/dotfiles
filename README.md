@@ -49,7 +49,7 @@ your local terminal's config will not get automatically updated._
 
 ## 👑 Credits:
 
-1. [Nick Janetakis](https://github.com/nickj/dotfiles)
+1. [Nick Janetakis](https://github.com/nickjj/dotfiles)
 
 - Big thanks to Nick for his dotfiles project. I learned a lot from it and
   used it as a base for my own dotfiles.

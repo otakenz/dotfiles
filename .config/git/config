@@ -1,9 +1,9 @@
 [core]
   editor = nvim
-  pager = delta
+  pager = delta --diff-so-fancy
 
 [interactive]
-  diffFilter = delta --color-only
+  diffFilter = delta --color-only --diff-so-fancy
 
 [color "diff"]
   whitespace = red reverse
@@ -33,4 +33,3 @@
 
 [include]
   path = ~/.config/git/config.local
-
