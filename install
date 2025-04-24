@@ -347,8 +347,7 @@ _get_win_users_path() {
   for base in /mnt/c/Users /c/Users; do
     [ -d "$base" ] || continue
     for path in "$base"/*; do
-      user=$path
-      [[ -d "$path" && ! "$user" =~ (Public|Default|All\ Users) ]] && echo "Found window user $user"
+      [[ -d "$path" && ! "$path" =~ (Public|Default|All\ Users) ]] && echo "$path"
     done
     return
   done
