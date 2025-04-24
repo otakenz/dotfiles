@@ -608,6 +608,7 @@ create_symlinks() {
       "${DOTFILES_PATH}/etc/wsl.conf /etc/wsl.conf"
     )
     for user_path in $(_get_win_users_path); do
+      [ -f "${user_path}/.wezterm.lua" ] && continue
       cp "${DOTFILES_PATH}/.config/wezterm/wezterm.lua" "${user_path}/.wezterm.lua"
       echo "Copied wezterm.lua to window users"
     done
