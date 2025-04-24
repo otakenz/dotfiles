@@ -498,7 +498,7 @@ create_initial_dirs() {
   mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/git" \
     "${HOME}/.config/wezterm" "${HOME}/.config/zsh" "${HOME}/.config/bat"
 
-  mkdir -p "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share"
+  mkdir -p "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share/fonts"
 }
 
 install_packages() {
@@ -1066,6 +1066,33 @@ install_nvim_plugins() {
   echo "They've been installed"
 }
 
+install_powerlevel10k() {
+  _info "INSTALL POWERLEVEL10K"
+
+  if [ ! -d "${HOME}/powerlevel10k" ]; then
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${HOME}/powerlevel10k"
+  else
+    echo "✅ powerlevel10k already exists, skipping clone."
+  fi
+}
+
+install_nerdfont() {
+  _info "INSTALL NERDFONT"
+
+  local font_dir="$HOME/.local/share/fonts"
+  local meslo_pattern="MesloLGS NF*"
+
+  # Check if any Meslo Nerd Font files exist
+  if ! find "$font_dir" -type f -iname "$meslo_pattern" | grep -q .; then
+    echo "🔤 Meslo Nerd Font not found, downloading..."
+    wget -O /tmp/Meslo.zip "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/Meslo.zip"
+    unzip -o /tmp/Meslo.zip -d "$font_dir"
+  else
+    echo "✅ Meslo Nerd Font already installed."
+  fi
+  fc-cache -fv
+}
+
 healthcheck() {
   _info "CHECK INFORMATION AND VERSIONS"
 
@@ -1176,5 +1203,7 @@ install_programming_languages
 install_tools_with_python
 install_tmux_plugins
 install_nvim_plugins
+install_powerlevel10k
+install_nerdfont
 healthcheck
 completed_message
