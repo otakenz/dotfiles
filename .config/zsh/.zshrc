@@ -62,8 +62,8 @@ done
 
 # Use modern completion system. Other than enabling globdots for showing
 # hidden files, these ares values in the default generated zsh config.
-autoload -U compinit
-compinit
+#autoload -U compinit
+#compinit
 _comp_options+=(globdots)
 
 zstyle ':completion:*' menu select=2
@@ -85,18 +85,23 @@ zstyle ':completion:*' use-compctl false
 zstyle ':completion:*' verbose true
 
 # Use emacs keybindings even if your $EDITOR is set to Vim.
-bindkey -e
+#bindkey -e
 
 # Ensure home / end keys continue to work.
-bindkey '\e[1~' beginning-of-line
-bindkey '\e[H' beginning-of-line
-bindkey '\e[7~' beginning-of-line
-bindkey '\e[4~' end-of-line
-bindkey '\e[F' end-of-line
-bindkey '\e[8~' end-of-line
-bindkey '\e[3~' delete-char
+# bindkey '\e[1~' beginning-of-line
+# bindkey '\e[H' beginning-of-line
+# bindkey '\e[7~' beginning-of-line
+# bindkey '\e[4~' end-of-line
+# bindkey '\e[F' end-of-line
+# bindkey '\e[8~' end-of-line
+# bindkey '\e[3~' delete-char
 bindkey '^[[1;5D' backward-word
 bindkey '^[[1;5C' forward-word
+# Ctrl + n/p to search through history forward/backward
+bindkey "^p" history-search-backward
+bindkey "^n" history-search-forward
+bindkey "^k" history-search-backward
+bindkey "^j" history-search-forward
 
 # Enable FZF (this replaces needing ~/.fzf.zsh in your home directory).
 if [[ ! "${PATH}" == *${XDG_DATA_HOME}/fzf/bin* ]]; then
@@ -137,8 +142,12 @@ ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 # Load / source zsh plugins.
 . "${XDG_DATA_HOME}/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh"
 . "${XDG_DATA_HOME}/zsh-autosuggestions/zsh-autosuggestions.zsh"
+. "${XDG_DATA_HOME}/zsh-vi-mode/zsh-vi-mode.plugin.zsh"
 
-[ -f "${HOME}/.fzf.zsh" ] && source "${HOME}/.fzf.zsh"
+ZVM_LINE_INIT_MODE=$ZVM_MODE_INSERT
+ZVM_VI_INSERT_ESCAPE_BINDKEY='jk'
+
+zvm_after_init_commands+=('[ -f "${HOME}/.fzf.zsh" ] && source "${HOME}/.fzf.zsh"')
 
 export PATH=${HOME}/Android/Sdk/platform-tools:$PATH
 export PATH=${HOME}/Android/Sdk/cmdline-tools:$PATH
@@ -147,3 +156,5 @@ export PATH=${HOME}/.platformio/penv/bin:$PATH
 
 # source /opt/ros/noetic/setup.bash
 # export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/lib"
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh

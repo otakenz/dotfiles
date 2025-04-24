@@ -143,15 +143,15 @@ colorscheme gruvbox
 set background=dark
 
 " Specific colorscheme settings (must come after setting your colorscheme).
-" if (g:colors_name == 'gruvbox')
-"   if (&background == 'dark')
-"     hi Visual cterm=NONE ctermfg=NONE ctermbg=237 guibg=#3a3a3a
-"   else
-"     hi Visual cterm=NONE ctermfg=NONE ctermbg=228 guibg=#f2e5bc
-"     hi CursorLine cterm=NONE ctermfg=NONE ctermbg=228 guibg=#f2e5bc
-"     hi ColorColumn cterm=NONE ctermfg=NONE ctermbg=228 guibg=#f2e5bc
-"   endif
-" endif
+if (g:colors_name == 'gruvbox')
+  if (&background == 'dark')
+    hi Visual cterm=NONE ctermfg=NONE ctermbg=237 guibg=#3a3a3a
+  else
+    hi Visual cterm=NONE ctermfg=NONE ctermbg=228 guibg=#f2e5bc
+    hi CursorLine cterm=NONE ctermfg=NONE ctermbg=228 guibg=#f2e5bc
+    hi ColorColumn cterm=NONE ctermfg=NONE ctermbg=228 guibg=#f2e5bc
+  endif
+endif
 
 " Spelling mistakes will be colored up red.
 hi SpellBad cterm=underline ctermfg=203 guifg=#ff5f5f
@@ -919,6 +919,6 @@ let g:coc_global_extensions = [
     \ 'coc-git'
     \ ]
 
-let g:copilot_node_command = "~/.asdf/installs/nodejs/18.17.0/bin/node"
+let g:copilot_node_command = "~/.asdf/installs/nodejs/22.14.0/bin/node"
 
 nnoremap <C-Space> :Copilot panel<CR>
