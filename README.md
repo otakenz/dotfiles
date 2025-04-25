@@ -77,6 +77,42 @@ _Keep in mind with the Docker set up, unless your terminal is already
 configured to use Tokyonight Moon then the colors may look off. That's because
 your local terminal's config will not get automatically updated._
 
+## 📗 FAQ:
+1. Managing multiple github accounts using SSH
+  - Create multiple git config files (i.e config.local, config.local.personal..)
+  - Example of config.local:
+    ```
+    [user]
+      name = <your_name>
+      email = <your_email>
+      signingkey = <your_gpg_key>"
+    [core]
+      sshCommand = "ssh -i ~/.ssh/<your_ssh_key> -o IdentitiesOnly=yes"
+    [commit]
+      gpgsign = true
+    [tag]
+      gpgsign = true
+    [gpg]
+      program = gpg 
+    ```
+  - Place it anywhere you want, i.e ~/.config/git/config.local
+  - config.local is going to be my global git config for work
+  - This script already included ~/.config/git/config in global git config like so
+    ```
+    [include]
+      path = ~/.config/git/config.local
+    ```
+  - For personal git config, specify the following in your ${repo}/.git/config or run "git config --local --edit"
+    ```
+    [include]
+      path = ~/.config/git/config.local.personal
+    ```
+  - You can view the config loaded at work repo vs personal repo by running
+    ```
+    git config --list
+    ```
+
+
 ## 👑 Credits:
 
 1. [Nick Janetakis](https://github.com/nickjj/dotfiles)
