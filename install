@@ -1035,16 +1035,16 @@ configure_git() {
 #   https://nickjanetakis.com/blog/signing-and-verifying-git-commits-on-the-command-line-and-github
 
 # Uncomment the options below to auto-sign your git commits / tags using GPG.
-#[commit]
-#  gpgsign = true
+[commit]
+  gpgsign = true
 
 # This option requires git 2.23+ to work and you must annotate your tags,
 # although -m "" works if you want an empty message.
-#[tag]
-#  gpgSign = true
+[tag]
+  gpgSign = true
 
-#[gpg]
-#  program = gpg
+[gpg]
+  program = gpg
 EOF
   fi
   echo "It has been configured in '$(dirname "${git_config_local_path}")'"
