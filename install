@@ -70,7 +70,6 @@ DEBIAN_PACKAGES="
   pass
   pwgen
   rsync
-  tmux
   unzip
   wget
   whois
@@ -118,6 +117,7 @@ MISE_PACKAGES_DEBIAN="
   ripgrep
   shellcheck
   shfmt
+  tmux
   zoxide
 "
 

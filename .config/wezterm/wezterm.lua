@@ -8,6 +8,8 @@ local config = wezterm.config_builder()
 
 if wezterm.target_triple == "x86_64-pc-windows-msvc" then
 	config.default_prog = { "wsl.exe" }
+else
+  config.default_prog = { "zsh", "-l" }
 end
 
 config.color_scheme = "Tokyo Night Moon"
