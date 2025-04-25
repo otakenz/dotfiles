@@ -212,6 +212,12 @@ _install_packages_arch() {
 }
 
 _install_packages_debian() {
+  if [ -n "${OS_IN_WSL}" ]; then
+    curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /etc/apt/keyrings/wezterm-fury.gpg
+    echo 'deb [signed-by=/etc/apt/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
+    # Add wezterm to debian packages
+    DEBIAN_PACKAGES="${DEBIAN_PACKAGES} wezterm"
+  fi
   # shellcheck disable=SC2086
   sudo apt-get update && sudo apt-get install -y ${DEBIAN_PACKAGES}
 
