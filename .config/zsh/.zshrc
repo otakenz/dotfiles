@@ -84,7 +84,7 @@ _fzf_comprun() {
 # ---- FZF ---- #
 
 # ---- Mise (better asdf) ---- #
-eval "$("${HOME}"/.local/bin/mise activate zsh)"
+# eval "$("${HOME}"/.local/bin/mise activate zsh)"
 
 # ---- Bat (better cat) ---- #
 export BAT_THEME=tokyonight_night

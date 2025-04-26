@@ -211,6 +211,10 @@ EOF
 _install_packages_arch() {
   # shellcheck disable=SC2086
   sudo pacman -Syu --noconfirm ${PACMAN_PACKAGES}
+
+  # Install packages manually since they don't exist elsewhere.
+  [ -d "$HOME/.fzf-git.sh" ] || git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
+  printf "Installing fzf-git.sh ...\n\n"
 }
 
 _install_packages_debian() {
