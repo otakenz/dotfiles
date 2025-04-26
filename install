@@ -773,21 +773,29 @@ install_mise_packages() {
   # the latest and greatest versions for certain tools.
   echo
   # shellcheck disable=SC2086
-  if [[ -n "${MISE_PACKAGES_DEBIAN}" ]]; then
-    for package in ${MISE_PACKAGES_DEBIAN}; do
-      mise use --global "$package@latest"
-      sleep 1
-    done
-  elif [[ -n "${MISE_PACKAGES_ARCH}" ]]; then
-    for package in ${MISE_PACKAGES_ARCH}; do
-      mise use --global "$package@latest"
-      sleep 1
-    done
-  elif [[ -n "${MISE_PACKAGES_BREW}" ]]; then
-    for package in ${MISE_PACKAGES_BREW}; do
-      mise use --global "$package@latest"
-      sleep 1
-    done
+  if [ "${OS_TYPE}" == "linux" ]; then
+    if [ "${OS_DISTRO}" == "arch" ]; then
+      if [[ -n "${MISE_PACKAGES_ARCH}" ]]; then
+        for package in ${MISE_PACKAGES_ARCH}; do
+          mise use --global "$package@latest"
+          sleep 1
+        done
+      fi
+    elif [ "${OS_DISTRO}" == "debian" ]; then
+      if [[ -n "${MISE_PACKAGES_DEBIAN}" ]]; then
+        for package in ${MISE_PACKAGES_DEBIAN}; do
+          mise use --global "$package@latest"
+          sleep 1
+        done
+      fi
+    else
+      if [[ -n "${MISE_PACKAGES_BREW}" ]]; then
+        for package in ${MISE_PACKAGES_BREW}; do
+          mise use --global "$package@latest"
+          sleep 1
+        done
+      fi
+    fi
   fi
 
   bat cache --build
