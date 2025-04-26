@@ -116,6 +116,9 @@ your local terminal's config will not get automatically updated._
     git config --list
     ```
 
+2. Git Commit Freeze Due to GPG Lock issue
+  - https://gist.github.com/bahadiraraz/f2fb15b07e0fce92d8d5a86ab33469f7
+
 
 ## 👑 Credits:
 
