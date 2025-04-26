@@ -19,6 +19,7 @@ PACMAN_PACKAGES="
   bat
   bc
   curl
+  dust
   git-delta
   eza
   fastfetch
