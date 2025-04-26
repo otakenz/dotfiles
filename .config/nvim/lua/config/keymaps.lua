@@ -54,8 +54,8 @@ MAP(
   { desc = "Titleize Text" }
 )
 
-MAP("v", ">", ">gv<ESC>", { desc = "Indent right and exit visual" })
-MAP("v", "<", "<gv<ESC>", { desc = "Indent left and exit visual" })
+MAP("v", "<Tab>", ">gv", { desc = "Indent right" })
+MAP("v", "<S-Tab>", "<gv", { desc = "Indent left" })
 
 MAP(
   { "n" },
