@@ -19,7 +19,7 @@ PACMAN_PACKAGES="
   bat
   bc
   curl
-  delta
+  git-delta
   eza
   fastfetch
   fd
@@ -83,10 +83,11 @@ BREW_PACKAGES="
   aspell
   bash
   curl
+  diffutils
   fastfetch
   gc
-  diffutils
   git
+  git-delta
   gnupg
   htop
   inotify-tools
