@@ -616,9 +616,15 @@ create_symlinks() {
 
   # And if you happen to be using WSL:
   if [ -n "${OS_IN_WSL}" ]; then
-    symlinks_system+=(
-      "${DOTFILES_PATH}/etc/wsl.conf /etc/wsl.conf"
-    )
+    if [ "${OS_DISTRO}" = "arch" ]; then
+      symlinks_system+=(
+        "${DOTFILES_PATH}/etc/archlinux/wsl.conf /etc/wsl.conf"
+      )
+    elif [ "${OS_DISTRO}" = "debian" ]; then
+      symlinks_system+=(
+        "${DOTFILES_PATH}/etc/debian/wsl.conf /etc/wsl.conf"
+      )
+    fi
     for user_path in $(_get_win_users_path); do
       [ -f "${user_path}/.wezterm.lua" ] && continue
       cp "${DOTFILES_PATH}/.config/wezterm/wezterm.lua" "${user_path}/.wezterm.lua"
