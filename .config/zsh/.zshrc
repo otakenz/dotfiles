@@ -113,23 +113,9 @@ setopt HIST_IGNORE_SPACE      # Ignore commands that start with a space
 setopt HIST_REDUCE_BLANKS     # Remove unnecessary blank lines
 setopt HIST_EXPIRE_DUPS_FIRST # Remove oldest history first
 
-## Load Zsh plugins
-# Better at syntax highlighting than zsh-syntax-highlighting
-# shellcheck disable=SC1091
-source "${XDG_DATA_HOME}"/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
-# shellcheck disable=SC1091
-source "${XDG_DATA_HOME}"/zsh-autosuggestions/zsh-autosuggestions.zsh
-export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
-# shellcheck disable=SC1091
-source "${XDG_DATA_HOME}"/zsh-vi-mode/zsh-vi-mode.plugin.zsh
-# shellcheck disable=SC1091
-source "${XDG_DATA_HOME}"/fzf-tab/fzf-tab.plugin.zsh
-
-# zsh-vi-mode settings
-ZVM_LINE_INIT_MODE=$ZVM_MODE_INSERT
-ZVM_VI_INSERT_ESCAPE_BINDKEY='jk'
-
 ## Zsh completion system
+autoload -U compinit
+compinit
 # Include dotfiles for compinit
 _comp_options+=(globdots)
 # Set default path for completion cache
@@ -168,6 +154,22 @@ zstyle ":fzf-tab:complete:cd:*" fzf-preview "eza --tree --color=always \${realpa
 zstyle ':fzf-tab:*' switch-group '<' '>'
 # Rebind to tab to select multiple results
 zstyle ':fzf-tab:*' fzf-bindings 'tab:toggle'
+
+## Load Zsh plugins
+# Better at syntax highlighting than zsh-syntax-highlighting
+# shellcheck disable=SC1091
+source "${XDG_DATA_HOME}"/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
+# shellcheck disable=SC1091
+export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
+source "${XDG_DATA_HOME}"/zsh-autosuggestions/zsh-autosuggestions.zsh
+# shellcheck disable=SC1091
+source "${XDG_DATA_HOME}"/zsh-vi-mode/zsh-vi-mode.plugin.zsh
+# shellcheck disable=SC1091
+source "${XDG_DATA_HOME}"/fzf-tab/fzf-tab.plugin.zsh
+
+# zsh-vi-mode settings
+ZVM_LINE_INIT_MODE=$ZVM_MODE_INSERT
+ZVM_VI_INSERT_ESCAPE_BINDKEY='jk'
 
 ## Key bindings
 # Use vi bindings for zsh
