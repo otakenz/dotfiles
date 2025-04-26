@@ -23,6 +23,7 @@ PACMAN_PACKAGES="
   eza
   fastfetch
   fd
+  font-config
   fzf
   git
   gitui
