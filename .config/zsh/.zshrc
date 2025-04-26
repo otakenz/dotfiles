@@ -156,11 +156,11 @@ zstyle ':fzf-tab:*' switch-group '<' '>'
 zstyle ':fzf-tab:*' fzf-bindings 'tab:toggle'
 
 ## Load Zsh plugins
+export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 # Better at syntax highlighting than zsh-syntax-highlighting
 # shellcheck disable=SC1091
 source "${XDG_DATA_HOME}"/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
 # shellcheck disable=SC1091
-export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 source "${XDG_DATA_HOME}"/zsh-autosuggestions/zsh-autosuggestions.zsh
 # shellcheck disable=SC1091
 source "${XDG_DATA_HOME}"/zsh-vi-mode/zsh-vi-mode.plugin.zsh
