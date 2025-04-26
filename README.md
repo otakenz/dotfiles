@@ -1,3 +1,7 @@
+Dependencies:
+- git
+- curl
+
 Install Wezterm
 https://wezterm.org/installation.html
 
