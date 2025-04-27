@@ -14,7 +14,7 @@ end
 
 config.color_scheme = "Tokyo Night Moon"
 config.font = wezterm.font("MesloLGS Nerd Font Mono")
-config.font_size = 14
+config.font_size = 13
 
 --config.enable_tab_bar = false
 
