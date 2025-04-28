@@ -10,6 +10,7 @@
 - git
 - curl
 - bash 4+
+- [Docker](https://docs.docker.com/engine/install/) (for experience it or local test)
 
 ## 🔨 Installation
 ### Local way
