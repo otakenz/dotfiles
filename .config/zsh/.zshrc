@@ -105,7 +105,7 @@ HISTFILE=${XDG_CONFIG_HOME}/zsh/.zsh_history
 HISTTIMEFORMAT="%Y/%m/%d %H:%M:%S  "
 HISTSIZE=50000 # History lines stored in memory
 SAVEHIST=50000 # History lines stored in disk
-setopt SHARE_HISTORY
+# setopt SHARE_HISTORY
 setopt HIST_VERIFY
 setopt INC_APPEND_HISTORY     # Immediately append commands to history file
 setopt HIST_IGNORE_ALL_DUPS   # Never add duplicate entries
