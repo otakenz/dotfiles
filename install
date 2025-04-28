@@ -141,6 +141,7 @@ CPU_ARCH="$(uname -m)"
 OS_TYPE="$(uname | tr "[:upper:]" "[:lower:]")"
 OS_DISTRO=
 OS_IN_WSL=
+WIN_USER_PATH=
 
 DOTFILES_URL="${DOTFILES_URL:-https://github.com/otakenz/dotfiles}"
 DOTFILES_PATH="${DOTFILES_PATH:-${HOME}/dotfiles}"
@@ -355,13 +356,31 @@ _backup_and_symlink() {
 }
 
 _get_win_users_path() {
-  for base in /mnt/c/Users /c/Users; do
-    [ -d "$base" ] || continue
-    for path in "$base"/*; do
-      [[ -d "$path" && ! "$path" =~ (Public|Default|All\ Users) ]] && echo "$path"
-    done
-    return
-  done
+  local win_user win_path wsl_path
+
+  # Get Windows username
+  win_user=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')
+
+  # If failed, return error
+  if [[ -z "$win_user" ]]; then
+    echo "Error: Could not retrieve Windows username" >&2
+    return 1
+  fi
+
+  # Build Windows path
+  win_path="C:\\Users\\$win_user"
+
+  # Convert to WSL path
+  wsl_path=$(wslpath "$win_path" 2>/dev/null)
+
+  # If failed, return error
+  if [[ -z "$wsl_path" ]]; then
+    echo "Error: Could not convert Windows path to WSL path" >&2
+    return 1
+  fi
+
+  # Return the path
+  echo "$wsl_path"
 }
 
 _check_shell_type() {
@@ -407,6 +426,7 @@ detect_env() {
     # Are we in WSL2 ?
     if grep -q "\-WSL2" /proc/version; then
       OS_IN_WSL=1
+      WIN_USER_PATH=$(_get_win_users_path)
     fi
 
     # Adjust packages depending on which display server is in use.
@@ -623,11 +643,11 @@ create_symlinks() {
         "${DOTFILES_PATH}/etc/debian/wsl.conf /etc/wsl.conf"
       )
     fi
-    for user_path in $(_get_win_users_path); do
-      [ -f "${user_path}/.wezterm.lua" ] && continue
-      cp "${DOTFILES_PATH}/.config/wezterm/wezterm.lua" "${user_path}/.wezterm.lua"
+
+    if [ ! -e "${WIN_USER_PATH}/.wezterm.lua" ]; then
+      cp "${DOTFILES_PATH}/.config/wezterm/wezterm.lua" "${WIN_USER_PATH}/.wezterm.lua"
       echo "Copied wezterm.lua to window users"
-    done
+    fi
   fi
 
   if [ "${OS_DISTRO}" = "arch" ]; then
