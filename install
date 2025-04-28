@@ -37,7 +37,6 @@ PACMAN_PACKAGES="
   man-db
   man-pages
   mise
-  neovim
   openbsd-netcat
   openssh
   pacman-contrib
@@ -102,7 +101,7 @@ BREW_PACKAGES="
   xz
   zsh
 "
-MISE_PACKAGES_ARCH=""
+MISE_PACKAGES_ARCH="neovim"
 
 MISE_PACKAGES_DEBIAN="
   bat
