@@ -1,54 +1,106 @@
-Dependencies:
+# dotfiles
+
+## 📓Supported platforms
+- Archlinux
+- Ubuntu 22+
+- macOS (not yet tested)
+- wsl2 (Archlinux/ Ubuntu22+)
+
+## 🔗 Requirements
 - git
 - curl
+- bash 4+
 
-Install Wezterm
-https://wezterm.org/installation.html
+## 🔨 Installation
+### Local way
+```sh
+git clone https://github.com/otakenz/dotfiles.git
+cd ~/dotfiles
+LOCAL=1 bash install
+```
 
-Install this script
-- sudo apt-get update && sudo apt-get install -y curl \
-  && bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install) 
-  - If you install this way, and later wants to push to github using ssh key, you have to edit your local git config
-  - git config --local --config
-  - under [remote "origin"] edit "url", https:// -> git@ and .com/ -> .com:
+### One-liner way
+```sh
+bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install)
+```
 
-- sudo apt-get update && sudo apt-get install -y curl \
-  && LOCAL=1 bash ~/dotfiles/install
+### (Optional) Change remote url to ssh
+```sh
+git remote set-url origin git@github.com:otakenz/dotfiles.git
+```
 
-Install Powerlevel10k (Terminal Theme)
+## Install script
+This script is designed to be run on a fresh install of the supported platforms. It will install the following:
+### 1. [wezterm](https://wezterm.org/index.html) (cross platform GPU accelerated terminal)
+- New Wezterm application installed on your desktop
+- Config wezterm at ~/.config/wezterm/wezterm.lua
+### 2. [Powerlevel10k](https://github.com/romkatv/powerlevel10k) (Terminal theme)
+- p10k configure (when needed to reconfigure)
+- ~/.config/zsh/.p10k.zsh (config stored here)
+### 3. [Meslo Nerd Font](https://www.nerdfonts.com/font-downloads) (Terminal Fonts that support icons)
+- Fonts data installed at ~/.local/share/fonts/
+- fc-cache -fv (load new fonts to terminal)
+### 4. zsh (Z shell - modern shell)
+- ~/.config/zsh/.zshrc (zsh configurations)
+- ~/.config/zsh/.zshrc (to add machine specifics config)
+- ~/.config/zsh/.zprofile (zsh profile run on login)
+- ~/.config/zsh/.zprofile.local (to add machine specifics profile)
+- ~/.config/zsh/.zsh_history (commands history stored here)
+```sh
+# To append old history to new
+cat ~/.bash_history >> ~/.config/zsh/.zsh_history
+```
+- ~/.zshenv (zsh environment globally)
+- ~/.config/zsh/.aliases
+- ~/.config/zsh/.aliases.local (store your local aliases here)
+### 5. [mise](https://mise.jdx.dev/getting-started.html) (language/package manager, better asdf)
 
-- https://github.com/romkatv/powerlevel10k
-- git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k
-- source ~/.zshrc
-  Reconfigure
-  - p10k configure
+```sh
+# To view installed packages
+mise ls
+# To install new package globally (user-wide), specify 'latest' if no specific version requirement
+mise use -g <package>@<version>
+# To list available versions of a package
+mise list-all <package>
+```
+- node@22.14, python@3.13, go@1.23, lua@5.4, rust@1.86
+### 6. Tools (special mentioned)
+- [bat](https://github.com/sharkdp/bat) (better cat, provide colors)
+- [delta](https://github.com/dandavison/delta) (provide syntax highlighting for git, diff)
+- [eza](https://github.com/eza-community/eza) (better ls, with color and icons)
+- [fd](https://github.com/sharkdp/fd) (find on steroids, ultra fast files search)
+- [fzf](https://github.com/junegunn/fzf) (fuzzy finder)
+- [gitui](https://github.com/gitui-org/gitui) (git TUI, written in rust, can be spawned inside neovim)
+- [lazygit](https://github.com/jesseduffield/lazygit) (another git TUI, written in go, can be spawned inside neovim)
+- [ripgrep](https://github.com/BurntSushi/ripgrep) (ultra fast regex search on files)
+- [tldr](https://github.com/tldr-pages/tldr) (cheatsheet for console commands)
+- [zoxide](https://github.com/ajeetdsouza/zoxide) (cd with memory)
+### 7. Neovim (v0.10+ or latest)
+- [Lazy.nvim](https://github.com/folke/lazy.nvim) (Modern neovim package manager with lazy-loading feature)
+- [Lazyvim](https://github.com/LazyVim/LazyVim) (Upstream Neovim config on top of my neovim configs)
+> Checkout the upstream LazyVim's [config](https://github.com/LazyVim/LazyVim/tree/main/lua/lazyvim/config) and 
+ [plugins](https://github.com/LazyVim/LazyVim/tree/main/lua/lazyvim/plugins) and
+ [extra plugins](https://github.com/LazyVim/LazyVim/tree/main/lua/lazyvim/plugins/extras) (not installed by default) \
+ Then adjust your customisation accordingly below
+- ~/.config/nvim/lua/plugins/* (put your customisation of plugins here)
+- ~/.config/nvim/lua/config/autocmds.lua (put your custom autocmd here)
+- ~/.config/nvim/lua/config/keymaps.lua (put your custom keybindings here)
+- ~/.config/nvim/lua/config/options.lua (custom options for your neovim)
+- ~/.config/nvim/lua/config/lazy.lua (instruct neovim to load Lazyvim's plugin and your custom plugin)
+#### Plugins (special mentioned)
+-
+### 8. Tmux (v3.4+ or latest)
+- ~/.config/tmux/tmux.conf (tmux configuration file)
+```sh
+# Create new session
+tmux new -s dev
+# Attach to a session
+tmux attach -t dev
+# Kill a session
+tmux kill-session -t dev
+```
 
-Install Nerf Fonts (https://www.nerdfonts.com/)
-
-- use Meslo Nerd Font
-  Ubuntu
-  Download Meslo Nerd Font
-- mkdir -p ~/.local/share/fonts
-- cd ~/.local/share/fonts
-- wget https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/Meslo.zip
-- unzip Meslo.zip
-- rm Meslo.zip
-  Refresh font cache (make system aware of the new fonts)
-- fc-cache -fv
-
-- <https://www.nerdfonts.com/font-downloads>
-- I use MesloLGS Nerd Font Mono
-
-Bat
-bat cache --build
-bat --list-themes | grep tokyo # should output "tokyonight_night"
-echo '--theme="tokyonight_night"' >> "$(bat --config-dir)/config"
-
-
-Mise by default uses unauthenticated requests to the GitHub API (60 request/hr)
-To increase the rate limit to 5000 requests/hr, you can set the `GITHUB_TOKEN`
-Generate one from here https://github.com/settings/tokens
-
+## Experience it
 **Try it in Docker without modifying your system:**
 
 ```sh
@@ -64,10 +116,11 @@ apt-get update && apt-get install -y curl \
   && zsh -c ". ~/.config/zsh/.zprofile && . ~/.config/zsh/.zshrc; zsh -i"
 ```
 
-**  Local Test**
+**Local Test with docker**
 
 ```sh
-cd dotfiles/
+git clone https://github.com/otakenz/dotfiles.git
+cd ~/dotfiles
 
 docker container run --rm -it --env-file .env -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app debian:stable-slim bash
 
@@ -81,43 +134,48 @@ _Keep in mind with the Docker set up, unless your terminal is already
 configured to use Tokyonight Moon then the colors may look off. That's because
 your local terminal's config will not get automatically updated._
 
+
 ## 📗 FAQ:
 1. Managing multiple github accounts using SSH
-  - Create multiple git config files (i.e config.local, config.local.personal..)
-  - Example of config.local:
-    ```
-    [user]
-      name = <your_name>
-      email = <your_email>
-      signingkey = <your_gpg_key>"
-    [core]
-      sshCommand = "ssh -i ~/.ssh/<your_ssh_key> -o IdentitiesOnly=yes"
-    [commit]
-      gpgsign = true
-    [tag]
-      gpgsign = true
-    [gpg]
-      program = gpg 
-    ```
-  - Place it anywhere you want, i.e ~/.config/git/config.local
-  - config.local is going to be my global git config for work
-  - This script already included ~/.config/git/config in global git config like so
-    ```
-    [include]
-      path = ~/.config/git/config.local
-    ```
-  - For personal git config, specify the following in your ${repo}/.git/config or run "git config --local --edit"
-    ```
-    [include]
-      path = ~/.config/git/config.local.personal
-    ```
-  - You can view the config loaded at work repo vs personal repo by running
-    ```
-    git config --list
+- Create multiple git config files (i.e config.local, config.local.personal..)
+- Example of config.local:
+  ```
+  [user]
+    name = <your_name>
+    email = <your_email>
+    signingkey = <your_gpg_key>"
+  [core]
+    sshCommand = "ssh -i ~/.ssh/<your_ssh_key> -o IdentitiesOnly=yes"
+  [commit]
+    gpgsign = true
+  [tag]
+    gpgsign = true
+  [gpg]
+    program = gpg 
+  ```
+- Place it anywhere you want, i.e ~/.config/git/config.local
+- config.local is going to be my global git config for work
+- This script already included ~/.config/git/config in global git config like so
+  ```
+  [include]
+    path = ~/.config/git/config.local
+  ```
+- For personal git config, specify the following in your ${repo}/.git/config or run "git config --local --edit"
+  ```
+  [include]
+    path = ~/.config/git/config.local.personal
+  ```
+- You can view the config loaded at work repo vs personal repo by running
+  ```
+  git config --list
     ```
 
 2. Git Commit Freeze Due to GPG Lock issue
-  - https://gist.github.com/bahadiraraz/f2fb15b07e0fce92d8d5a86ab33469f7
+- https://gist.github.com/bahadiraraz/f2fb15b07e0fce92d8d5a86ab33469f7
+
+3. [Github API rate limit](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)
+- Mise by default uses unauthenticated requests to the GitHub API (60 request/hr)
+- To increase the rate limit to 5000 requests/hr, you can set the `GITHUB_TOKEN`
 
 
 ## 👑 Credits:
