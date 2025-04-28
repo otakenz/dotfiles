@@ -38,15 +38,26 @@ TERMINALS = {
                 "replace": '"theme": "%theme"',
             },
         ],
-    }
+    },
+    "wezterm": {
+        "path": f"{os.environ.get('USERPROFILE')}/.wezterm.lua",
+        "matches": [
+            {
+                "find": '"theme": ".*"',
+                "replace": '"theme": "%theme"',
+            },
+        ],
+    },
 }
 
 THEMES = {
     "tokyonight-moon": {
-        "terminal": "Tokyonight Moon",
+        "windows-terminal": "Tokyonight Moon",
+        "wezterm": "tokyonight_moon",
     },
     "gruvbox-dark-medium": {
-        "terminal": "Gruvbox Dark Medium",
+        "windows-terminal": "Gruvbox Dark Medium",
+        "wezterm": "GruvboxDark",
         "nvim": {
             "colorscheme": "gruvbox",
             "variant": {
@@ -90,26 +101,21 @@ def active_theme():
 
 
 def change_terminal_theme(theme):
-    # TODO: implementation for wezterm terminal needed
-    terminal = TERMINALS["windows-terminal"]
-    theme = THEMES[theme]["terminal"]
-    unknown = (
-        """SKIPPING [Terminal]: Terminal config path unknown / not found """
-    )
+    for terminal, value in TERMINALS.items():
+        if not os.path.exists(value["path"]):
+            continue
 
-    if not os.path.exists(terminal["path"]):
-        print(unknown)
-        return None
+        with edit_inplace(value["path"]) as f:
+            for line in f:
+                for match in value["matches"]:
+                    terminal_theme = THEMES[theme][terminal]
 
-    with edit_inplace(terminal["path"]) as f:
-        for line in f:
-            for match in terminal["matches"]:
-                line = re.sub(
-                    rf"{match['find']}",
-                    match["replace"].replace("%theme", theme),
-                    line,
-                )
-            sys.stdout.write(line)
+                    line = re.sub(
+                        rf"{match['find']}",
+                        match["replace"].replace("%theme", terminal_theme),
+                        line,
+                    )
+                sys.stdout.write(line)
 
 
 def change_tmux_theme(theme):
@@ -168,6 +174,10 @@ def change_gitui_theme(theme):
     os.symlink(theme_path, link_path)
 
 
+def update_tmux_shells():
+    print("Please run the 'SZ' alias to reload all of your tmux shells.")
+
+
 def parseargs():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -197,6 +207,7 @@ def main():
     change_nvim_theme(theme)
     change_fzf_theme(theme)
     change_gitui_theme(theme)
+    update_tmux_shells()
 
 
 if __name__ == "__main__":
