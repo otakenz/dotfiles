@@ -131,9 +131,9 @@ declare -A MISE_LANGUAGES
 MISE_LANGUAGES=(
   ["node"]="node@22.14"
   ["python"]="python@3.13"
-  ["go"]="go@1.23.8"
-  ["lua"]="lua@5.4.7"
-  ["rust"]="rust@1.86.0"
+  ["go"]="go@1.23"
+  ["lua"]="lua@5.4"
+  ["rust"]="rust@1.86"
 )
 
 CPU_ARCH="$(uname -m)"
