@@ -136,7 +136,7 @@ configured to use Tokyonight Moon then the colors may look off. That's because
 your local terminal's config will not get automatically updated._
 
 
-## 📗 FAQ:
+## 📗 Troubleshooting:
 1. Managing multiple github accounts using SSH
 - Create multiple git config files (i.e config.local, config.local.personal..)
 - Example of config.local:
@@ -172,7 +172,7 @@ your local terminal's config will not get automatically updated._
     ```
 
 2. Git Commit Freeze Due to GPG Lock issue
-- https://gist.github.com/bahadiraraz/f2fb15b07e0fce92d8d5a86ab33469f7
+- [Issue](https://gist.github.com/bahadiraraz/f2fb15b07e0fce92d8d5a86ab33469f7)
 
 3. [Github API rate limit](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)
 - Mise by default uses unauthenticated requests to the GitHub API (60 request/hr)

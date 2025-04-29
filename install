@@ -18,6 +18,7 @@ PACMAN_PACKAGES="
   base-devel
   bat
   bc
+  bison
   curl
   dust
   git-delta
@@ -37,6 +38,7 @@ PACMAN_PACKAGES="
   man-db
   man-pages
   mise
+  ncurses
   openbsd-netcat
   openssh
   pacman-contrib
@@ -59,6 +61,7 @@ PACMAN_PACKAGES="
 DEBIAN_PACKAGES="
   aspell
   bc
+  bison
   build-essential
   curl
   git
@@ -66,6 +69,8 @@ DEBIAN_PACKAGES="
   htop
   inotify-tools
   iproute2
+  libncurses5-dev
+  libncursesw5-dev
   netcat-openbsd
   openssh-server
   pass
@@ -1075,6 +1080,8 @@ configure_git() {
   name = ${NAME}
   email = ${EMAIL}
   signingkey = ${gpg_fingerprint}
+[core]
+  sshCommand = "ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
 
 # Learn more about signing git commits here:
 #   https://nickjanetakis.com/blog/signing-and-verifying-git-commits-on-the-command-line-and-github
