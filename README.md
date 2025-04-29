@@ -211,7 +211,6 @@ Port 443
 # For Ubuntu/Debian
 # Place the CA / Security Certs in this path
 sudo cp <path_to>/proxy_ca.crt /usr/local/share/ca-certificates
-sudo cp <path_to>/proxy_security.crt /usr/local/share/ca-certificates
 # Update the system
 sudo update-ca-certificates
 
@@ -224,6 +223,13 @@ sudo trust extract-compat
 # Test curl
 curl https://example.com
 ```
+6. yarn install throws 'error Error: self-signed certificate in certificate chain'
+- This usually means you are behind a proxy
+- You need to obtain the Proxy provider's CA certs
+```sh
+export NODE_EXTRA_CA_CERTS="<path_to>/proxy_ca.crt"
+```
+- You can also add this in ~/.config/zsh/.zprofile.local
 
 ## 👑 Credits:
 
