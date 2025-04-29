@@ -35,12 +35,17 @@ This script is designed to be run on a fresh install of the supported platforms.
 ### 1. [wezterm](https://wezterm.org/index.html) (cross platform GPU accelerated terminal)
 - New Wezterm application installed on your desktop
 - Config wezterm at ~/.config/wezterm/wezterm.lua
+- [Windows] You have to install wezterm installer for Windows manually
+- Config wezterm for windows is copied to %USERPROFILE%/.wezterm.lua
 ### 2. [Powerlevel10k](https://github.com/romkatv/powerlevel10k) (Terminal theme)
 - p10k configure (when needed to reconfigure)
 - ~/.config/zsh/.p10k.zsh (config stored here)
 ### 3. [Meslo Nerd Font](https://www.nerdfonts.com/font-downloads) (Terminal Fonts that support icons)
 - Fonts data installed at ~/.local/share/fonts/
 - fc-cache -fv (load new fonts to terminal)
+- [Window] You have to install Nerd Fonts manually
+- Unzip the installed NerdFonts to %USERPROFILE%/.local/share/fonts
+- Choose the fonts style and click "install"
 ### 4. zsh (Z shell - modern shell)
 - ~/.config/zsh/.zshrc (zsh configurations)
 - ~/.config/zsh/.zshrc (to add machine specifics config)
@@ -170,14 +175,11 @@ your local terminal's config will not get automatically updated._
   ```
   git config --list
     ```
-
 2. Git Commit Freeze Due to GPG Lock issue
 - [Issue](https://gist.github.com/bahadiraraz/f2fb15b07e0fce92d8d5a86ab33469f7)
-
 3. [Github API rate limit](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)
 - Mise by default uses unauthenticated requests to the GitHub API (60 request/hr)
 - To increase the rate limit to 5000 requests/hr, you can set the `GITHUB_TOKEN`
-
 4. Having issue accessing public Github (behind corporate proxy)
 - Verify if public Github reachable 
 ```sh
@@ -201,6 +203,26 @@ User git
 Hostname altssh.gitlab.com
 Identityfile ~/.ssh/id_ed25519
 Port 443
+```
+5. curl: (60) SSL certificate problem: self-signed certificate in certificate chain
+- This usually means you are behind a proxy
+- You need to obtain the Proxy provider's CA certs
+```sh
+# For Ubuntu/Debian
+# Place the CA / Security Certs in this path
+sudo cp <path_to>/proxy_ca.crt /usr/local/share/ca-certificates
+sudo cp <path_to>/proxy_security.crt /usr/local/share/ca-certificates
+# Update the system
+sudo update-ca-certificates
+
+# For Arch
+# Place the CA / Security Certs in this path
+sudo cp <path_to>/proxy_ca.crt /etc/ca-certificates/trust-source/anchors
+# Update the system
+sudo trust extract-compat
+
+# Test curl
+curl https://example.com
 ```
 
 ## 👑 Credits:
