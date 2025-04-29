@@ -228,9 +228,9 @@ curl https://example.com
 - You need to obtain the Proxy provider's CA certs
 ```sh
 export NODE_EXTRA_CA_CERTS="<path_to>/proxy_ca.crt"
+
 ```
 - You can also add this in ~/.config/zsh/.zprofile.local
-
 ## 👑 Credits:
 
 1. [Nick Janetakis](https://github.com/nickjj/dotfiles)

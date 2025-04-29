@@ -696,6 +696,9 @@ EOF
         _backup_and_symlink "$src" "$dest" sudo
       done
 
+      sudo ln -s "$(which nvim)" /usr/bin/nvim
+      echo "Symlink nvim to /usr/bin/nvim"
+
       echo "🌟 All symlinks created successfully."
 
       break
