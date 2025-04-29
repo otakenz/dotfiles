@@ -142,7 +142,7 @@ your local terminal's config will not get automatically updated._
 
 
 ## 📗 Troubleshooting:
-1. Managing multiple github accounts using SSH
+### 1. Managing multiple github accounts using SSH
 - Create multiple git config files (i.e config.local, config.local.personal..)
 - Example of config.local:
   ```
@@ -175,12 +175,12 @@ your local terminal's config will not get automatically updated._
   ```
   git config --list
     ```
-2. Git Commit Freeze Due to GPG Lock issue
+### 2. Git Commit Freeze Due to GPG Lock issue
 - [Issue](https://gist.github.com/bahadiraraz/f2fb15b07e0fce92d8d5a86ab33469f7)
-3. [Github API rate limit](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)
+### 3. [Github API rate limit](https://docs.github.com/en/rest/overview/resources-in-the-rest-api#rate-limiting)
 - Mise by default uses unauthenticated requests to the GitHub API (60 request/hr)
 - To increase the rate limit to 5000 requests/hr, you can set the `GITHUB_TOKEN`
-4. Having issue accessing public Github (behind corporate proxy)
+### 4. Having issue accessing public Github (behind corporate proxy)
 - Verify if public Github reachable 
 ```sh
 ssh -T git@github.com 
@@ -204,7 +204,7 @@ Hostname altssh.gitlab.com
 Identityfile ~/.ssh/id_ed25519
 Port 443
 ```
-5. curl: (60) SSL certificate problem: self-signed certificate in certificate chain
+### 5. curl: (60) SSL certificate problem: self-signed certificate in certificate chain
 - This usually means you are behind a proxy
 - You need to obtain the Proxy provider's CA certs
 ```sh
@@ -223,14 +223,14 @@ sudo trust extract-compat
 # Test curl
 curl https://example.com
 ```
-6. yarn install throws 'error Error: self-signed certificate in certificate chain'
+### 6. yarn install throws 'error Error: self-signed certificate in certificate chain'
 - This usually means you are behind a proxy
 - You need to obtain the Proxy provider's CA certs
 - You can also add this in ~/.config/zsh/.zprofile.local
 ```sh
 export NODE_EXTRA_CA_CERTS="<path_to>/proxy_ca.crt"
 ```
-7. Wsl2 dns resolv issue, unable to ping LAN which can be ping-ed from Windows
+### 7. Wsl2 dns resolv issue, unable to ping LAN which can be ping-ed from Windows
 - Open Powershell
 ```sh
 # This will return Server and Address, copy the DNS Server's Address
@@ -246,6 +246,15 @@ dnsTunneling=true
 networkingMode=mirrored
 autoProxy=true
 guiApplications=true
+```
+### 8. clipboard: error invoking wl-copy: Failed to connect to a Wayland server: No such file or directory Note: WAYLAND_DISPLAY is set to wayland-0 Note: XDG_RUNTIME_DIR is set to /run/user/1000/ Please check whether /run/user/1000//wayland-0 socket exists and is accessible. 
+```sh
+# Check if wayland-0 exist here
+ls -la /run/user/1000/
+# wayland-0 usually exist here for wslg
+ls -la /wslg/runtime-dir/wayland-0
+# symlink it to /run/user/1000
+ln -s /wslg/runtime-dir/wayland-0 /run/user/1000/wayland-0
 ```
 
 ## 👑 Credits:
