@@ -178,6 +178,30 @@ your local terminal's config will not get automatically updated._
 - Mise by default uses unauthenticated requests to the GitHub API (60 request/hr)
 - To increase the rate limit to 5000 requests/hr, you can set the `GITHUB_TOKEN`
 
+4. Having issue accessing public Github (behind corporate proxy)
+- Verify if public Github reachable 
+```sh
+ssh -T git@github.com 
+```
+- Create ~/.ssh/confg file
+```sh
+touch ~/.ssh/config
+```
+- Paste below to config, in my case to access public Github, I need to specify Port 443 instead of 22
+```sh
+# Access to public github
+Host github.com
+User git
+Hostname ssh.github.com
+Identityfile ~/.ssh/id_ed25519
+Port 443
+
+Host gitlab.com
+User git
+Hostname altssh.gitlab.com
+Identityfile ~/.ssh/id_ed25519
+Port 443
+```
 
 ## 👑 Credits:
 
