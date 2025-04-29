@@ -226,11 +226,28 @@ curl https://example.com
 6. yarn install throws 'error Error: self-signed certificate in certificate chain'
 - This usually means you are behind a proxy
 - You need to obtain the Proxy provider's CA certs
+- You can also add this in ~/.config/zsh/.zprofile.local
 ```sh
 export NODE_EXTRA_CA_CERTS="<path_to>/proxy_ca.crt"
-
 ```
-- You can also add this in ~/.config/zsh/.zprofile.local
+7. Wsl2 dns resolv issue, unable to ping LAN which can be ping-ed from Windows
+- Open Powershell
+```sh
+# This will return Server and Address, copy the DNS Server's Address
+nslookup google.com
+```
+- Open .wslconfig (usually on %USERPROFILE/.wslconfig) and paste in the address to 'dnsTunnelingIpAddress'
+```sh
+[experimental]
+hostAddressLoopback=true
+dnsTunnelingIpAddress=<DNS_Server_Address>
+[wsl2]
+dnsTunneling=true
+networkingMode=mirrored
+autoProxy=true
+guiApplications=true
+```
+
 ## 👑 Credits:
 
 1. [Nick Janetakis](https://github.com/nickjj/dotfiles)
