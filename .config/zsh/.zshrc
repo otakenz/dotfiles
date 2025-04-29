@@ -180,10 +180,6 @@ bindkey "^[[1;5C" forward-word  # Ctrl+Right
 bindkey '^F' toggle-fzf-tab     # Ctrl+f
 
 ## Misc
-# Allows your gpg passphrase prompt to spawn (useful for signing commits)
-GPG_TTY="$(tty)"
-export GPG_TTY
-
 # Load colors so we can access $fg and more.
 autoload -U colors && colors
 

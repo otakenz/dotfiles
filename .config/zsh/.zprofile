@@ -8,6 +8,10 @@ export XDG_CONFIG_HOME="$HOME/.config"
 export XDG_DATA_HOME="$HOME/.local/share"
 export XDG_STATE_HOME="${HOME}/.local/state"
 
+# Allows your gpg passphrase prompt to spawn (useful for signing commits)
+GPG_TTY="$(tty)"
+export GPG_TTY
+
 # Add all local binaries to the system path and make sure they are first.
 export PATH="${HOME}/.local/bin:${HOME}/.local/bin/local:${PATH}"
 
