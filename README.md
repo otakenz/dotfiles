@@ -11,6 +11,7 @@
 - curl
 - bash 4+
 - [Docker](https://docs.docker.com/engine/install/) (for experience it or local test)
+- [PowerToys](https://github.com/microsoft/PowerToys) (For Windows, to swap esc and caps key bind)
 
 ## 🔨 Installation
 ### Local way
