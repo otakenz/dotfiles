@@ -247,14 +247,41 @@ networkingMode=mirrored
 autoProxy=true
 guiApplications=true
 ```
-### 8. clipboard: error invoking wl-copy: Failed to connect to a Wayland server: No such file or directory Note: WAYLAND_DISPLAY is set to wayland-0 Note: XDG_RUNTIME_DIR is set to /run/user/1000/ Please check whether /run/user/1000//wayland-0 socket exists and is accessible. 
+### 8. clipboard: error invoking wl-copy: Failed to connect to a Wayland server: No such file or directory Note: WAYLAND_DISPLAY is set to wayland-0 Note: XDG_RUNTIME_DIR is set to /run/user/1000/ Please check whether /run/user/1000/wayland-0 socket exists and is accessible. 
+- This happens when interop appendWindowsPath = true
 ```sh
 # Check if wayland-0 exist here
-ls -la /run/user/1000/
 # wayland-0 usually exist here for wslg
+ls -la /run/user/1000/
 ls -la /wslg/runtime-dir/wayland-0
 # symlink it to /run/user/1000
 ln -s /wslg/runtime-dir/wayland-0 /run/user/1000/wayland-0
+```
+- You can also make it permenant at ~/.config/zsh/.zshrc.local
+```sh
+if [ -e /wslg/runtime-dir/wayland-0 ]; then
+  if [ ! -L /run/user/1000/wayland-0 ]; then
+    ln -s /wslg/runtime-dir/wayland-0 /run/user/1000/wayland-0
+  fi
+fi
+```
+### 9. Wsl high input lag
+- This is due to interop appendWindowsPath = true, which import all
+  Windows path to WSL
+```sh
+# /etc/wsl.conf
+[interop]
+enabled = true
+appendWindowsPath = false # set this to false
+```
+- Markdown preview not working due to cmd.exe not found
+```sh
+# Example in order to use cmd.exe which is located in /c/Windows/System32
+# Manually appendWindowsPath to ~/.config/zsh/.zprofile.local
+win_path="/c/Windows/System32"
+if [[ ":$PATH:" != *":$win_path:"* ]]; then
+  export PATH="$PATH:$win_path"
+fi
 ```
 
 ## 👑 Credits:
