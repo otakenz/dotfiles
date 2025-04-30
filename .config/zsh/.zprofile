@@ -27,6 +27,12 @@ if [[ ":$PATH:" != *":$mise_shims:"* ]]; then
   export PATH="$mise_shims:$PATH"
 fi
 
+# Manually appendWindowsPath to ~/.config/zsh/.zprofile.local
+win_path="/c/Windows/System32"
+if [[ ":$PATH:" != *":$win_path:"* ]]; then
+  export PATH="$PATH:$win_path"
+fi
+
 # Default programs to run.
 export EDITOR="nvim"
 export DIFFPROG="nvim -d"
