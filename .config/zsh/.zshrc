@@ -201,8 +201,6 @@ if [ -f "${XDG_CONFIG_HOME}/zsh/.aliases.local" ]; then . "${XDG_CONFIG_HOME}/zs
 
 # ---- Zsh settings ---- #
 
-# shellcheck disable=SC1091
-[ -f "${XDG_CONFIG_HOME}/zsh/.zshrc.local" ] && . "${XDG_CONFIG_HOME}/zsh/.zshrc.local"
 # shellcheck disable=SC2034
 zsh_end_time=$(date +%s%N)
 #echo ".zshrc startup time: $(( (zsh_end_time - zsh_start_time)/1000000 )) ms"
