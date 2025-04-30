@@ -332,7 +332,7 @@ TimeoutSec=30
 WantedBy=multi-user.target
 
 # Enable the mount unit (restart wsl2 after this)
-sudo systemctl enable media-didc0232.mount
+sudo systemctl enable <mount_name>.mount
 ```
 ### 11. [Proxy Auto-Configuration (PAC) issue](https://learn.microsoft.com/en-us/windows/wsl/troubleshooting#considerations-when-using-autoproxy-for-httpproxy-mirroring-in-wsl)
 - If you enable mirrored networkingMode and autoProxy, WSL2 will import proxy settings from Windows
