@@ -283,6 +283,83 @@ if [[ ":$PATH:" != *":$win_path:"* ]]; then
   export PATH="$PATH:$win_path"
 fi
 ```
+### 10. Mount network drive in WSL (Ubuntu/Debian)
+a. Method 1 - Using Drvfs (Very bad performance)
+```sh
+sudo mount -t drvfs D: /mnt/d
+```
+b. Method 2 - Using manual mount (cifs)
+```sh
+sudo apt update && sudo apt install -y cifs-utils nfs-kernel-server
+# Create credentials file
+echo "username=<username>" > ~/<cred_name>.cred
+echo "password=<password>" >> ~/<cred_name>.cred
+chmod 600 ~/<cred_name>.cred
+
+mkdir -p /media/<share>
+sudo mount -t cifs //<server>/<share> /media/<share> -o credentials=<path_to>/<cred_name>.cred, \
+iocharset=utf8,uid=$(id -u),gid=$(id -g)
+```
+c. Method 3 - Using /etc/fstab (Error: processing fstab with mount -a failed)
+- This happens because fstab tries to mount the network drive before the DNS server is up.
+```sh
+sudo apt update && sudo apt install -y cifs-utils nfs-kernel-server
+mkdir -p /media/<share>
+sudo -E nvim /etc/fstab
+# Insert the following line
+//<server>/<share> /media/<share> cifs credentials=<path_to>/<cred_name>.cred, \
+iocharset=utf8,uid=1000,gid=1000 0 0
+```
+d. Method 4 - Using systemd
+```sh
+# Create systemd mount unit
+sudo -E nvim /etc/systemd/system/<mount_name>.mount
+
+# Insert the following lines
+[Unit]
+Description=Mount CIFS Share to /media/<share>
+Requires=network-online.target
+After=network-online.target
+
+[Mount]
+What=//<server>/<share>
+Where=/media/<share>
+Type=cifs
+Options=credentials=<path_to>/<cred_name>.cred,iocharset=utf8,uid=1000,gid=1000
+TimeoutSec=30
+
+[Install]
+WantedBy=multi-user.target
+
+# Enable the mount unit (restart wsl2 after this)
+sudo systemctl enable media-didc0232.mount
+```
+### 11. [Proxy Auto-Configuration (PAC) issue](https://learn.microsoft.com/en-us/windows/wsl/troubleshooting#considerations-when-using-autoproxy-for-httpproxy-mirroring-in-wsl)
+- If you enable mirrored networkingMode and autoProxy, WSL2 will import proxy settings from Windows
+- If you are then also behind corporate proxy which employ PAC, when the VPN auto renew proxy settings, \
+  WSL2 will not be able to access the internet which probably caused by "WSL_PAC_URL" become unset
+> .wslconfig
+```sh
+[experimental]
+hostAddressLoopback=true
+dnsTunnelingIpAddress="<DNS_Server_Address>"
+[wsl2]
+dnsTunneling=true
+networkingMode=mirrored
+autoProxy=true
+guiApplications=true
+```
+> Add the following into ~/.config/zsh/.zshrc.local
+```sh
+# If WSL_PAC_URL is not set, set it to the default PAC URL
+if [[ -z "WSL_PAC_URL" ]]; then
+  export WSL_PAC_URL=<corporate_pac_url>
+fi
+```
+- Restart WSL2 or Restart PC if it doesn't work
+```sh
+wsl --shutdown
+```
 
 ## 👑 Credits:
 
