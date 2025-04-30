@@ -12,11 +12,20 @@ export XDG_STATE_HOME="${HOME}/.local/state"
 GPG_TTY="$(tty)"
 export GPG_TTY
 
-# Add all local binaries to the system path and make sure they are first.
-export PATH="${HOME}/.local/bin:${HOME}/.local/bin/local:${PATH}"
+# Add ~/.local/bin and ~/.local/bin/local if not already in PATH and make sure
+# they are first
+for dir in "${HOME}/.local/bin" "${HOME}/.local/bin/local"; do
+  if [[ ":$PATH:" != *":$dir:"* ]]; then
+    export PATH="$dir:$PATH"
+  fi
+done
 
+# Add mise shims path safely
 # Confiure Mise (programming language run-time manager)
-export PATH="${XDG_DATA_HOME}/mise/shims:${PATH}"
+mise_shims="${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims"
+if [[ ":$PATH:" != *":$mise_shims:"* ]]; then
+  export PATH="$mise_shims:$PATH"
+fi
 
 # Default programs to run.
 export EDITOR="nvim"
