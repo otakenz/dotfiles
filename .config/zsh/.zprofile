@@ -28,7 +28,9 @@ if [[ ":$PATH:" != *":$mise_shims:"* ]]; then
 fi
 
 # Manually appendWindowsPath to ~/.config/zsh/.zprofile.local
-win_path="/c/Windows/System32"
+win_path="/c/Windows"
+win_path+=":/c/Windows/System32/"
+win_path+=":/c/Program Files/WezTerm/"
 if [[ ":$PATH:" != *":$win_path:"* ]]; then
   export PATH="$PATH:$win_path"
 fi
