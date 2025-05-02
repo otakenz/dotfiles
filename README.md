@@ -261,7 +261,7 @@ ln -s /wslg/runtime-dir/wayland-0 /run/user/1000/wayland-0
 - You can also make it permenant at ~/.config/zsh/.zshrc.local
 ```sh
 if [ -e /wslg/runtime-dir/wayland-0 ]; then
-  if [ ! -L /run/user/1000/wayland-0 ]; then
+  if [ ! -e /run/user/1000/wayland-0 ]; then
     ln -s /wslg/runtime-dir/wayland-0 /run/user/1000/wayland-0
   fi
 fi
