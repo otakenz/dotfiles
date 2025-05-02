@@ -13,6 +13,7 @@ SKIP_SYSTEM_PACKAGES="${1:-}"
 ONLY_UPDATE=
 
 PACMAN_PACKAGES="
+  7zip
   aspell
   base
   base-devel
@@ -25,12 +26,14 @@ PACMAN_PACKAGES="
   eza
   fastfetch
   fd
+  ffmpeg
   fontconfig
   fzf
   git
   gitui
   gnupg
   htop
+  imagemagick
   inotify-tools
   jq
   lazygit
@@ -43,6 +46,7 @@ PACMAN_PACKAGES="
   openssh
   pacman-contrib
   pass
+  poppler
   pwgen
   ripgrep
   rsync
@@ -53,17 +57,20 @@ PACMAN_PACKAGES="
   wget
   whois
   wl-clipboard
+  yazi
   zip
   zsh
   zoxide
 "
 
 DEBIAN_PACKAGES="
+  7zip
   aspell
   bc
   bison
   build-essential
   curl
+  ffmpeg
   git
   gnupg
   htop
@@ -74,6 +81,7 @@ DEBIAN_PACKAGES="
   netcat-openbsd
   openssh-server
   pass
+  poppler-utils
   pwgen
   rsync
   unzip
@@ -116,6 +124,7 @@ MISE_PACKAGES_DEBIAN="
   fd
   fzf
   gitui
+  imagemagick
   lazygit
   jq
   neovim
