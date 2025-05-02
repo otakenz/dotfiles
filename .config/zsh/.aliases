@@ -100,3 +100,14 @@ grs() {
       --bind 'ctrl-d:execute(git diff --cached --color=always {3} | bat --paging=always --style=full)' \
       --preview-window=right:60%:wrap
 }
+
+# Yazi cwd
+y() {
+  local tmp cwd
+  tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+  yazi "$@" --cwd-file="$tmp"
+  if cwd="$(command cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+    builtin cd -- "$cwd" || exit
+  fi
+  rm -f -- "$tmp"
+}
