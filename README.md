@@ -229,6 +229,7 @@ curl https://example.com
 - You need to obtain the Proxy provider's CA certs
 - You can also add this in ~/.config/zsh/.zprofile.local
 ```sh
+# Usually at /usr/local/share/ca-certificates/
 export NODE_EXTRA_CA_CERTS="<path_to>/proxy_ca.crt"
 ```
 ### 7. Wsl2 dns resolv issue, unable to ping LAN which can be ping-ed from Windows
@@ -266,7 +267,7 @@ if [ -e /wslg/runtime-dir/wayland-0 ]; then
   fi
 fi
 ```
-### 9. Wsl high input lag
+### 9. [Wsl high input lag](https://github.com/zsh-users/zsh-syntax-highlighting/issues/790)
 - This is due to interop appendWindowsPath = true, which import all
   Windows path to WSL
 ```sh
@@ -353,13 +354,20 @@ guiApplications=true
 > Add the following into ~/.config/zsh/.zshrc.local
 ```sh
 # If WSL_PAC_URL is not set, set it to the default PAC URL
-if [[ -z "WSL_PAC_URL" ]]; then
+if [[ -z "${WSL_PAC_URL}" ]]; then
   export WSL_PAC_URL=<corporate_pac_url>
 fi
 ```
 - Restart WSL2 or Restart PC if it doesn't work
 ```sh
 wsl --shutdown
+```
+### 12. [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain (_ssl.c:1028)
+- Problem with some python packages not trusting the corporate proxy self-signed cert
+```sh
+# Append this in ~/.config/zsh/.zprofile.local
+# Usually at /usr/local/share/ca-certificates/
+export SSL_CERT_FILE=<path_to>/<proxy.crt
 ```
 
 ## 👑 Credits:
