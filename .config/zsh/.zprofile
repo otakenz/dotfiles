@@ -28,11 +28,14 @@ if [[ ":$PATH:" != *":$mise_shims:"* ]]; then
 fi
 
 # Manually appendWindowsPath to ~/.config/zsh/.zprofile.local
-win_path="/c/Windows"
-win_path+=":/c/Windows/System32/"
-win_path+=":/c/Program Files/WezTerm/"
-if [[ ":$PATH:" != *":$win_path:"* ]]; then
-  export PATH="$PATH:$win_path"
+if grep -q "\-WSL2" /proc/version; then
+  win_path="/c/Windows"
+  win_path+=":/c/Windows/System32/"
+  win_path+=":/c/Program Files/WezTerm/"
+  win_path+=":/c/Users/$(cmd.exe /c 'echo %USERNAME%' 2>/dev/null | tr -d '\r')/AppData/Local/Programs/Microsoft VS Code/bin"
+  if [[ ":$PATH:" != *":$win_path:"* ]]; then
+    export PATH="$PATH:$win_path"
+  fi
 fi
 
 # Default programs to run.

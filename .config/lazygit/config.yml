@@ -1,0 +1,14 @@
+gui:
+  spinner:
+    frames:
+      - "◡◡"
+      - "⊙⊙"
+      - "◠◠"
+
+git:
+  paging:
+    pager: delta --paging=never
+  log:
+    showWholeGraph: true
+
+confirmOnQuit: true
