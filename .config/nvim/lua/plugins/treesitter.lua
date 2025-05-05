@@ -24,7 +24,7 @@ return {
         "python",
         "ron",
         "rust",
-        "tmux",
+        -- "tmux",
         "toml",
         "xml",
         "yaml",
