@@ -159,8 +159,9 @@ zstyle ':fzf-tab:*' fzf-bindings 'tab:toggle'
 export ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20
 # Better at syntax highlighting than zsh-syntax-highlighting
 # shellcheck disable=SC1091
-source "${XDG_DATA_HOME}"/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-# source "${XDG_DATA_HOME}"/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
+# source "${XDG_DATA_HOME}"/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+# shellcheck disable=SC1091
+source "${XDG_DATA_HOME}"/fast-syntax-highlighting/fast-syntax-highlighting.plugin.zsh
 # shellcheck disable=SC1091
 source "${XDG_DATA_HOME}"/zsh-autosuggestions/zsh-autosuggestions.zsh
 # shellcheck disable=SC1091
