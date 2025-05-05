@@ -639,6 +639,7 @@ create_symlinks() {
     "${DOTFILES_PATH}/.config/git/config ${HOME}/.config/git/config"
     "${DOTFILES_PATH}/.config/git/config.local ${HOME}/.config/git/config.local"
     "${DOTFILES_PATH}/.config/gitui ${HOME}/.config/gitui"
+    "${DOTFILES_PATH}/.config/lazygit/config.yml ${HOME}/.config/lazygit/config.yml"
     "${DOTFILES_PATH}/.config/nvim ${HOME}/.config/nvim"
     "${DOTFILES_PATH}/.local/bin/* ${HOME}/.local/bin"
   )
