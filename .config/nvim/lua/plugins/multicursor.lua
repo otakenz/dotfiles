@@ -43,8 +43,8 @@ return {
       -- multiple cursors. This lets you have overlapping mappings.
       mc.addKeymapLayer(function(layerSet)
         -- select a different cursor as the main one.
-        layerSet({ "n", "x" }, "<left>", mc.prevcursor)
-        layerSet({ "n", "x" }, "<right>", mc.nextcursor)
+        -- layerSet({ "n", "x" }, "<left>", mc.prevcursor)
+        -- layerSet({ "n", "x" }, "<right>", mc.nextcursor)
 
         -- Enable and clear cursors using escape.
         layerSet("n", "<esc>", function()
