@@ -11,4 +11,6 @@ git:
   log:
     showWholeGraph: true
 
+  overrideGpg: true
+
 confirmOnQuit: true
