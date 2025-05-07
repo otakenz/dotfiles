@@ -62,3 +62,30 @@ vim.api.nvim_create_autocmd("BufWritePost", {
     end
   end,
 })
+
+-- Customize highlighting for C and C++ comments with LSP semantic tokens.
+-- This is particularly useful for handling preprocessor directives (`#define`, `#ifdef`, etc.)
+-- in both C and C++ files, where we ensure that the background color of comments is distinct
+-- while preserving the foreground and italic styles based on the LSP configuration.
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "cpp", "c" },
+  callback = function()
+    local comment_hl = vim.api.nvim_get_hl(
+      0,
+      { name = "@lsp.type.comment.cpp", link = true }
+    ) or {}
+    local new_bg = "#444a73"
+
+    -- List of LSP semantic token types to update
+    local comment_types = { "@lsp.type.comment.cpp", "@lsp.type.comment.c" }
+
+    -- Apply the highlight for both C and C++ comments
+    for _, comment_type in ipairs(comment_types) do
+      vim.api.nvim_set_hl(0, comment_type, {
+        fg = comment_hl.fg,
+        italic = comment_hl.italic,
+        bg = new_bg,
+      })
+    end
+  end,
+})
