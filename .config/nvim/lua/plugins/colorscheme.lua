@@ -1,21 +1,6 @@
 return {
   {
     "ellisonleao/gruvbox.nvim",
-    init = function()
-      vim.api.nvim_set_hl(0, "SnacksPicker", { link = "GruvboxBg0" })
-      vim.api.nvim_set_hl(0, "SnacksPickerBorder", { link = "GruvboxBlue" })
-      vim.api.nvim_set_hl(0, "SnacksPickerPathIgnored", { link = "GruvboxBg3" })
-      vim.api.nvim_set_hl(0, "SnacksPicker", { link = "GruvboxBg0" })
-      vim.api.nvim_set_hl(0, "SnacksPickerBorder", { link = "GruvboxBlue" })
-      vim.api.nvim_set_hl(0, "SnacksPickerDir", { link = "GruvboxGray" })
-      vim.api.nvim_set_hl(0, "SnacksPickerPathHidden", { link = "GruvboxGray" })
-      vim.api.nvim_set_hl(0, "SnacksPickerPathIgnored", { link = "GruvboxBg3" })
-      vim.api.nvim_set_hl(
-        0,
-        "SnacksPickerGitStatusUntracked",
-        { link = "GruvboxGray" }
-      )
-    end,
     opts = {
       contrast = "medium",
       italic = {
@@ -24,6 +9,10 @@ return {
         comments = false,
         operators = false,
         folds = false,
+      },
+      overrides = {
+        SnacksPickerBorder = { link = "GruvboxBlue" },
+        NormalFloat = { link = "GruvboxBlue" },
       },
     },
   },
@@ -35,6 +24,10 @@ return {
         keywords = { italic = false },
       },
       on_highlights = function(hl, c)
+        hl.SnacksPickerPathHidden = { fg = c.comment }
+        hl.SnacksPickerDir = { fg = c.comment }
+        hl.SnacksPickerGitStatusIgnored = { fg = c.nontext }
+        hl.SnacksPickerGitStatusUntracked = { fg = c.nontext }
         hl.ColorColumn = { bg = c.bg_highlight }
         hl.SpellBad = { fg = c.red, undercurl = true }
         hl.SpellCap = { fg = c.red, undercurl = true }
