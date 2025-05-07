@@ -36,6 +36,8 @@ PACMAN_PACKAGES="
   imagemagick
   inotify-tools
   jq
+  kguiaddons
+  kwindowsystem
   lazygit
   less
   man-db
@@ -46,7 +48,7 @@ PACMAN_PACKAGES="
   openssh
   pacman-contrib
   pass
-  pinentry-qt
+  pinentry
   poppler
   pwgen
   ripgrep
@@ -162,6 +164,7 @@ DOTFILES_URL="${DOTFILES_URL:-https://github.com/otakenz/dotfiles}"
 DOTFILES_PATH="${DOTFILES_PATH:-${HOME}/dotfiles}"
 
 GPG_HOME="${GNUPGHOME:-"${HOME}/.config/gnupg"}"
+PASS_HOME="${PASSWORD_STORE_DIR:-"${HOME}/.config/password-store"}"
 
 SSH_INSTRUCTIONS=
 SSH_PUBKEY=
@@ -546,6 +549,9 @@ create_initial_dirs() {
     "${HOME}/.config/wezterm" "${HOME}/.config/zsh" "${HOME}/.config/bat"
 
   mkdir -p "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share/fonts"
+
+  mkdir -p "${PASS_HOME}"
+  chmod 700 "${PASS_HOME}"
 
   mkdir -p "${GPG_HOME}"
   chmod 700 "${GPG_HOME}"
