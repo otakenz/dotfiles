@@ -34,17 +34,30 @@ git remote set-url origin git@github.com:otakenz/dotfiles.git
 ## Install script
 This script is designed to be run on a fresh install of the supported platforms. It will install the following:
 ### 1. [wezterm](https://wezterm.org/index.html) (cross platform GPU accelerated terminal)
+#### [Ubuntu/Archlinux]
 - New Wezterm application installed on your desktop
 - Config wezterm at ~/.config/wezterm/wezterm.lua
-- [Windows] You have to install wezterm installer for Windows manually
-- Config wezterm for windows is copied to %USERPROFILE%/.wezterm.lua
+#### [Windows/WSL2]
+- New Wezterm application installed on C:\Program Files\WezTerm with winget
+- Config wezterm for windows is copied to %USERPROFILE%/.wezterm.lua. 
+  > Refer [ordering to this](https://wezterm.org/config/files.html)
+- [(Manual Fixed) Known issue](#13-unable-to-display-image-in-wezterm-windows-version) that image preview not working in Window's Wezterm
+- Optionally, if you don't want to copy the config file to %USERPROFILE%/.wezterm.lua, you can edit the properties of wezterm shortcut from startup menu.
+```sh
+# In "Target" field of WezTerm shortcut properties, specify the --config-file as follow:
+"C:\Program Files\WezTerm\wezterm-gui.exe" \
+  --config-file \\wsl.localhost\<REPLACE_DISTRO_NAME>\home\<REPLACE_USERNAME>\dotfiles\.config\wezterm\wezterm.lua
+```
+- Then you can pin the shortcut to the taskbar, the caveat is that the automatic hot-reload of config is broken with this method, and you have to manual-reload everytime with "CTRL+SHIFT+R"
 ### 2. [Powerlevel10k](https://github.com/romkatv/powerlevel10k) (Terminal theme)
 - p10k configure (when needed to reconfigure)
 - ~/.config/zsh/.p10k.zsh (config stored here)
 ### 3. [Meslo Nerd Font](https://www.nerdfonts.com/font-downloads) (Terminal Fonts that support icons)
+#### [Ubuntu/Archlinux]
 - Fonts data installed at ~/.local/share/fonts/
 - fc-cache -fv (load new fonts to terminal)
-- [Window] You have to install Nerd Fonts manually
+#### [Window/WSL2] 
+- You have to install Nerd Fonts manually
 - Unzip the installed NerdFonts to %USERPROFILE%/.local/share/fonts
 - Choose the fonts style and click "install"
 ### 4. zsh (Z shell - modern shell)
@@ -369,6 +382,11 @@ wsl --shutdown
 # Usually at /usr/local/share/ca-certificates/
 export SSL_CERT_FILE=<path_to>/<proxy.crt
 ```
+### 13. Unable to display image in WezTerm Window's version
+- This is due to the outdated ConPTY delivered in earlier version of WezTerm
+  > As of May2025 latest release is that of Feb2024, but it is still outdated
+- **window admin privilege required** To fix this we need to replace the conpty.dll and OpenConsole.exe in the WezTerm installation folder, with the one in ~/dotfiles/c/Program Files/WezTerm/*.
+  > Typically located at C:\Program Files\WezTerm
 
 ## 👑 Credits:
 

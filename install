@@ -239,12 +239,6 @@ _install_packages_arch() {
 }
 
 _install_packages_debian() {
-  if [ -z "${OS_IN_WSL}" ]; then
-    curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /etc/apt/keyrings/wezterm-fury.gpg
-    echo 'deb [signed-by=/etc/apt/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
-    # Add wezterm to debian packages
-    DEBIAN_PACKAGES="${DEBIAN_PACKAGES} wezterm"
-  fi
   # shellcheck disable=SC2086
   sudo apt-get update && sudo apt-get install -y ${DEBIAN_PACKAGES}
 
@@ -1184,6 +1178,19 @@ install_nerdfont() {
   fc-cache -fv
 }
 
+install_wezterm() {
+  _info "INSTALL WEZTERM"
+
+  if [ -z "${OS_IN_WSL}" ]; then
+    curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /etc/apt/keyrings/wezterm-fury.gpg
+    echo 'deb [signed-by=/etc/apt/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
+    # Add wezterm to debian packages
+    DEBIAN_PACKAGES="${DEBIAN_PACKAGES} wezterm"
+  else
+    winget.exe install wez.wezterm
+  fi
+}
+
 healthcheck() {
   _info "CHECK INFORMATION AND VERSIONS"
 
@@ -1283,6 +1290,7 @@ clone_dotfiles
 install_zsh_plugins
 create_symlinks
 configure_system_configs
+install_wezterm
 configure_shell
 ask_for_name
 ask_for_email
