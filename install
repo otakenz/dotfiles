@@ -20,6 +20,7 @@ PACMAN_PACKAGES="
   bat
   bc
   bison
+  chafa
   curl
   dust
   git-delta
@@ -73,6 +74,7 @@ DEBIAN_PACKAGES="
   bison
   build-essential
   curl
+  chafa
   ffmpeg
   git
   gnupg

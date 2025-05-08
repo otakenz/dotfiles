@@ -387,6 +387,11 @@ export SSL_CERT_FILE=<path_to>/<proxy.crt
   > As of May2025 latest release is that of Feb2024, but it is still outdated
 - **window admin privilege required** To fix this we need to replace the conpty.dll and OpenConsole.exe in the WezTerm installation folder, with the one in ~/dotfiles/c/Program Files/WezTerm/*.
   > Typically located at C:\Program Files\WezTerm
+### 14. WSL starts with root instead of user
+```sh
+# Run this in wsl
+wsl.exe --manage <distro_name> --set-default-user <username_in_distro>
+```
 
 ## 👑 Credits:
 
