@@ -691,7 +691,6 @@ create_symlinks() {
   else
     symlinks_system+=(
       "${DOTFILES_PATH}/.config/wezterm/wezterm.lua ${HOME}/.config/wezterm/wezterm.lua"
-      "${DOTFILES_PATH}/.config/yazi/yazi.toml ${HOME}/.config/yazi/yazi.toml"
     )
   fi
 
