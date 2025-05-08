@@ -58,6 +58,7 @@ PACMAN_PACKAGES="
   shfmt
   tmux
   unzip
+  ueberzugpp
   wget
   whois
   wl-clipboard
@@ -160,6 +161,7 @@ MISE_LANGUAGES=(
 CPU_ARCH="$(uname -m)"
 OS_TYPE="$(uname | tr "[:upper:]" "[:lower:]")"
 OS_DISTRO=
+DEBIAN_VERSION="$(lsb_release -a 2>/dev/null | grep '^Release:' | awk '{print $2}')"
 OS_IN_WSL=
 WIN_USER_PATH=
 
@@ -241,6 +243,16 @@ _install_packages_arch() {
 }
 
 _install_packages_debian() {
+  if [ "$DEBIAN_VERSION" == "24.04" ]; then
+    echo 'deb http://download.opensuse.org/repositories/home:/justkidding/xUbuntu_24.10/ /' | sudo tee /etc/apt/sources.list.d/home:justkidding.list
+    curl -fsSL https://download.opensuse.org/repositories/home:justkidding/xUbuntu_24.10/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_justkidding.gpg >/dev/null
+    DEBIAN_PACKAGES="${DEBIAN_PACKAGES} ueberzugpp"
+  elif [ "$DEBIAN_VERSION" == "22.04" ]; then
+    echo 'deb http://download.opensuse.org/repositories/home:/justkidding/xUbuntu_22.04/ /' | sudo tee /etc/apt/sources.list.d/home:justkidding.list
+    curl -fsSL https://download.opensuse.org/repositories/home:justkidding/xUbuntu_22.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_justkidding.gpg >/dev/null
+    DEBIAN_PACKAGES="${DEBIAN_PACKAGES} ueberzugpp"
+  fi
+
   # shellcheck disable=SC2086
   sudo apt-get update && sudo apt-get install -y ${DEBIAN_PACKAGES}
 
