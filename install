@@ -646,7 +646,6 @@ create_symlinks() {
     "${DOTFILES_PATH}/.config/zsh/.zprofile.local ${HOME}/.config/zsh/.zprofile.local"
     "${DOTFILES_PATH}/.config/zsh/.aliases ${HOME}/.config/zsh/.aliases"
     "${DOTFILES_PATH}/.config/zsh/.aliases.local ${HOME}/.config/zsh/.aliases.local"
-    "${DOTFILES_PATH}/.config/wezterm/wezterm.lua ${HOME}/.config/wezterm/wezterm.lua"
     "${DOTFILES_PATH}/.config/tmux/tmux.conf ${HOME}/.config/tmux/tmux.conf"
     "${DOTFILES_PATH}/.config/zsh/themes ${HOME}/.config/zsh/themes"
     "${DOTFILES_PATH}/.config/tmux/themes ${HOME}/.config/tmux/themes"
@@ -683,6 +682,7 @@ create_symlinks() {
     fi
   else
     symlinks_system+=(
+      "${DOTFILES_PATH}/.config/wezterm/wezterm.lua ${HOME}/.config/wezterm/wezterm.lua"
       "${DOTFILES_PATH}/.config/yazi/yazi.toml ${HOME}/.config/yazi/yazi.toml"
     )
   fi
@@ -828,6 +828,7 @@ EOF
   fi
 
   [ "${SHELL: -3}" != "zsh" ] && chsh -s "${shell_path}"
+  echo "Changed your default shell to zsh"
 
   # shellcheck disable=SC1091
   . "${HOME}/.config/zsh/.zprofile"

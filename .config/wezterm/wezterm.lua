@@ -1,15 +1,16 @@
 -- Pull in the wezterm API
 local wezterm = require("wezterm")
 
--- This will hold the configuration.
+-- Wezterm module
+-- Return {} if no WSL
+local wsl_domains = wezterm.default_wsl_domains()
+
+-- Wezterm configuration
 local config = wezterm.config_builder()
 
--- This is where you actually apply your config choices
-
-if wezterm.target_triple == "x86_64-pc-windows-msvc" then
-	config.default_prog = { "wsl.exe" }
-else
-	config.default_prog = { "zsh", "-l" }
+-- Set the first distro found by 'wsl -l -v' to Wezterm's default_domain
+if wsl_domains and #wsl_domains > 0 then
+	config.default_domain = wsl_domains[1].name
 end
 
 config.color_scheme = "Tokyo Night Moon"
