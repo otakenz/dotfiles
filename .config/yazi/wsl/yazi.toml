@@ -1,0 +1,10 @@
+"$schema" = "https://yazi-rs.github.io/schemas/yazi.json"
+
+[opener]
+open = [
+  { run = 'explorer.exe "$(wslpath -w "$1")"', desc = "Open", for = "linux" },
+]
+
+reveal = [
+  { run = 'explorer.exe "$(wslpath -w "$(dirname "$1")")"', desc = "Reveal", for = "linux" },
+]
