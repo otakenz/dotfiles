@@ -25,7 +25,9 @@ config.initial_rows = 50
 config.initial_cols = 180
 
 config.color_scheme = "Tokyo Night Moon"
-config.font = wezterm.font("MesloLGS Nerd Font Mono")
+
+config.font = wezterm.font_with_fallback("MesloLGS Nerd Font", "Symbols Nerd Font")
+config.font_dirs = "~/.local/share/fonts"
 config.font_size = 13
 
 config.window_decorations = "TITLE|RESIZE"

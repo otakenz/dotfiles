@@ -1178,7 +1178,8 @@ install_nerdfont() {
   _info "INSTALL NERDFONT"
 
   local font_dir="$HOME/.local/share/fonts"
-  local meslo_pattern="MesloLGS NF*"
+  local meslo_pattern="MesloLGS*"
+  local nerd_symbols="SymbolsNerdFont*"
 
   # Check if any Meslo Nerd Font files exist
   if ! find "$font_dir" -type f -iname "$meslo_pattern" | grep -q .; then
@@ -1188,6 +1189,16 @@ install_nerdfont() {
   else
     echo "✅ Meslo Nerd Font already installed."
   fi
+
+  # Download and install Symbols Nerd Font if missing
+  if ! find "$font_dir" -type f -iname "$nerd_symbols" | grep -q .; then
+    echo "🔣 Symbols Nerd Font not found, downloading..."
+    wget -O /tmp/SymbolsNF.zip "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/NerdFontsSymbolsOnly.zip"
+    unzip -o /tmp/SymbolsNF.zip -d "$font_dir"
+  else
+    echo "✅ Symbols Nerd Font already installed."
+  fi
+
   fc-cache -fv
 }
 
@@ -1195,11 +1206,18 @@ install_wezterm() {
   _info "INSTALL WEZTERM"
 
   if [ -z "${OS_IN_WSL}" ]; then
+    if command -v wezterm &>/dev/null; then
+      echo "Skipping, since wezterm is already installed"
+      return 0
+    fi
     curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /etc/apt/keyrings/wezterm-fury.gpg
     echo 'deb [signed-by=/etc/apt/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
-    # Add wezterm to debian packages
-    DEBIAN_PACKAGES="${DEBIAN_PACKAGES} wezterm"
+    sudo apt update && sudo apt install wezterm
   else
+    if command -v wezterm.exe &>/dev/null; then
+      echo "Skipping, since wezterm is already installed"
+      return 0
+    fi
     winget.exe install wez.wezterm
   fi
 }
