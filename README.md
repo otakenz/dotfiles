@@ -86,7 +86,7 @@ mise use -g <package>@<version>
 mise list-all <package>
 ```
 - node@22.14, python@3.13, go@1.23, lua@5.4, rust@1.86
-### 6. Tools (special mentioned)
+### 6. CLI Tools (special mentioned)
 - [bat](https://github.com/sharkdp/bat) (better cat, provide colors)
 - [delta](https://github.com/dandavison/delta) (provide syntax highlighting for git, diff)
 - [eza](https://github.com/eza-community/eza) (better ls, with color and icons)
@@ -96,6 +96,7 @@ mise list-all <package>
 - [lazygit](https://github.com/jesseduffield/lazygit) (another git TUI, written in go, can be spawned inside neovim)
 - [ripgrep](https://github.com/BurntSushi/ripgrep) (ultra fast regex search on files)
 - [tldr](https://github.com/tldr-pages/tldr) (cheatsheet for console commands)
+- [yazi](https://github.com/sxyazi/yazi) (blazingly fast and fancy TUI file manager)
 - [zoxide](https://github.com/ajeetdsouza/zoxide) (cd with memory)
 ### 7. Neovim (v0.10+ or latest)
 - [Lazy.nvim](https://github.com/folke/lazy.nvim) (Modern neovim package manager with lazy-loading feature)
