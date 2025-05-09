@@ -31,16 +31,19 @@ opt.laststatus = 2
 
 -- These are all invisible by default but we can toggle them with a keymap.
 opt.listchars = {
-  eol = "$",
-  tab = ">-",
-  trail = "-",
-  lead = "-",
-  extends = "~",
-  precedes = "~",
-  conceal = "+",
-  nbsp = "&",
+	eol = "$",
+	tab = ">-",
+	trail = "-",
+	lead = "-",
+	extends = "~",
+	precedes = "~",
+	conceal = "+",
+	nbsp = "&",
 }
 opt.list = false
+
+-- True auto expand tab keys to number of spaces specified by shiftwidth.
+opt.expandtab = true
 
 -- Don't auto-scroll N number of lines from the top of the buffer.
 opt.scrolloff = 0
