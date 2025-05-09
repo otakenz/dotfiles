@@ -54,6 +54,7 @@ This script is designed to be run on a fresh install of the supported platforms.
 - p10k configure (when needed to reconfigure)
 - ~/.config/zsh/.p10k.zsh (config stored here)
 ### 3. [Meslo Nerd Font](https://www.nerdfonts.com/font-downloads) (Terminal Fonts that support icons)
+- I used Meslo Nerd Font Mono and Symbols Nerd Font Mono, if you used otherwise, you have to modify your wezterm.lua
 #### [Ubuntu/Archlinux]
 - Fonts data installed at ~/.local/share/fonts/
 - fc-cache -fv (load new fonts to terminal)
