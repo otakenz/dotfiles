@@ -21,9 +21,10 @@ cd ~/dotfiles
 LOCAL=1 bash install
 ```
 
-### One-liner way
+### Remote way
 ```sh
-bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install)
+rm /tmp/install 2>/dev/null && curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install -o /tmp/install \
+&& chmod +x /tmp/install && bash /tmp/install
 ```
 
 ### (Optional) Change remote url to ssh

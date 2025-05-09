@@ -80,6 +80,7 @@ DEBIAN_PACKAGES="
   git
   gnupg
   htop
+  imagemagick
   inotify-tools
   iproute2
   libncurses5-dev
@@ -131,7 +132,6 @@ MISE_PACKAGES_DEBIAN="
   fd
   fzf
   gitui
-  imagemagick
   lazygit
   jq
   neovim
@@ -176,6 +176,8 @@ SSH_PUBKEY=
 
 GPG_INSTRUCTIONS=
 GPG_PUBKEY=
+
+BACKUP_DIR="${HOME}/.dotfiles_backup/backup_$(date +%Y-%m-%d_%H-%M-%S)"
 
 # -----------------------------------------------------------------------------
 # Helper functions
@@ -312,75 +314,25 @@ _display_packages() {
   fi
 }
 
-_backup_and_symlink() {
-  local src_path="$1"
-  local dest_path="$2"
-  local use_sudo="$3"
-  local timestamp
-  local BACKUP_DIR="${HOME}/.dotfiles_backup"
-  local backup_dirname
-  local relative_path
-  local backup_path
-
-  # Generate timestamp for backup directory
-  timestamp=$(date "+%Y-%m-%d_%H-%M-%S")
-  local timestamped_backup_dir="${BACKUP_DIR}/backup_${timestamp}"
-
-  echo "${timestamped_backup_dir}"
-
-  # Create backup directory
-  mkdir -p "$timestamped_backup_dir" || {
-    echo "Error: Unable to create backup directory."
-    return 1
-  }
-
-  # Determine relative path of destination for backup
-  relative_path="${dest_path#"${HOME}/"}"
-  backup_path="${timestamped_backup_dir}/${relative_path}"
-  backup_dirname=$(dirname "$backup_path")
-
-  # Backup existing file if it exists
-  if [ -e "$dest_path" ]; then
-    # Resolve the real path the symlink points to
-    real_target=$(realpath "$dest_path")
-    echo "Resolved to: $real_target"
-
-    if [ -d "$dest_path" ]; then
-      # Ensure parent directories exist for backup
-      mkdir -p "$backup_path" || {
-        echo "Error: Unable to create parent directory for backup: $backup_path"
-        return 1
-      }
-      # If the destination is a directory, copy its contents to the backup path
-      cp -a "$real_target"/. "$backup_path"/
-      echo "Contents copied from $real_target to $backup_path"
-    else
-      # Ensure parent directories exist for backup
-      mkdir -p "$backup_dirname" || {
-        echo "Error: Unable to create parent directory for backup: $backup_dirname"
-        return 1
-      }
-      # If the destination is a file, copy it to the backup path
-      cp -a "$real_target" "$backup_dirname"
-      echo "File copied from $real_target to $backup_dirname"
-    fi
-
-  else
-    echo "Warning: $dest_path does not exist, no backup made."
+_backup_and_remove_dir() {
+  if [ -L "$1" ]; then
+    echo "Skipping backup ... $1 is a symlink"
+    return 0
   fi
 
-  # Create the symlink
-  echo "🔗 Creating symlink: ln -fs \"$src_path\" \"$dest_path\""
-  # shellcheck disable=SC2086
-  if ${use_sudo:+sudo} ln -fs $src_path "$dest_path"; then
-    if [ -L "$dest_path" ] && [ -e "$dest_path" ]; then
-      echo "Symlink created successfully."
-    else
-      echo "Symlink created but points to a non-existent target."
-    fi
+  if [ ! -d "$1" ]; then
+    echo "Skipping backup ... $1 does not exist"
+    return 0
+  fi
+
+  if [ "$(ls -A "$1")" ]; then
+    echo "$1 is not empty, backing up ..."
+    echo "cp -a '$1' '$BACKUP_DIR'"
+    cp -ar "$1" "$BACKUP_DIR"
+    rm -rf "$1"
   else
-    echo "Error: Failed to create symlink."
-    return 1
+    echo "$1 is empty, removing directory ..."
+    rm -rf "$1"
   fi
 }
 
@@ -504,7 +456,7 @@ EOF
 update_dotfiles() {
   _info "UPDATE DOTFILES"
 
-  if [ -z "${DOTFILES_PATH:-}" ]; then
+  if [ ! -d "$DOTFILES_PATH" ]; then
     echo "Skipping, since this is the first time you've run this script"
     return 0
   fi
@@ -558,9 +510,21 @@ EOF
 }
 
 create_initial_dirs() {
+  _info "CREATING INITIAL DIRECTORIES"
+
+  mkdir -p "$BACKUP_DIR"
+
+  _backup_and_remove_dir "${HOME}/.config/zsh/themes"
+  _backup_and_remove_dir "${HOME}/.config/tmux/themes"
+  _backup_and_remove_dir "${HOME}/.config/bat/themes"
+  _backup_and_remove_dir "${HOME}/.config/gitui"
+  _backup_and_remove_dir "${HOME}/.config/nvim"
+  _backup_and_remove_dir "${HOME}/.config/yazi"
+  _backup_and_remove_dir "${HOME}/.config/git"
+
   mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/git" \
     "${HOME}/.config/wezterm" "${HOME}/.config/zsh" "${HOME}/.config/bat" \
-    "${HOME}/.config/yazi"
+    "${HOME}/.config/lazygit"
 
   mkdir -p "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share/fonts"
 
@@ -569,6 +533,7 @@ create_initial_dirs() {
 
   mkdir -p "${GPG_HOME}"
   chmod 700 "${GPG_HOME}"
+
 }
 
 install_packages() {
@@ -651,27 +616,26 @@ create_symlinks() {
   _info "CREATE SYMLINKS"
 
   local symlinks=(
-    "${DOTFILES_PATH}/.zshenv ${HOME}/.zshenv"
-    "${DOTFILES_PATH}/.config/zsh/.zshrc ${HOME}/.config/zsh/.zshrc"
-    "${DOTFILES_PATH}/.config/zsh/.zshrc.local ${HOME}/.config/zsh/.zshrc.local"
-    "${DOTFILES_PATH}/.config/zsh/.zprofile ${HOME}/.config/zsh/.zprofile"
-    "${DOTFILES_PATH}/.config/zsh/.zprofile.local ${HOME}/.config/zsh/.zprofile.local"
-    "${DOTFILES_PATH}/.config/zsh/.aliases ${HOME}/.config/zsh/.aliases"
-    "${DOTFILES_PATH}/.config/zsh/.aliases.local ${HOME}/.config/zsh/.aliases.local"
-    "${DOTFILES_PATH}/.config/tmux/tmux.conf ${HOME}/.config/tmux/tmux.conf"
-    "${DOTFILES_PATH}/.config/zsh/themes ${HOME}/.config/zsh/themes"
-    "${DOTFILES_PATH}/.config/tmux/themes ${HOME}/.config/tmux/themes"
-    "${DOTFILES_PATH}/.config/bat/themes ${HOME}/.config/bat/themes"
-    "${DOTFILES_PATH}/.config/git/config ${HOME}/.config/git/config"
-    "${DOTFILES_PATH}/.config/git/config.local ${HOME}/.config/git/config.local"
-    "${DOTFILES_PATH}/.config/gitui ${HOME}/.config/gitui"
-    "${DOTFILES_PATH}/.config/lazygit/config.yml ${HOME}/.config/lazygit/config.yml"
-    "${DOTFILES_PATH}/.config/nvim ${HOME}/.config/nvim"
-    "${DOTFILES_PATH}/.config/gnupg/gpg.conf ${HOME}/.config/gnupg/gpg.conf"
-    "${DOTFILES_PATH}/.config/gnupg/gpg-agent.conf ${HOME}/.config/gnupg/gpg-agent.conf"
-    "${DOTFILES_PATH}/.config/yazi/yazi.toml ${HOME}/.config/yazi/yazi.toml"
-    "${DOTFILES_PATH}/.config/yazi/keymap.toml ${HOME}/.config/yazi/keymap.toml"
-    "${DOTFILES_PATH}/.local/bin/* ${HOME}/.local/bin"
+    "ln -fs ${DOTFILES_PATH}/.zshenv ${HOME}/.zshenv"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/.zshrc ${HOME}/.config/zsh/.zshrc"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/.zshrc.local ${HOME}/.config/zsh/.zshrc.local"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/.zprofile ${HOME}/.config/zsh/.zprofile"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/.zprofile.local ${HOME}/.config/zsh/.zprofile.local"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/.aliases ${HOME}/.config/zsh/.aliases"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/.aliases.local ${HOME}/.config/zsh/.aliases.local"
+    "ln -fs ${DOTFILES_PATH}/.config/tmux/tmux.conf ${HOME}/.config/tmux/tmux.conf"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/themes ${HOME}/.config/zsh/themes"
+    "ln -fs ${DOTFILES_PATH}/.config/tmux/themes ${HOME}/.config/tmux/themes"
+    "ln -fs ${DOTFILES_PATH}/.config/bat/themes ${HOME}/.config/bat/themes"
+    "ln -fs ${DOTFILES_PATH}/.config/git/config ${HOME}/.config/git/config"
+    "ln -fs ${DOTFILES_PATH}/.config/git/config.local ${HOME}/.config/git/config.local"
+    "ln -fs ${DOTFILES_PATH}/.config/gitui ${HOME}/.config/gitui"
+    "ln -fs ${DOTFILES_PATH}/.config/lazygit/config.yml ${HOME}/.config/lazygit/config.yml"
+    "ln -fs ${DOTFILES_PATH}/.config/nvim ${HOME}/.config/nvim"
+    "ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg.conf ${HOME}/.config/gnupg/gpg.conf"
+    "ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg-agent.conf ${HOME}/.config/gnupg/gpg-agent.conf"
+    "ln -fs ${DOTFILES_PATH}/.config/yazi ${HOME}/.config/yazi"
+    "ln -fs ${DOTFILES_PATH}/.local/bin/* ${HOME}/.local/bin"
   )
 
   local symlinks_system=()
@@ -680,11 +644,11 @@ create_symlinks() {
   if [ -n "${OS_IN_WSL}" ]; then
     if [ "${OS_DISTRO}" = "arch" ]; then
       symlinks_system+=(
-        "${DOTFILES_PATH}/etc/archlinux/wsl.conf /etc/wsl.conf"
+        "sudo ln -fs ${DOTFILES_PATH}/etc/archlinux/wsl.conf /etc/wsl.conf"
       )
     elif [ "${OS_DISTRO}" = "debian" ]; then
       symlinks_system+=(
-        "${DOTFILES_PATH}/etc/debian/wsl.conf /etc/wsl.conf"
+        "sudo ln -fs ${DOTFILES_PATH}/etc/debian/wsl.conf /etc/wsl.conf"
       )
     fi
 
@@ -693,26 +657,45 @@ create_symlinks() {
       echo "Copied wezterm.lua to window users"
     fi
   else
-    symlinks_system+=(
-      "${DOTFILES_PATH}/.config/wezterm/wezterm.lua ${HOME}/.config/wezterm/wezterm.lua"
+    symlinks+=(
+      "ln -fs ${DOTFILES_PATH}/.config/wezterm/wezterm.lua ${HOME}/.config/wezterm/wezterm.lua"
     )
   fi
 
   if [ "${OS_DISTRO}" = "arch" ]; then
-    symlinks_system+=("${DOTFILES_PATH}/etc/pacman.d/01-options.conf /etc/pacman.d/01-options.conf")
+    symlinks_system+=("sudo ln -fs ${DOTFILES_PATH}/etc/pacman.d/01-options.conf /etc/pacman.d/01-options.conf")
 
     if [ -f "etc/pacman.d/02-ignore.conf" ]; then
-      symlinks_system+=("${DOTFILES_PATH}/etc/pacman.d/02-ignore.conf /etc/pacman.d/02-ignore.conf")
+      symlinks_system+=("sudo ln -fs ${DOTFILES_PATH}/etc/pacman.d/02-ignore.conf /etc/pacman.d/02-ignore.conf")
     else
       sudo rm -f "/etc/pacman.d/02-ignore.conf"
     fi
   fi
 
+  printf -- "-------------------------------------------------------------------------------\n\n"
+
+  for link in "${symlinks[@]}"; do
+    echo "${link}"
+  done
+
+  for link in "${symlinks_system[@]}"; do
+    echo "${link}"
+  done
+
   cat <<EOF
 
-  -----------------------------------------------------------------------------------
-  The following symlinks will be created:
-  -----------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+
+A potentially destructive action is about to happen. The above directories and
+files are going to get forcefully symlinked if you type y in the prompt below.
+
+What does that mean?
+
+Any config files you have on the right hand side of the paths are going to get
+overwritten with the files that come with these dotfiles (left side).
+
+Without these symlinks, these dotfiles will not work. If you plan to type y
+and have existing files now would be a good time to back them up.
 
 EOF
 
@@ -720,28 +703,14 @@ EOF
     read -rep "Ready to continue? Enter y to apply them all or n to skip (y/n) " yn
     case "${yn}" in
     [Yy]*)
-      # Avoid using ln -T flag since it doesn't exist on macOS. We're being
-      # extra careful here to only delete symlinks if they exist. Technically
-      # rm -f would work but that could delete real files potentially.
-      [ -L "${HOME}/.config/zsh/themes" ] && rm "${HOME}/.config/zsh/themes"
-      [ -L "${HOME}/.config/tmux/themes" ] && rm "${HOME}/.config/tmux/themes"
-      [ -L "${HOME}/.config/bat/themes" ] && rm "${HOME}/.config/bat/themes"
-      [ -L "${HOME}/.config/gitui" ] && rm "${HOME}/.config/gitui"
-      [ -L "${HOME}/.config/nvim" ] && rm "${HOME}/.config/nvim"
 
-      # Backup and create symlinks for each file
       for link in "${symlinks[@]}"; do
-        read -r src dest <<<"$link"
-        _backup_and_symlink "$src" "$dest"
+        eval "${link}"
       done
 
       for link in "${symlinks_system[@]}"; do
-        read -r src dest <<<"$link"
-        _backup_and_symlink "$src" "$dest" sudo
+        eval "${link}"
       done
-
-      sudo ln -s "$(which nvim)" /usr/bin/nvim
-      echo "Symlink nvim to /usr/bin/nvim"
 
       echo "🌟 All symlinks created successfully."
 
@@ -884,6 +853,13 @@ install_mise_packages() {
           sleep 1
         done
       fi
+    fi
+  fi
+
+  if [ ! -e /usr/bin/nvim ]; then
+    if [ -e "$(which nvim)" ]; then
+      sudo ln -s "$(which nvim)" /usr/bin/nvim
+      echo "Symlink nvim to /usr/bin/nvim"
     fi
   fi
 
@@ -1146,6 +1122,8 @@ EOF
   echo "It has been configured in '$(dirname "${git_config_local_path}")'"
   echo "✅ Git is now set to sign commits using your GPG key. Uncomment them to use it"
   echo "🔑 GPG Fingerprint: ${gpg_fingerprint}"
+
+  git -C "${DOTFILES_PATH}" remote set-url origin git@github.com:otakenz/dotfiles.git
 }
 
 install_tmux_plugins() {
@@ -1222,7 +1200,13 @@ install_wezterm() {
       echo "Skipping, since wezterm is already installed"
       return 0
     fi
-    winget.exe install wez.wezterm
+
+    if [ -d /mnt/c/Program\ Files/WezTerm/ ] || [ -d /c/Program\ Files/WezTerm/ ]; then
+      echo "Skipping, since wezterm is already installed"
+      return 0
+    fi
+
+    "${WIN_USER_PATH}/AppData/Local/Microsoft/WindowsApps/winget.exe" install wez.wezterm
   fi
 }
 
