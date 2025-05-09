@@ -34,12 +34,7 @@ local function location()
   local line_end = vim.fn.line(".")
 
   if vim.fn.mode():find("[vV]") and line_end ~= line_start then
-    return string.format(
-      "%d:%d:%d",
-      line,
-      col,
-      vim.fn.wordcount().visual_chars
-    )
+    return string.format("%d:%d:%d", line, col, vim.fn.wordcount().visual_chars)
   else
     return string.format("%d:%d", line, col)
   end
@@ -49,6 +44,17 @@ return {
   {
     "nvim-lualine/lualine.nvim",
     opts = {
+      options = {
+        -- List of sections that always appear as inactive in lualine
+        ignore_focus = {
+          "dap-repl",
+          "dapui_scopes",
+          "dapui_breakpoints",
+          "dapui_stacks",
+          "dapui_watches",
+          "dapui_console",
+        },
+      },
       sections = {
         lualine_y = {
           { "progress", separator = " ", padding = { left = 1, right = 0 } },
