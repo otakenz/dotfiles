@@ -23,7 +23,7 @@ LOCAL=1 bash install
 
 ### Remote way
 ```sh
-rm /tmp/install 2>/dev/null && curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install -o /tmp/install \
+rm /tmp/install 2>/dev/null || true && curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install -o /tmp/install \
 && chmod +x /tmp/install && bash /tmp/install
 ```
 

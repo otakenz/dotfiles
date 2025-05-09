@@ -520,7 +520,7 @@ create_initial_dirs() {
   _backup_and_remove_dir "${HOME}/.config/gitui"
   _backup_and_remove_dir "${HOME}/.config/nvim"
   _backup_and_remove_dir "${HOME}/.config/yazi"
-  _backup_and_remove_dir "${HOME}/.config/git"
+  # _backup_and_remove_dir "${HOME}/.config/git"
 
   mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/git" \
     "${HOME}/.config/wezterm" "${HOME}/.config/zsh" "${HOME}/.config/bat" \
