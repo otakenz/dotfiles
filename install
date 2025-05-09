@@ -388,7 +388,11 @@ _get_win_users_path() {
   local win_user win_path wsl_path
 
   # Get Windows username
-  win_user=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')
+  if [ -e "/mnt/c/Windows/System32" ]; then
+    win_user=$(/mnt/c/Windows/System32/cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')
+  else
+    win_user=$(/c/Windows/System32/cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')
+  fi
 
   # If failed, return error
   if [[ -z "$win_user" ]]; then
