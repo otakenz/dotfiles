@@ -13,4 +13,4 @@ git:
 
   overrideGpg: true
 
-confirmOnQuit: true
+confirmOnQuit: false

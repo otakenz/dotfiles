@@ -21,6 +21,7 @@ PACMAN_PACKAGES="
   bc
   bison
   chafa
+  clang
   curl
   dust
   git-delta
@@ -40,6 +41,7 @@ PACMAN_PACKAGES="
   kguiaddons
   kwindowsystem
   lazygit
+  ldd
   less
   man-db
   man-pages
@@ -54,8 +56,6 @@ PACMAN_PACKAGES="
   pwgen
   ripgrep
   rsync
-  shellcheck
-  shfmt
   tmux
   unzip
   ueberzugpp
@@ -76,6 +76,8 @@ DEBIAN_PACKAGES="
   build-essential
   curl
   chafa
+  clang
+  clang-tidy
   ffmpeg
   git
   gnupg
@@ -85,6 +87,7 @@ DEBIAN_PACKAGES="
   iproute2
   libncurses5-dev
   libncursesw5-dev
+  ldd
   netcat-openbsd
   openssh-server
   pass
@@ -104,18 +107,21 @@ DEBIAN_PACKAGES="
 BREW_PACKAGES="
   aspell
   bash
+  bc
   curl
   diffutils
   fastfetch
-  gc
+  fd
+  fzf
   git
   git-delta
   gnupg
   htop
+  jq
   mise
-  openssh
   pass
   pwgen
+  ripgrep
   rsync
   tmux
   wget
@@ -136,14 +142,12 @@ MISE_PACKAGES_DEBIAN="
   jq
   neovim
   ripgrep
-  shellcheck
-  shfmt
   tmux
   yazi
   zoxide
 "
 
-MISE_PACKAGES_MACOS=""
+MISE_PACKAGES_MACOS="neovim"
 
 # Used to configure git
 NAME=
@@ -889,6 +893,10 @@ install_programming_languages() {
         npm install --unsafe-perm=true --allow-root --global yarn
       fi
     fi
+
+    # Provide node to neovim
+    yarn global add neovim
+
   done
 }
 
