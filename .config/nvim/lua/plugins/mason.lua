@@ -36,6 +36,7 @@ return {
         "markdown-toc",
         "markdownlint-cli2",
         "marksman",
+        "prettier",
         "taplo",
         "yaml-language-server",
         -- Rust
