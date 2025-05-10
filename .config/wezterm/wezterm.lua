@@ -6,6 +6,7 @@ local wezterm = require("wezterm")
 -- --------------
 -- Return {} if no WSL
 local wsl_domains = wezterm.default_wsl_domains()
+local gpus = wezterm.gui.enumerate_gpus()
 
 -- ---------------------
 -- Wezterm configuration
@@ -19,6 +20,11 @@ end
 
 if wezterm.hostname() == "msipc" then
 	config.default_domain = "WSL:archlinux"
+end
+
+if wezterm.hostname() == "IGL3640W" then
+	config.webgpu_preferred_adapter = gpus[4]
+	config.front_end = "WebGpu"
 end
 
 config.initial_rows = 50
