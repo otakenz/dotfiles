@@ -15,16 +15,16 @@ export GPG_TTY
 # Function to safely prepend to PATH
 prepend_path() {
   case ":$PATH:" in
-    *":$1:"*) ;;  # Already in PATH, do nothing
-    *) PATH="$1:$PATH" ;;
+  *":$1:"*) ;; # Already in PATH, do nothing
+  *) PATH="$1:$PATH" ;;
   esac
 }
 
 # Safely append to PATH
 append_path() {
   case ":$PATH:" in
-    *":$1:"*) ;;  # Already in PATH
-    *) PATH="$PATH:$1" ;;
+  *":$1:"*) ;; # Already in PATH
+  *) PATH="$PATH:$1" ;;
   esac
 }
 
