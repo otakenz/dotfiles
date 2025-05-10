@@ -12,41 +12,43 @@ export XDG_STATE_HOME="${HOME}/.local/state"
 GPG_TTY="$(tty)"
 export GPG_TTY
 
+# Function to safely prepend to PATH
+prepend_path() {
+  case ":$PATH:" in
+    *":$1:"*) ;;  # Already in PATH, do nothing
+    *) PATH="$1:$PATH" ;;
+  esac
+}
+
+# Safely append to PATH
+append_path() {
+  case ":$PATH:" in
+    *":$1:"*) ;;  # Already in PATH
+    *) PATH="$PATH:$1" ;;
+  esac
+}
+
 # When searching for binaries, my order of preference is:
 # 1. Mason bin
 # 2. Mise bin (Install those that are not provided by Mason)
 # 3. System bin (Install those that are not provided by Mise)
 
-# Configure Mason (package manager for Neovim)
-mason_bin="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/mason/bin"
-if [[ ":$PATH:" != *":$mason_bin:"* ]]; then
-  export PATH="$mason_bin:$PATH"
-fi
-
-# Add mise shims path safely
-# Confiure Mise (package manager)
-mise_shims="${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims"
-if [[ ":$PATH:" != *":$mise_shims:"* ]]; then
-  export PATH="$mise_shims:$PATH"
-fi
-
-# Configure Mason (package manager for Neovim)
-local_bin="${HOME}/.local/bin"
-if [[ ":$PATH:" != *":$local_bin:"* ]]; then
-  export PATH="$local_bin:$PATH"
-fi
+# Since this is prepend, last one will be the first one found.
+prepend_path "${HOME}/.local/bin"
+prepend_path "${HOME}/.cargo/bin"
+prepend_path "${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims"
+prepend_path "${XDG_DATA_HOME:-$HOME/.local/share}/nvim/mason/bin"
 
 # Manually appendWindowsPath
 if grep -q "\-WSL2" /proc/version; then
-  win_path="/c/Windows"
-  win_path+=":/c/Windows/System32/"
-  win_path+=":/c/Program Files/WezTerm/"
-  win_path+=":/c/Users/$(/c/Windows/System32/cmd.exe /c 'echo %USERNAME%' 2>/dev/null |
+  append_path "/mnt/c/Windows"
+  append_path "/mnt/c/Windows/System32/"
+  append_path "/mnt/c/Program Files/WezTerm/"
+  append_path "/mnt/c/Users/$(/mnt/c/Windows/System32/cmd.exe /c 'echo %USERNAME%' 2>/dev/null |
     tr -d '\r')/AppData/Local/Programs/Microsoft VS Code/bin"
-  if [[ ":$PATH:" != *":$win_path:"* ]]; then
-    export PATH="$PATH:$win_path"
-  fi
 fi
+
+export PATH
 
 # Default programs to run.
 export EDITOR="nvim"
