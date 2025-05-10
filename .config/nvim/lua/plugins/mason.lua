@@ -8,6 +8,7 @@ return {
         "stylua",
         "clangd",
         "cmakelint",
+        "rust-analyzer",
       },
     },
   },
