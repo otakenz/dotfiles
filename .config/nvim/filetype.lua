@@ -9,10 +9,10 @@ vim.filetype.add({ pattern = { ["%.*zprofile.*"] = "bash" } })
 -- This has less syntax highlighting and comes up with a different explorer
 -- icon so it's easier to know it's not the "real" env file.
 vim.filetype.add({
-  pattern = {
-    ["%.env.*"] = "dotenv",
-    ["%.env.*.example"] = { "conf", { priority = 1 } },
-  },
+	pattern = {
+		["%.env.*"] = "dotenv",
+		["%.env.*.example"] = { "conf", { priority = 1 } },
+	},
 })
 
 -- Ensure all .env files and variants are syntax highlighted as shell scripts.
@@ -29,8 +29,8 @@ vim.filetype.add({ pattern = { ["requirements.*.txt"] = "requirements" } })
 
 -- Set these as "markdown".
 vim.filetype.add({
-  pattern = {
-    ["LICENSE.*"] = "markdown",
-    ["README.*"] = "markdown",
-  },
+	pattern = {
+		["LICENSE.*"] = "markdown",
+		["README.*"] = "markdown",
+	},
 })

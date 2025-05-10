@@ -15,10 +15,6 @@ vim.g.root_spec = { "cwd" }
 vim.lsp.set_log_level("OFF")
 
 local opt = vim.opt
--- vim.cmd("let g:netrw_liststyle = 3")
-
--- clipboard
--- opt.clipboard = vim.env.SSH_TTY and "" or "unnamedplus" -- Sync with system clipboard
 
 -- I prefer seeing all characters by default.
 opt.conceallevel = 0
@@ -42,8 +38,12 @@ opt.listchars = {
 }
 opt.list = false
 
--- True auto expand tab keys to number of spaces specified by shiftwidth.
-opt.expandtab = true
+-- Size of an indent
+opt.shiftwidth = 2
+
+-- Use tabs instead of spaces if set false.
+opt.expandtab = false
+opt.tabstop = 2
 
 -- Don't auto-scroll N number of lines from the top of the buffer.
 opt.scrolloff = 0

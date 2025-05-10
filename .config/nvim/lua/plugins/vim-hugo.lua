@@ -1,3 +1,3 @@
 return {
-  { "phelipetls/vim-hugo" },
+	{ "phelipetls/vim-hugo" },
 }

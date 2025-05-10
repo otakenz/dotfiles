@@ -1,6 +1,6 @@
 return {
-  {
-    "tpope/vim-abolish",
-    event = "VeryLazy",
-  },
+	{
+		"tpope/vim-abolish",
+		event = "VeryLazy",
+	},
 }
