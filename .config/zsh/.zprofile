@@ -12,19 +12,28 @@ export XDG_STATE_HOME="${HOME}/.local/state"
 GPG_TTY="$(tty)"
 export GPG_TTY
 
-# Add ~/.local/bin and ~/.local/bin/local if not already in PATH and make sure
-# they are first
-for dir in "${HOME}/.local/bin" "${HOME}/.local/bin/local"; do
-  if [[ ":$PATH:" != *":$dir:"* ]]; then
-    export PATH="$dir:$PATH"
-  fi
-done
+# When searching for binaries, my order of preference is:
+# 1. Mason bin
+# 2. Mise bin (Install those that are not provided by Mason)
+# 3. System bin (Install those that are not provided by Mise)
+
+# Configure Mason (package manager for Neovim)
+mason_bin="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/mason/bin"
+if [[ ":$PATH:" != *":$mason_bin:"* ]]; then
+  export PATH="$mason_bin:$PATH"
+fi
 
 # Add mise shims path safely
-# Confiure Mise (programming language run-time manager)
+# Confiure Mise (package manager)
 mise_shims="${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims"
 if [[ ":$PATH:" != *":$mise_shims:"* ]]; then
   export PATH="$mise_shims:$PATH"
+fi
+
+# Configure Mason (package manager for Neovim)
+local_bin="${HOME}/.local/bin"
+if [[ ":$PATH:" != *":$local_bin:"* ]]; then
+  export PATH="$local_bin:$PATH"
 fi
 
 # Manually appendWindowsPath
@@ -32,13 +41,7 @@ if grep -q "\-WSL2" /proc/version; then
   win_path="/c/Windows"
   win_path+=":/c/Windows/System32/"
   win_path+=":/c/Program Files/WezTerm/"
-  if [[ ":$PATH:" != *":$win_path:"* ]]; then
-    export PATH="$PATH:$win_path"
-  fi
-fi
-
-if grep -q "\-WSL2" /proc/version; then
-  win_path="/c/Users/$(cmd.exe /c 'echo %USERNAME%' 2>/dev/null | tr -d '\r')/AppData/Local/Programs/Microsoft VS Code/bin"
+  win_path+=":/c/Users/$(cmd.exe /c 'echo %USERNAME%' 2>/dev/null | tr -d '\r')/AppData/Local/Programs/Microsoft VS Code/bin"
   if [[ ":$PATH:" != *":$win_path:"* ]]; then
     export PATH="$PATH:$win_path"
   fi
