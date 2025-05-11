@@ -5,11 +5,31 @@ local markdown_preview_css_path = data_path .. "/github-markdown.css"
 return {
 	{
 		"iamcco/markdown-preview.nvim",
+		cmd = { "MarkdownPreviewToggle", "MarkdownPreview", "MarkdownPreviewStop" },
 		ft = { "markdown" },
 		build = "cd app && yarn install",
 		init = function()
 			vim.g.mkdp_auto_close = false
 			vim.g.mkdp_markdown_css = markdown_preview_css_path
+		end,
+		config = function()
+			-- Define custom browser function
+			vim.cmd([[
+				function! OpenMarkdownPreview(url)
+					if has('win32')
+						lua vim.notify("Opening mdp with Windows cmd.exe")
+						silent execute '!start /b cmd.exe /c start "" "' . a:url . '"'
+					elseif has('wsl')
+						lua vim.notify("Opening mdp with explorer.exe")
+						silent execute '!explorer.exe ' . shellescape(a:url)
+					else
+						lua vim.notify("Opening mdp with xdg-open")
+						silent execute '!xdg-open ' . a:url
+					endif
+				endfunction
+    ]])
+			vim.g.mkdp_browserfunc = "OpenMarkdownPreview"
+			vim.g.mkdp_filetypes = { "markdown" }
 		end,
 	},
 	{
