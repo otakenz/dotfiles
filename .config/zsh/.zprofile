@@ -14,18 +14,18 @@ export GPG_TTY
 
 # Function to safely prepend to PATH
 prepend_path() {
-  case ":$PATH:" in
-  *":$1:"*) ;; # Already in PATH, do nothing
-  *) PATH="$1:$PATH" ;;
-  esac
+	case ":$PATH:" in
+	*":$1:"*) ;; # Already in PATH, do nothing
+	*) PATH="$1:$PATH" ;;
+	esac
 }
 
 # Safely append to PATH
 append_path() {
-  case ":$PATH:" in
-  *":$1:"*) ;; # Already in PATH
-  *) PATH="$PATH:$1" ;;
-  esac
+	case ":$PATH:" in
+	*":$1:"*) ;; # Already in PATH
+	*) PATH="$PATH:$1" ;;
+	esac
 }
 
 # When searching for binaries, my order of preference is:
@@ -41,11 +41,11 @@ prepend_path "${XDG_DATA_HOME:-$HOME/.local/share}/nvim/mason/bin"
 
 # Manually appendWindowsPath
 if grep -q "\-WSL2" /proc/version; then
-  append_path "/mnt/c/Windows"
-  append_path "/mnt/c/Windows/System32/"
-  append_path "/mnt/c/Program Files/WezTerm/"
-  append_path "/mnt/c/Users/$(/mnt/c/Windows/System32/cmd.exe /c 'echo %USERNAME%' 2>/dev/null |
-    tr -d '\r')/AppData/Local/Programs/Microsoft VS Code/bin"
+	append_path "/mnt/c/Windows"
+	append_path "/mnt/c/Windows/System32/"
+	append_path "/mnt/c/Program Files/WezTerm/"
+	append_path "/mnt/c/Users/$(/mnt/c/Windows/System32/cmd.exe /c 'echo %USERNAME%' 2>/dev/null |
+		tr -d '\r')/AppData/Local/Programs/Microsoft VS Code/bin"
 fi
 
 export PATH

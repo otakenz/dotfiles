@@ -4,35 +4,35 @@
 export XDG_DATA_HOME="${XDG_DATA_HOME:-"${HOME}/.local/share"}"
 
 clone_or_pull() {
-  local repo="$1"
-  local project="${repo##*/}"
-  local dest="${XDG_DATA_HOME}/${project}"
+	local repo="$1"
+	local project="${repo##*/}"
+	local dest="${XDG_DATA_HOME}/${project}"
 
-  if [[ -d "$dest/.git" ]]; then
-    echo "🔄 Updating $repo..."
-    git -C "$dest" fetch --quiet
-    if [[ $(git -C "$dest" rev-parse HEAD) != $(git -C "$dest" rev-parse "@{u}") ]]; then
-      git -C "$dest" pull --quiet
-    else
-      echo "✔️  $repo is up to date."
-    fi
-  else
-    echo "⬇️  Cloning $repo (shallow)..."
-    git clone --quiet --depth=1 "https://github.com/$repo" "$dest"
-  fi
+	if [[ -d "$dest/.git" ]]; then
+		echo "🔄 Updating $repo..."
+		git -C "$dest" fetch --quiet
+		if [[ $(git -C "$dest" rev-parse HEAD) != $(git -C "$dest" rev-parse "@{u}") ]]; then
+			git -C "$dest" pull --quiet
+		else
+			echo "✔️  $repo is up to date."
+		fi
+	else
+		echo "⬇️  Cloning $repo (shallow)..."
+		git clone --quiet --depth=1 "https://github.com/$repo" "$dest"
+	fi
 }
 
 check_internet() {
-  if [[ -n "$http_proxy$https_proxy" ]]; then
-    echo "📡 Proxy detected  skipping internet check."
-    return 0
-  fi
+	if [[ -n "$http_proxy$https_proxy" ]]; then
+		echo "📡 Proxy detected  skipping internet check."
+		return 0
+	fi
 
-  echo "🌐 Checking connectivity to GitHub..."
-  curl -s --head https://github.com | grep -q "^HTTP.*200" && return 0
+	echo "🌐 Checking connectivity to GitHub..."
+	curl -s --head https://github.com | grep -q "^HTTP.*200" && return 0
 
-  echo "❌ Cannot reach GitHub. Check your internet connection."
-  return 1
+	echo "❌ Cannot reach GitHub. Check your internet connection."
+	return 1
 }
 
 check_internet || exit 1

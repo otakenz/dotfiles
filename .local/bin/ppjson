@@ -14,10 +14,10 @@ set -o nounset
 file="${1:-}"
 
 if [ -f "${file}" ]; then
-  shift
-  # shellcheck disable=SC2068
-  jq ${@:-} <"${file}"
+	shift
+	# shellcheck disable=SC2068
+	jq ${@:-} <"${file}"
 else
-  # shellcheck disable=SC2068
-  if command -v pbpaste >/dev/null 2>&1; then pbpaste; else xclip -out -selection clipboard; fi | jq ${@:-}
+	# shellcheck disable=SC2068
+	if command -v pbpaste >/dev/null 2>&1; then pbpaste; else xclip -out -selection clipboard; fi | jq ${@:-}
 fi

@@ -9,8 +9,8 @@ zsh_start_time=$(date +%s%N) # nanoseconds
 # confirmations, etc.) must go above this block; everything else may go below.
 # shellcheck disable=SC2296
 if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-$(print -P %n).zsh" ]]; then
-  # shellcheck disable=SC1090
-  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-$(print -P %n).zsh"
+	# shellcheck disable=SC1090
+	source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-$(print -P %n).zsh"
 fi
 
 # shellcheck disable=SC1090
@@ -28,10 +28,10 @@ fi
 # to remove this zsh plugin then each array item can exist normally in zshrc.
 # shellcheck disable=SC1090
 zvm_after_init_commands+=(
-  ". <(fzf --zsh)"
-  # Ctrl + n/p to search through history forward/backward
-  "bindkey '^p' history-search-backward"
-  "bindkey '^n' history-search-forward"
+	". <(fzf --zsh)"
+	# Ctrl + n/p to search through history forward/backward
+	"bindkey '^p' history-search-backward"
+	"bindkey '^n' history-search-forward"
 )
 
 ## Configure FZF
@@ -49,12 +49,12 @@ source "${XDG_CONFIG_HOME}"/zsh/themes/fzf/tokyonight-moon.sh
 # - See the source code (completion.{bash,zsh}) for the details.
 # Blazing fast tab completion with fd
 _fzf_compgen_path() {
-  fd --hidden --exclude .git . "$1"
+	fd --hidden --exclude .git . "$1"
 }
 
 # Use fd to generate the list for directory completion
 _fzf_compgen_dir() {
-  fd --type=d --hidden --exclude .git . "$1"
+	fd --type=d --hidden --exclude .git . "$1"
 }
 
 # shellcheck disable=SC1091
@@ -71,15 +71,15 @@ export FZF_ALT_C_OPTS="--preview 'eza --tree --color=always {} | head -200'"
 # - The first argument to the function is the name of the command.
 # - You should make sure to pass the rest of the arguments to fzf.
 _fzf_comprun() {
-  local command=$1
-  shift
+	local command=$1
+	shift
 
-  case "$command" in
-  cd) fzf --preview 'eza --tree --color=always {} | head -200' "$@" ;;
-  export | unset) fzf --preview "eval 'echo \${}'" "$@" ;;
-  ssh) fzf --preview 'dig {}' "$@" ;;
-  *) fzf --preview "$show_file_or_dir_preview" "$@" ;;
-  esac
+	case "$command" in
+	cd) fzf --preview 'eza --tree --color=always {} | head -200' "$@" ;;
+	export | unset) fzf --preview "eval 'echo \${}'" "$@" ;;
+	ssh) fzf --preview 'dig {}' "$@" ;;
+	*) fzf --preview "$show_file_or_dir_preview" "$@" ;;
+	esac
 }
 # ---- FZF ---- #
 

@@ -29,7 +29,7 @@ return {
 				"go",
 				"gomod",
 				"gosum",
-				"html",
+				-- "html",
 				"javascript",
 				"json",
 				"json5",
