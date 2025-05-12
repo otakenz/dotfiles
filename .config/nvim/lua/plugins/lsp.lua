@@ -48,7 +48,7 @@ local M = {
 		"json-lsp", -- JSON language server
 		"prettier", -- formatter
 		-- "eslint-lsp", -- linter
-		"stylelint", -- linter
+		-- "stylelint", -- linter
 
 		-- Misc
 		"html-lsp", -- HTML language server
@@ -70,11 +70,6 @@ local M = {
 			default = vim.fn.expand("$HOME/.config/nvim/rules/.luacheckrc"),
 		},
 		-- TODO: Add clang
-		-- TODO: change this to gofumpt?
-		revive = {
-			files = { "revive.toml" },
-			default = vim.fn.expand("$HOME/.config/nvim/rules/revive.toml"),
-		},
 		rustfmt = {
 			files = { "rustfmt.toml", ".rustfmt.toml" },
 			default = vim.fn.expand("$HOME/.config/nvim/rules/rustfmt.toml"),
@@ -89,19 +84,6 @@ local M = {
 				"prettier.config.js",
 			},
 			default = vim.fn.expand("$HOME/.config/nvim/rules/.prettierrc.json"),
-		},
-		stylelint = {
-			files = {
-				".stylelintrc",
-				".stylelintrc.js",
-				".stylelintrc.json",
-				".stylelintrc.yaml",
-				".stylelintrc.yml",
-				"stylelint.config.js",
-			},
-			default = vim.fn.expand(
-				"$HOME/.config/nvim/rules/stylelint/stylelint.config.js"
-			),
 		},
 	},
 }
@@ -174,40 +156,6 @@ return {
 						},
 					},
 				},
-				-- TODO: How to do this properly?
-				-- Idea is to have eslint handle diagnostic and linting while
-				-- prettier handle formatting.
-				-- eslint = {
-				-- 	filetypes = {
-				-- 		"json",
-				-- 		"jsonc",
-				-- 		"json5",
-				-- 		"yaml",
-				-- 		"yaml.docker-compose",
-				-- 		"toml",
-				-- 		unpack(eslint_default.filetypes),
-				-- 	},
-				-- 	root_dir = function(fname)
-				-- 		return eslint_default.root_dir(fname) or vim.fs.dirname(fname)
-				-- 	end,
-				-- 	settings = {
-				-- 		packageManager = "pnpm",
-				-- 		useESLintClass = true,
-				-- 		experimental = {
-				-- 			useFlatConfig = true,
-				-- 		},
-				-- 		options = {
-				-- 			overrideConfigFile = vim.fn.expand(
-				-- 				"$HOME/.config/nvim/rules/eslint/eslint.config.cjs"
-				-- 			),
-				-- 		},
-				-- 	},
-				-- 	on_attach = function(client, bufnr)
-				-- 		client.server_capabilities.documentFormattingProvider = true
-				-- 		client.server_capabilities.documentRangeFormattingProvider = true
-				-- 	end,
-				-- 	mason = false,
-				-- },
 			},
 		},
 	},
@@ -217,7 +165,6 @@ return {
 			local stylua_config = M.resolve_config("stylua")
 			local rustfmt_config = M.resolve_config("rustfmt")
 			local prettier_config = M.resolve_config("prettier")
-			local stylelint_config = M.resolve_config("stylelint")
 
 			return {
 				formatters_by_ft = {
@@ -255,10 +202,10 @@ return {
 					["markdown.mdx"] = { "prettier" },
 
 					-- CSS
-					css = { "prettier", "stylelint" },
-					less = { "prettier", "stylelint" },
-					sass = { "prettier", "stylelint" },
-					scss = { "prettier", "stylelint" },
+					css = { "prettier" },
+					less = { "prettier" },
+					sass = { "prettier" },
+					scss = { "prettier" },
 				},
 
 				formatters = {
@@ -275,14 +222,6 @@ return {
 					prettier = {
 						prepend_args = { "--config", prettier_config() },
 					},
-					stylelint = {
-						prepend_args = {
-							"-c",
-							stylelint_config(),
-							"--stdin-filepath",
-							"$FILENAME",
-						},
-					},
 				},
 			}
 		end,
@@ -292,11 +231,6 @@ return {
 		opts = {
 			linters_by_ft = {
 				lua = { "luacheck" },
-				-- go = { "revive" },
-				css = { "stylelint" },
-				less = { "stylelint" },
-				scss = { "stylelint" },
-				sass = { "stylelint" },
 				yaml = { "actionlint" },
 			},
 
@@ -315,52 +249,7 @@ return {
 					stdin = true,
 					stream = "both",
 				},
-				-- stylelint = {
-				-- 	cmd = "stylelint",
-				-- 	args = {
-				-- 		"-c",
-				-- 		M.resolve_config("stylelint")(),
-				-- 		"-f",
-				-- 		"json",
-				-- 		"--stdin",
-				-- 		"--stdin-filename",
-				-- 		vim.fn.expand("%:p"),
-				-- 	},
-				-- 	stdin = true,
-				-- },
 			},
 		},
 	},
-
-	-- Integrating non-LSPs like Prettier
-	-- {
-	-- 	"nvimtools/none-ls.nvim",
-	-- 	dependencies = {
-	-- 		{ "nvim-lua/plenary.nvim", lazy = true },
-	-- 		{
-	-- 			"WhoIsSethDaniel/mason-tool-installer.nvim",
-	-- 			opts = { ensure_installed = M.mason_tools },
-	-- 		},
-	-- 		{ "davidmh/cspell.nvim", lazy = true },
-	-- 	},
-	-- 	event = { "BufReadPre", "BufNewFile" },
-	-- 	config = function()
-	-- 		local nls = require("null-ls")
-	-- 		local cspell = require("cspell")
-	--
-	-- 		nls.setup {
-	-- 			sources = {
-	-- 				cspell.diagnostics.with {
-	-- 					diagnostics_postprocess = function(diagnostic)
-	-- 						diagnostic.severity = vim.diagnostic.severity.HINT
-	-- 					end,
-	-- 				},
-	-- 				cspell.code_actions,
-	--
-	-- 				nls.builtins.code_actions.gitrebase,
-	-- 				nls.builtins.code_actions.gitsigns,
-	-- 			},
-	-- 		}
-	-- 	end,
-	-- },
 }

@@ -27,3 +27,4 @@ tags
 *.spl
 etc/pacman.d/02-ignore.conf.example
 .env
+node_modules/
