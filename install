@@ -14,12 +14,12 @@ ONLY_UPDATE=
 
 PACMAN_PACKAGES="
   7zip
-  aspell
   base
   base-devel
   bat
   bc
   bison
+	btop
   chafa
   clang
   curl
@@ -34,7 +34,6 @@ PACMAN_PACKAGES="
   git
   gitui
   gnupg
-  htop
   imagemagick
   inotify-tools
   jq
@@ -70,7 +69,6 @@ PACMAN_PACKAGES="
 
 DEBIAN_PACKAGES="
   7zip
-  aspell
   bc
   bison
   build-essential
@@ -81,7 +79,6 @@ DEBIAN_PACKAGES="
   ffmpeg
   git
   gnupg
-  htop
   imagemagick
   inotify-tools
   iproute2
@@ -105,9 +102,9 @@ DEBIAN_PACKAGES="
 "
 
 BREW_PACKAGES="
-  aspell
   bash
   bc
+	btop
   curl
   diffutils
   fastfetch
@@ -132,6 +129,7 @@ MISE_PACKAGES_ARCH="neovim"
 
 MISE_PACKAGES_DEBIAN="
   bat
+	btop
   delta
   dust
   eza
@@ -887,15 +885,15 @@ install_programming_languages() {
 			mise use --global "${MISE_LANGUAGES[${lang}]}"
 		fi
 
-		# Also install Yarn for Node.
+		# Also install pnpm for Node.
 		if [ "${lang}" = "node" ]; then
-			if ! yarn --version >/dev/null 2>&1; then
-				npm install --unsafe-perm=true --allow-root --global yarn
+			if ! pnpm --version >/dev/null 2>&1; then
+				npm install -g pnpm
 			fi
 		fi
 
 		# Provide node to neovim
-		yarn global add neovim
+		pnpm add -g neovim
 
 	done
 }

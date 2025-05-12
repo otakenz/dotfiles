@@ -17,13 +17,13 @@ return {
 			vim.cmd([[
 				function! OpenMarkdownPreview(url)
 					if has('win32')
-						lua vim.notify("Opening mdp with Windows cmd.exe")
+						lua vim.notify("Opening mdp with Windows cmd.exe", vim.log.levels.INFO)
 						silent execute '!start /b cmd.exe /c start "" "' . a:url . '"'
 					elseif has('wsl')
-						lua vim.notify("Opening mdp with explorer.exe")
+						lua vim.notify("Opening mdp with explorer.exe", vim.log.levels.INFO)
 						silent execute '!explorer.exe ' . shellescape(a:url)
 					else
-						lua vim.notify("Opening mdp with xdg-open")
+						lua vim.notify("Opening mdp with xdg-open", vim.log.levels.INFO)
 						silent execute '!xdg-open ' . a:url
 					endif
 				endfunction

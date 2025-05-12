@@ -38,9 +38,9 @@ rm /tmp/install 2>/dev/null || true && curl -sS https://raw.githubusercontent.co
 git remote set-url origin git@github.com:otakenz/dotfiles.git
 ```
 
-## Install script
+## 📝 Install script
 
-This script is designed to be run on a fresh install of the supported platforms. It will install the following:
+The install script will setup the following on your system:
 
 ### 1. [wezterm](https://wezterm.org/index.html) (cross platform GPU accelerated terminal)
 
@@ -113,7 +113,7 @@ mise use -g <package>@<version>
 mise list-all <package>
 ```
 
-- node@22.14, python@3.13, go@1.23, lua@5.4, rust@1.86
+- node@22.14, python@3.13, go@1.23, lua@5.4, rust@stable
 
 ### 6. CLI Tools (special mentioned)
 

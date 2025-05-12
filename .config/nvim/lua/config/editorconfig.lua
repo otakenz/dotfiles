@@ -16,6 +16,7 @@ local function apply(bufnr, config)
 		indent_style = "tab",
 		indent_size = 2,
 		insert_final_newline = "true",
+		max_line_length = 80,
 		tab_width = 2,
 		trim_trailing_whitespace = "true",
 	}

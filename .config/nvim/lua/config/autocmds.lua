@@ -25,6 +25,14 @@ vim.api.nvim_create_autocmd("FileType", {
 	end,
 })
 
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = { "make" },
+	callback = function()
+		vim.opt_local.expandtab = false
+		vim.opt_local.shiftwidth = 4
+	end,
+})
+
 vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
 	pattern = { "*.yaml", "*.yml" },
 	callback = function()

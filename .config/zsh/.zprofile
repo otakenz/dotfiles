@@ -49,6 +49,16 @@ fi
 
 export PATH
 
+# pnpm
+export PNPM_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/pnpm"
+case ":$PATH:" in
+*":$PNPM_HOME:"*) ;;
+*) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+
+export CSPELL_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/nvim/spell/cspell.json"
+
 # Default programs to run.
 export EDITOR="nvim"
 export DIFFPROG="nvim -d"

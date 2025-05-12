@@ -45,6 +45,8 @@ alias vdt='rm ${XDG_STATE_HOME}/nvim/swap/%*'
 # shellcheck disable=SC2139
 alias pf="fzf ${FZF_CTRL_T_OPTS}"
 
+alias drop_cache="sudo sh -c \"echo 3 >'/proc/sys/vm/drop_caches' && swapoff -a && swapon -a && printf '\n%s\n' 'Ram-cache and Swap Cleared'\""
+
 # ---- Functions ----#
 # Git Branch Checkout (with preview)
 gco() {
