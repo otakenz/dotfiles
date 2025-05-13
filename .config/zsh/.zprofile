@@ -36,6 +36,7 @@ append_path() {
 # Since this is prepend, last one will be the first one found.
 prepend_path "${HOME}/.local/bin"
 prepend_path "${HOME}/.cargo/bin"
+prepend_path "${XDG_DATA_HOME:-$HOME/.local/share}/pnpm"
 prepend_path "${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims"
 prepend_path "${XDG_DATA_HOME:-$HOME/.local/share}/nvim/mason/bin"
 
@@ -48,14 +49,6 @@ if grep -q "\-WSL2" /proc/version; then
 fi
 
 export PATH
-
-# pnpm
-export PNPM_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/pnpm"
-case ":$PATH:" in
-*":$PNPM_HOME:"*) ;;
-*) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
 
 export CSPELL_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/nvim/spell/cspell.json"
 
