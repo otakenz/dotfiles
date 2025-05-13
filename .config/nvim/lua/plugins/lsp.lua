@@ -69,7 +69,6 @@ local M = {
 			files = { ".luacheckrc" },
 			default = vim.fn.expand("$HOME/.config/nvim/rules/.luacheckrc"),
 		},
-		-- TODO: Add clang
 		rustfmt = {
 			files = { "rustfmt.toml", ".rustfmt.toml" },
 			default = vim.fn.expand("$HOME/.config/nvim/rules/rustfmt.toml"),
@@ -84,6 +83,22 @@ local M = {
 				"prettier.config.js",
 			},
 			default = vim.fn.expand("$HOME/.config/nvim/rules/.prettierrc.json"),
+		},
+		cmakeformat = {
+			files = {
+				".cmake-format.yaml",
+				".cmake-format.yml",
+				"cmake-format.yaml",
+				"cmake-format.yml",
+			},
+			default = vim.fn.expand("$HOME/.config/nvim/rules/.cmake-format.yaml"),
+		},
+		cmakelint = {
+			files = {
+				".cmakelintrc",
+				"cmakelintrc",
+			},
+			default = vim.fn.expand("$HOME/.config/nvim/rules/.cmakelintrc"),
 		},
 	},
 }
@@ -140,8 +155,17 @@ return {
 						filetypes = { "sh", "bash", "zsh" },
 					},
 				},
-				rubocop = {
-					enabled = false,
+				neocmake = {
+					init_options = {
+						-- cmake-format handles formatting
+						format = {
+							enable = false,
+						},
+						-- cmakelint (not cmake-lint) handles linting
+						lint = {
+							enable = false,
+						},
+					},
 				},
 				pyright = {
 					-- Both settings are to let Ruff handle these tasks.
@@ -201,6 +225,9 @@ return {
 				less = { "prettier" },
 				sass = { "prettier" },
 				scss = { "prettier" },
+
+				-- Cmake
+				cmake = { "cmake_format" },
 			},
 
 			formatters = {
@@ -217,6 +244,12 @@ return {
 				prettier = {
 					prepend_args = { "--config", M.resolve_config("prettier")() },
 				},
+				cmake_format = {
+					append_args = {
+						"-c",
+						M.resolve_config("cmakeformat")(),
+					},
+				},
 			},
 		},
 	},
@@ -225,12 +258,12 @@ return {
 		opts = {
 			linters_by_ft = {
 				lua = { "luacheck" },
-				yaml = { "actionlint" },
+				-- yaml = { "actionlint" },
+				cmake = { "cmakelint" },
 			},
 
 			linters = {
 				luacheck = {
-					cmd = "luacheck",
 					args = {
 						"--config",
 						M.resolve_config("luacheck")(),
@@ -240,8 +273,13 @@ return {
 						"--ranges",
 						"-",
 					},
-					stdin = true,
-					stream = "both",
+				},
+				cmakelint = {
+					args = {
+						"--quiet",
+						"--config",
+						M.resolve_config("cmakelint")(),
+					},
 				},
 			},
 		},
