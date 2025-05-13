@@ -161,70 +161,64 @@ return {
 	},
 	{
 		"stevearc/conform.nvim",
-		opts = function()
-			local stylua_config = M.resolve_config("stylua")
-			local rustfmt_config = M.resolve_config("rustfmt")
-			local prettier_config = M.resolve_config("prettier")
+		opts = {
+			formatters_by_ft = {
+				-- Lua
+				lua = { "stylua" },
+				luau = { "stylua" },
 
-			return {
-				formatters_by_ft = {
-					-- Lua
-					lua = { "stylua" },
-					luau = { "stylua" },
+				-- Golang
+				go = { "goimports" },
 
-					-- Golang
-					go = { "goimports" },
+				-- Rust
+				rust = { "rustfmt" },
 
-					-- Rust
-					rust = { "rustfmt" },
+				-- Python
+				python = { "ruff_format" },
 
-					-- Python
-					python = { "ruff_format" },
+				-- JavaScript
+				javascript = { "prettier" },
+				javascriptreact = { "prettier" },
+				["javascript.jsx"] = { "prettier" },
+				typescript = { "prettier" },
+				typescriptreact = { "prettier" },
+				["typescript.jsx"] = { "prettier" },
 
-					-- JavaScript
-					javascript = { "prettier" },
-					javascriptreact = { "prettier" },
-					["javascript.jsx"] = { "prettier" },
-					typescript = { "prettier" },
-					typescriptreact = { "prettier" },
-					["typescript.jsx"] = { "prettier" },
+				-- JSON/XML
+				json = { "prettier" },
+				jsonc = { "prettier" },
+				json5 = { "prettier" },
+				yaml = { "prettier" },
+				["yaml.docker-compose"] = { "prettier" },
+				html = { "prettier" },
 
-					-- JSON/XML
-					json = { "prettier" },
-					jsonc = { "prettier" },
-					json5 = { "prettier" },
-					yaml = { "prettier" },
-					["yaml.docker-compose"] = { "prettier" },
-					html = { "prettier" },
+				-- Markdown
+				markdown = { "prettier" },
+				["markdown.mdx"] = { "prettier" },
 
-					-- Markdown
-					markdown = { "prettier" },
-					["markdown.mdx"] = { "prettier" },
+				-- CSS
+				css = { "prettier" },
+				less = { "prettier" },
+				sass = { "prettier" },
+				scss = { "prettier" },
+			},
 
-					-- CSS
-					css = { "prettier" },
-					less = { "prettier" },
-					sass = { "prettier" },
-					scss = { "prettier" },
-				},
-
-				formatters = {
-					stylua = {
-						prepend_args = {
-							"--config-path",
-							stylua_config(),
-							"--no-editorconfig",
-						},
-					},
-					rustfmt = {
-						prepend_args = { "--config-path", rustfmt_config() },
-					},
-					prettier = {
-						prepend_args = { "--config", prettier_config() },
+			formatters = {
+				stylua = {
+					prepend_args = {
+						"--config-path",
+						M.resolve_config("stylua")(),
+						"--no-editorconfig",
 					},
 				},
-			}
-		end,
+				rustfmt = {
+					prepend_args = { "--config-path", M.resolve_config("rustfmt")() },
+				},
+				prettier = {
+					prepend_args = { "--config", M.resolve_config("prettier")() },
+				},
+			},
+		},
 	},
 	{
 		"mfussenegger/nvim-lint",

@@ -29,6 +29,7 @@ alias ll="ls -alF"
 alias la="ls -A"
 alias gs="git status"
 alias gl="git log --oneline --graph --color=always --decorate=short"
+alias lz="lazygit"
 
 alias follow="namei -om"
 alias diff="diff --color -u"
