@@ -62,7 +62,7 @@ gswt() {
 	}
 }
 
-gh() {
+ghash() {
 	_fzf_git_hashes --no-multi --preview "git show --color=always {-1}" | xargs git show
 }
 
