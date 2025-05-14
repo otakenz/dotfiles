@@ -43,7 +43,9 @@ prepend_path "${XDG_DATA_HOME:-$HOME/.local/share}/nvim/mason/bin"
 # Manually appendWindowsPath
 if grep -q "\-WSL2" /proc/version; then
 	append_path "/c/Windows"
-	append_path "/c/Program Files/WezTerm/"
+	append_path "/c/Program Files/WezTerm"
+	# append_path "/c/Program Files/usbipd-win"
+	# append_path "/c/Program Files/usbipd-win/WSL"
 	append_path "/c/Users/$(/c/Windows/System32/cmd.exe /c 'echo %USERNAME%' 2>/dev/null |
 		tr -d '\r')/AppData/Local/Programs/Microsoft VS Code/bin"
 fi

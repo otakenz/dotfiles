@@ -56,8 +56,10 @@ PACMAN_PACKAGES="
   ripgrep
   rsync
   tmux
+	tree
   unzip
   ueberzugpp
+	usbutils
   wget
   whois
   wl-clipboard
@@ -92,6 +94,7 @@ DEBIAN_PACKAGES="
   poppler-utils
   pwgen
   rsync
+	tree
   unzip
   wget
   whois
@@ -118,6 +121,7 @@ BREW_PACKAGES="
   mise
   pass
   pwgen
+	usbutils
   ripgrep
   rsync
   tmux
