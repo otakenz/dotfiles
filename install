@@ -896,8 +896,15 @@ install_programming_languages() {
       fi
     fi
 
+    # Also install Yarn for Node.
+    if [ "${lang}" = "node" ]; then
+      if ! yarn --version >/dev/null 2>&1; then
+        npm install --unsafe-perm=true --allow-root --global yarn
+      fi
+    fi
+
     # Provide node to neovim
-    pnpm add -g neovim
+    yarn global add neovim
 
   done
 }
