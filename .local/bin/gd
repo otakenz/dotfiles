@@ -15,14 +15,14 @@ git_args=()
 
 # Handle displaying diffs side by side on demand.
 for arg in "${@}"; do
-	if [ "${arg}" = "--side" ]; then
-		export DELTA_FEATURES="${DELTA_FEATURES} side-by-side"
-	else
-		git_args+=("${arg}")
-	fi
+  if [ "${arg}" = "--side" ]; then
+    export DELTA_FEATURES="${DELTA_FEATURES} side-by-side"
+  else
+    git_args+=("${arg}")
+  fi
 done
 
 # shellcheck disable=SC2086
 git diff ${git_args:-} --name-only |
-	fzf --ansi --preview-window="right,75%" --preview "git diff ${git_args:-} --color=always -- {-1} | delta --width=\${FZF_PREVIEW_COLUMNS}" ||
-	true
+  fzf --ansi --preview-window="right,75%" --preview "git diff ${git_args:-} --color=always -- {-1} | delta --width=\${FZF_PREVIEW_COLUMNS}" ||
+  true

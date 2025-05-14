@@ -4,75 +4,75 @@ set -o errexit
 set -o pipefail
 
 lint() {
-	# Lint all supported file types
-	local shellcheck_cmd=(shellcheck)
-	local ruff_cmd=(ruff)
+  # Lint all supported file types
+  local shellcheck_cmd=(shellcheck)
+  local ruff_cmd=(ruff)
 
-	if ! command -v shellcheck >/dev/null 2>&1; then
-		local shellcheck_cmd=(docker container run --rm -i -v "${PWD}:/mnt" koalaman/shellcheck:stable)
-	fi
+  if ! command -v shellcheck >/dev/null 2>&1; then
+    local shellcheck_cmd=(docker container run --rm -i -v "${PWD}:/mnt" koalaman/shellcheck:stable)
+  fi
 
-	if ! command -v ruff >/dev/null 2>&1; then
-		local ruff_cmd=(docker container run --rm -i -v "${PWD}:/io" -u "$(id -u):$(id -g)" ghcr.io/astral-sh/ruff:0.11.1)
-	fi
+  if ! command -v ruff >/dev/null 2>&1; then
+    local ruff_cmd=(docker container run --rm -i -v "${PWD}:/io" -u "$(id -u):$(id -g)" ghcr.io/astral-sh/ruff:0.11.1)
+  fi
 
-	find . -type f \
-		! -path "./.git/*" \
-		! -path "./.ruff_cache/*" \
-		! -path "./.pytest_cache/*" \
-		! -path "./c/*" \
-		-exec grep --quiet -E '^(#!.*sh|# shellcheck shell=)' {} \; -exec "${shellcheck_cmd[@]}" {} +
+  find . -type f \
+    ! -path "./.git/*" \
+    ! -path "./.ruff_cache/*" \
+    ! -path "./.pytest_cache/*" \
+    ! -path "./c/*" \
+    -exec grep --quiet -E '^(#!.*sh|# shellcheck shell=)' {} \; -exec "${shellcheck_cmd[@]}" {} +
 
-	"${ruff_cmd[@]}" check "${@}"
+  "${ruff_cmd[@]}" check "${@}"
 }
 
 format() {
-	# Format all supported file types
-	local shfmt_cmd=(shfmt)
-	local ruff_cmd=(ruff)
+  # Format all supported file types
+  local shfmt_cmd=(shfmt)
+  local ruff_cmd=(ruff)
 
-	if ! command -v shfmt >/dev/null 2>&1; then
-		local shfmt_cmd=(docker container run --rm -i -v "${PWD}:/mnt" -u "$(id -u):$(id -g)" -w /mnt mvdan/shfmt:v3)
-	fi
+  if ! command -v shfmt >/dev/null 2>&1; then
+    local shfmt_cmd=(docker container run --rm -i -v "${PWD}:/mnt" -u "$(id -u):$(id -g)" -w /mnt mvdan/shfmt:v3)
+  fi
 
-	if ! command -v ruff >/dev/null 2>&1; then
-		local ruff_cmd=(docker container run --rm -i -v "${PWD}:/io" -u "$(id -u):$(id -g)" ghcr.io/astral-sh/ruff:0.11.1)
-	fi
+  if ! command -v ruff >/dev/null 2>&1; then
+    local ruff_cmd=(docker container run --rm -i -v "${PWD}:/io" -u "$(id -u):$(id -g)" ghcr.io/astral-sh/ruff:0.11.1)
+  fi
 
-	local shfmt_args=("--write")
+  local shfmt_args=("--write")
 
-	for arg in "${@}"; do
-		[ "${arg}" == "--check" ] && shfmt_args+=("--diff")
+  for arg in "${@}"; do
+    [ "${arg}" == "--check" ] && shfmt_args+=("--diff")
 
-		if [ "${arg}" == "-d" ] || [ "${arg}" == "--diff" ] || [ "${shfmt_args[1]}" == "--diff" ]; then
-			unset "shfmt_args[0]"
-		fi
-	done
+    if [ "${arg}" == "-d" ] || [ "${arg}" == "--diff" ] || [ "${shfmt_args[1]}" == "--diff" ]; then
+      unset "shfmt_args[0]"
+    fi
+  done
 
-	"${shfmt_cmd[@]}" "${shfmt_args[@]}" . .config/zsh/.{aliases,zprofile,zshrc}
+  "${shfmt_cmd[@]}" "${shfmt_args[@]}" . .config/zsh/.{aliases,zprofile,zshrc}
 
-	"${ruff_cmd[@]}" check --fix
-	"${ruff_cmd[@]}" format "${@}"
+  "${ruff_cmd[@]}" check --fix
+  "${ruff_cmd[@]}" format "${@}"
 }
 
 quality() {
-	# Perform all code quality commands together
-	lint "${@}"
-	format "${@}"
+  # Perform all code quality commands together
+  lint "${@}"
+  format "${@}"
 }
 
 ci:test() {
-	# Execute Continuous Integration (CI) pipeline
-	lint
-	format --check --diff
+  # Execute Continuous Integration (CI) pipeline
+  lint
+  format --check --diff
 }
 
 help() {
-	printf "%s <task> [args]\n\nTasks:\n" "${0}"
+  printf "%s <task> [args]\n\nTasks:\n" "${0}"
 
-	compgen -A function | grep -v "^_" | cat -n
+  compgen -A function | grep -v "^_" | cat -n
 
-	printf "\nExtended help:\n  Each task has comments for general usage\n"
+  printf "\nExtended help:\n  Each task has comments for general usage\n"
 }
 
 TIMEFORMAT=$'\nTask completed in %3lR'

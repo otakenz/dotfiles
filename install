@@ -19,7 +19,7 @@ PACMAN_PACKAGES="
   bat
   bc
   bison
-	btop
+  btop
   chafa
   clang
   curl
@@ -40,7 +40,7 @@ PACMAN_PACKAGES="
   kguiaddons
   kwindowsystem
   lazygit
-  ldd
+  lld
   less
   man-db
   man-pages
@@ -56,10 +56,10 @@ PACMAN_PACKAGES="
   ripgrep
   rsync
   tmux
-	tree
+  tree
   unzip
   ueberzugpp
-	usbutils
+  usbutils
   wget
   whois
   wl-clipboard
@@ -86,7 +86,7 @@ DEBIAN_PACKAGES="
   iproute2
   libncurses5-dev
   libncursesw5-dev
-  ldd
+  lld
   netcat-openbsd
   openssh-server
   pass
@@ -94,7 +94,7 @@ DEBIAN_PACKAGES="
   poppler-utils
   pwgen
   rsync
-	tree
+  tree
   unzip
   wget
   whois
@@ -107,7 +107,7 @@ DEBIAN_PACKAGES="
 BREW_PACKAGES="
   bash
   bc
-	btop
+  btop
   curl
   diffutils
   fastfetch
@@ -121,7 +121,7 @@ BREW_PACKAGES="
   mise
   pass
   pwgen
-	usbutils
+  usbutils
   ripgrep
   rsync
   tmux
@@ -133,7 +133,7 @@ MISE_PACKAGES_ARCH="neovim"
 
 MISE_PACKAGES_DEBIAN="
   bat
-	btop
+  btop
   delta
   dust
   eza
@@ -157,11 +157,11 @@ EMAIL=
 
 declare -A MISE_LANGUAGES
 MISE_LANGUAGES=(
-	["node"]="node@22.14"
-	["python"]="python@3.13"
-	["go"]="go@1.23"
-	["lua"]="lua@5.4"
-	["rust"]="rust@stable"
+  ["node"]="node@22.14"
+  ["python"]="python@3.13"
+  ["go"]="go@1.23"
+  ["lua"]="lua@5.4"
+  ["rust"]="rust@stable"
 )
 
 CPU_ARCH="$(uname -m)"
@@ -190,43 +190,43 @@ BACKUP_DIR="${HOME}/.dotfiles_backup/backup_$(date +%Y-%m-%d_%H-%M-%S)"
 # -----------------------------------------------------------------------------
 
 _error() {
-	local message="${1:-}"
+  local message="${1:-}"
 
-	printf "\e[31;1mERROR:\e[0m %s\n\n" "${message}" >&2
-	exit 1
+  printf "\e[31;1mERROR:\e[0m %s\n\n" "${message}" >&2
+  exit 1
 }
 
 _info() {
-	local message="${1:-}"
-	printf "\n\n\e[36;1m%s:\e[0m\n\n" "${message}"
+  local message="${1:-}"
+  printf "\n\n\e[36;1m%s:\e[0m\n\n" "${message}"
 }
 
 _local_only() {
-	[ -z "${LOCAL}" ] && return 1
+  [ -z "${LOCAL}" ] && return 1
 
-	if [ "${PWD}" != "${DOTFILES_PATH}" ]; then
-		cp -R "${PWD}/." "${DOTFILES_PATH}"
+  if [ "${PWD}" != "${DOTFILES_PATH}" ]; then
+    cp -R "${PWD}/." "${DOTFILES_PATH}"
 
-		# Ensure the containerized environment starts fresh.
-		if [ -n "${IN_CONTAINER}" ]; then
-			rm \
-				"${DOTFILES_PATH}/.config/zsh/.zsh_history" \
-				"${DOTFILES_PATH}/.config/zsh/.aliases.local" \
-				"${DOTFILES_PATH}/.config/zsh/.zprofile.local" \
-				"${DOTFILES_PATH}/.config/zsh/.zshrc.local" \
-				"${DOTFILES_PATH}/.config/git/config.local"
+    # Ensure the containerized environment starts fresh.
+    if [ -n "${IN_CONTAINER}" ]; then
+      rm \
+        "${DOTFILES_PATH}/.config/zsh/.zsh_history" \
+        "${DOTFILES_PATH}/.config/zsh/.aliases.local" \
+        "${DOTFILES_PATH}/.config/zsh/.zprofile.local" \
+        "${DOTFILES_PATH}/.config/zsh/.zshrc.local" \
+        "${DOTFILES_PATH}/.config/git/config.local"
 
-			if grep -q "git@github.com:" "${DOTFILES_PATH}/.git/config"; then
-				sed -i "s|git@github.com:|https://github.com/|g" "${DOTFILES_PATH}/.git/config"
-			fi
-		fi
-	fi
+      if grep -q "git@github.com:" "${DOTFILES_PATH}/.git/config"; then
+        sed -i "s|git@github.com:|https://github.com/|g" "${DOTFILES_PATH}/.git/config"
+      fi
+    fi
+  fi
 
-	printf "They've been locally copied to '%s'\n" "${DOTFILES_PATH}"
+  printf "They've been locally copied to '%s'\n" "${DOTFILES_PATH}"
 }
 
 _no_system_packages() {
-	cat <<EOF
+  cat <<EOF
 System package installation isn't supported with your distro (${OS_DISTRO})
 
 Please install any comparable packages on your own, you can view the list at:
@@ -238,152 +238,152 @@ Then re-run this script and explicitly skip installing system packages:
     bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install) --skip-system-packages
 EOF
 
-	exit 1
+  exit 1
 }
 
 _install_packages_arch() {
-	# shellcheck disable=SC2086
-	sudo pacman -Syu --noconfirm ${PACMAN_PACKAGES}
+  # shellcheck disable=SC2086
+  sudo pacman -Syu --noconfirm ${PACMAN_PACKAGES}
 
-	# Install packages manually since they don't exist elsewhere.
-	[ -d "$HOME/.fzf-git.sh" ] || git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
-	printf "Installing fzf-git.sh ...\n\n"
+  # Install packages manually since they don't exist elsewhere.
+  [ -d "$HOME/.fzf-git.sh" ] || git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
+  printf "Installing fzf-git.sh ...\n\n"
 }
 
 _install_packages_debian() {
-	if [ "$DEBIAN_VERSION" == "24.04" ]; then
-		echo 'deb http://download.opensuse.org/repositories/home:/justkidding/xUbuntu_24.10/ /' | sudo tee /etc/apt/sources.list.d/home:justkidding.list
-		curl -fsSL https://download.opensuse.org/repositories/home:justkidding/xUbuntu_24.10/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_justkidding.gpg >/dev/null
-		DEBIAN_PACKAGES="${DEBIAN_PACKAGES} ueberzugpp"
-	elif [ "$DEBIAN_VERSION" == "22.04" ]; then
-		echo 'deb http://download.opensuse.org/repositories/home:/justkidding/xUbuntu_22.04/ /' | sudo tee /etc/apt/sources.list.d/home:justkidding.list
-		curl -fsSL https://download.opensuse.org/repositories/home:justkidding/xUbuntu_22.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_justkidding.gpg >/dev/null
-		DEBIAN_PACKAGES="${DEBIAN_PACKAGES} ueberzugpp"
-	fi
+  if [ "$DEBIAN_VERSION" == "24.04" ]; then
+    echo 'deb http://download.opensuse.org/repositories/home:/justkidding/xUbuntu_24.10/ /' | sudo tee /etc/apt/sources.list.d/home:justkidding.list
+    curl -fsSL https://download.opensuse.org/repositories/home:justkidding/xUbuntu_24.10/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_justkidding.gpg >/dev/null
+    DEBIAN_PACKAGES="${DEBIAN_PACKAGES} ueberzugpp"
+  elif [ "$DEBIAN_VERSION" == "22.04" ]; then
+    echo 'deb http://download.opensuse.org/repositories/home:/justkidding/xUbuntu_22.04/ /' | sudo tee /etc/apt/sources.list.d/home:justkidding.list
+    curl -fsSL https://download.opensuse.org/repositories/home:justkidding/xUbuntu_22.04/Release.key | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/home_justkidding.gpg >/dev/null
+    DEBIAN_PACKAGES="${DEBIAN_PACKAGES} ueberzugpp"
+  fi
 
-	# shellcheck disable=SC2086
-	sudo apt-get update && sudo apt-get install -y ${DEBIAN_PACKAGES}
+  # shellcheck disable=SC2086
+  sudo apt-get update && sudo apt-get install -y ${DEBIAN_PACKAGES}
 
-	# Install Mise.
-	if ! command -v mise &>/dev/null; then
-		curl https://mise.run | sh
-	else
-		echo "Mise is already installed"
-	fi
+  # Install Mise.
+  if ! command -v mise &>/dev/null; then
+    curl https://mise.run | sh
+  else
+    echo "Mise is already installed"
+  fi
 
-	# Install packages manually since they don't exist elsewhere.
-	[ -d "$HOME/.fzf-git.sh" ] || git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
-	printf "Installing fzf-git.sh ...\n\n"
+  # Install packages manually since they don't exist elsewhere.
+  [ -d "$HOME/.fzf-git.sh" ] || git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
+  printf "Installing fzf-git.sh ...\n\n"
 
-	# fastfetch, Debian 13 / Ubuntu 26.04 LTS will have it in apt by default.
-	echo
-	curl -fsSL https://github.com/fastfetch-cli/fastfetch/releases/latest/download/fastfetch-linux-amd64.deb -o /tmp/fastfetch.deb
-	sudo dpkg -i "${_}"
-	rm "${_}"
+  # fastfetch, Debian 13 / Ubuntu 26.04 LTS will have it in apt by default.
+  echo
+  curl -fsSL https://github.com/fastfetch-cli/fastfetch/releases/latest/download/fastfetch-linux-amd64.deb -o /tmp/fastfetch.deb
+  sudo dpkg -i "${_}"
+  rm "${_}"
 }
 
 _install_packages_macos() {
-	local prefix="/opt/homebrew"
-	[[ "${CPU_ARCH}" == "x86_64" ]] && prefix="/usr/local"
+  local prefix="/opt/homebrew"
+  [[ "${CPU_ARCH}" == "x86_64" ]] && prefix="/usr/local"
 
-	# Ensure brew's paths are available for this script
-	eval "$(${prefix}/bin/brew shellenv)"
+  # Ensure brew's paths are available for this script
+  eval "$(${prefix}/bin/brew shellenv)"
 
-	# shellcheck disable=SC2086
-	brew install ${BREW_PACKAGES}
+  # shellcheck disable=SC2086
+  brew install ${BREW_PACKAGES}
 }
 
 _display_packages_output() {
-	local packages="${1:-}"
-	local mise="${3:-}"
+  local packages="${1:-}"
+  local mise="${3:-}"
 
-	if [ -n "${packages}" ]; then
-		echo ":: Packages (default)"
-		echo -n "${packages}"
-	fi
+  if [ -n "${packages}" ]; then
+    echo ":: Packages (default)"
+    echo -n "${packages}"
+  fi
 
-	if [ -n "${mise}" ]; then
-		echo ":: Mise (default)"
-		echo -n "${mise}"
-	fi
+  if [ -n "${mise}" ]; then
+    echo ":: Mise (default)"
+    echo -n "${mise}"
+  fi
 }
 
 _display_packages() {
-	if [ "${OS_TYPE}" == "linux" ]; then
-		if [ "${OS_DISTRO}" == "arch" ]; then
-			_display_packages_output "${PACMAN_PACKAGES}" "${MISE_PACKAGES_ARCH}"
-		elif [ "${OS_DISTRO}" == "debian" ]; then
-			_display_packages_output "${DEBIAN_PACKAGES}" "${MISE_PACKAGES_DEBIAN}"
-		fi
-	else
-		_display_packages_output "${BREW_PACKAGES}" "${MISE_PACKAGES_MACOS}"
-	fi
+  if [ "${OS_TYPE}" == "linux" ]; then
+    if [ "${OS_DISTRO}" == "arch" ]; then
+      _display_packages_output "${PACMAN_PACKAGES}" "${MISE_PACKAGES_ARCH}"
+    elif [ "${OS_DISTRO}" == "debian" ]; then
+      _display_packages_output "${DEBIAN_PACKAGES}" "${MISE_PACKAGES_DEBIAN}"
+    fi
+  else
+    _display_packages_output "${BREW_PACKAGES}" "${MISE_PACKAGES_MACOS}"
+  fi
 }
 
 _backup_and_remove_dir() {
-	if [ -L "$1" ]; then
-		echo "Skipping backup ... $1 is a symlink"
-		return 0
-	fi
+  if [ -L "$1" ]; then
+    echo "Skipping backup ... $1 is a symlink"
+    return 0
+  fi
 
-	if [ ! -d "$1" ]; then
-		echo "Skipping backup ... $1 does not exist"
-		return 0
-	fi
+  if [ ! -d "$1" ]; then
+    echo "Skipping backup ... $1 does not exist"
+    return 0
+  fi
 
-	if [ "$(ls -A "$1")" ]; then
-		echo "$1 is not empty, backing up ..."
-		echo "cp -a '$1' '$BACKUP_DIR'"
-		cp -ar "$1" "$BACKUP_DIR"
-		rm -rf "$1"
-	else
-		echo "$1 is empty, removing directory ..."
-		rm -rf "$1"
-	fi
+  if [ "$(ls -A "$1")" ]; then
+    echo "$1 is not empty, backing up ..."
+    echo "cp -a '$1' '$BACKUP_DIR'"
+    cp -ar "$1" "$BACKUP_DIR"
+    rm -rf "$1"
+  else
+    echo "$1 is empty, removing directory ..."
+    rm -rf "$1"
+  fi
 }
 
 _get_win_users_path() {
-	local win_user win_path wsl_path
+  local win_user win_path wsl_path
 
-	# Get Windows username
-	if [ -e "/mnt/c/Windows/System32" ]; then
-		win_user=$(/mnt/c/Windows/System32/cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')
-	else
-		win_user=$(/c/Windows/System32/cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')
-	fi
+  # Get Windows username
+  if [ -e "/mnt/c/Windows/System32" ]; then
+    win_user=$(/mnt/c/Windows/System32/cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')
+  else
+    win_user=$(/c/Windows/System32/cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r')
+  fi
 
-	# If failed, return error
-	if [[ -z "$win_user" ]]; then
-		echo "Error: Could not retrieve Windows username" >&2
-		return 1
-	fi
+  # If failed, return error
+  if [[ -z "$win_user" ]]; then
+    echo "Error: Could not retrieve Windows username" >&2
+    return 1
+  fi
 
-	# Build Windows path
-	win_path="C:\\Users\\$win_user"
+  # Build Windows path
+  win_path="C:\\Users\\$win_user"
 
-	# Convert to WSL path
-	wsl_path=$(wslpath "$win_path" 2>/dev/null)
+  # Convert to WSL path
+  wsl_path=$(wslpath "$win_path" 2>/dev/null)
 
-	# If failed, return error
-	if [[ -z "$wsl_path" ]]; then
-		echo "Error: Could not convert Windows path to WSL path" >&2
-		return 1
-	fi
+  # If failed, return error
+  if [[ -z "$wsl_path" ]]; then
+    echo "Error: Could not convert Windows path to WSL path" >&2
+    return 1
+  fi
 
-	# Return the path
-	echo "$wsl_path"
+  # Return the path
+  echo "$wsl_path"
 }
 
 _check_shell_type() {
-	if [[ "$SHELL" != *zsh ]]; then
-		echo "This install script requires Zsh as default shell"
-		echo
-		echo "💡 To make Zsh your default shell, run:"
-		echo "    chsh -s $(which zsh)"
-		echo
-		echo "Then log out and log back in for the change to take effect."
-		exit 1
-	fi
+  if [[ "$SHELL" != *zsh ]]; then
+    echo "This install script requires Zsh as default shell"
+    echo
+    echo "💡 To make Zsh your default shell, run:"
+    echo "    chsh -s $(which zsh)"
+    echo
+    echo "Then log out and log back in for the change to take effect."
+    exit 1
+  fi
 }
 
 # -----------------------------------------------------------------------------
@@ -391,166 +391,166 @@ _check_shell_type() {
 # -----------------------------------------------------------------------------
 
 detect_env() {
-	if [[ ! -t 0 ]]; then
-		export NON_INTERACTIVE=true
-	else
-		export NON_INTERACTIVE=false
-	fi
+  if [[ ! -t 0 ]]; then
+    export NON_INTERACTIVE=true
+  else
+    export NON_INTERACTIVE=false
+  fi
 
-	case "${OS_TYPE}" in
-	linux)
-		if [ -r /etc/os-release ]; then
-			# shellcheck disable=SC1091
-			OS_DISTRO="$(. /etc/os-release && echo "${ID_LIKE:-${ID}}")"
+  case "${OS_TYPE}" in
+  linux)
+    if [ -r /etc/os-release ]; then
+      # shellcheck disable=SC1091
+      OS_DISTRO="$(. /etc/os-release && echo "${ID_LIKE:-${ID}}")"
 
-			# Technically ID_LIKE can have a space separated list of distros but
-			# we really only care that we have a Debian based system where apt is
-			# available to use.
-			[[ "${OS_DISTRO}" =~ (ubuntu|debian) ]] && OS_DISTRO="debian"
-		fi
+      # Technically ID_LIKE can have a space separated list of distros but
+      # we really only care that we have a Debian based system where apt is
+      # available to use.
+      [[ "${OS_DISTRO}" =~ (ubuntu|debian) ]] && OS_DISTRO="debian"
+    fi
 
-		# Only fully support these Linux distros.
-		if [[ -z "${OS_DISTRO}" || ! "arch ubuntu debian raspbian" =~ ${OS_DISTRO} ]]; then
-			[ -z "${SKIP_SYSTEM_PACKAGES}" ] && _no_system_packages
-		fi
+    # Only fully support these Linux distros.
+    if [[ -z "${OS_DISTRO}" || ! "arch ubuntu debian raspbian" =~ ${OS_DISTRO} ]]; then
+      [ -z "${SKIP_SYSTEM_PACKAGES}" ] && _no_system_packages
+    fi
 
-		# Are we in WSL2 ?
-		if grep -q "\-WSL2" /proc/version; then
-			OS_IN_WSL=1
-			WIN_USER_PATH=$(_get_win_users_path)
-		fi
+    # Are we in WSL2 ?
+    if grep -q "\-WSL2" /proc/version; then
+      OS_IN_WSL=1
+      WIN_USER_PATH=$(_get_win_users_path)
+    fi
 
-		# Adjust packages depending on which display server is in use.
-		if [[ -z "${WAYLAND_DISPLAY}" ]]; then
-			DEBIAN_PACKAGES="${DEBIAN_PACKAGES//wl-clipboard/xclip}"
-			PACMAN_PACKAGES="${PACMAN_PACKAGES//wl-clipboard/xclip}"
-		fi
+    # Adjust packages depending on which display server is in use.
+    if [[ -z "${WAYLAND_DISPLAY}" ]]; then
+      DEBIAN_PACKAGES="${DEBIAN_PACKAGES//wl-clipboard/xclip}"
+      PACMAN_PACKAGES="${PACMAN_PACKAGES//wl-clipboard/xclip}"
+    fi
 
-		;;
-	darwin) ;;
-	*)
-		_error "'${OS_TYPE}' is not supported"
+    ;;
+  darwin) ;;
+  *)
+    _error "'${OS_TYPE}' is not supported"
 
-		;;
-	esac
+    ;;
+  esac
 }
 
 warn_root() {
-	# Root will have an effective uid of 0, but it's ok if we're in a container.
-	[[ "${EUID}" != 0 || -n "${IN_CONTAINER}" ]] && return 0
+  # Root will have an effective uid of 0, but it's ok if we're in a container.
+  [[ "${EUID}" != 0 || -n "${IN_CONTAINER}" ]] && return 0
 
-	cat <<EOF
+  cat <<EOF
 Here are details about this user:
 
 $(id)
 
 EOF
 
-	local msg="as root"
-	[[ -n "${SUDO_USER}" ]] && msg="with sudo as ${SUDO_USER}"
+  local msg="as root"
+  [[ -n "${SUDO_USER}" ]] && msg="with sudo as ${SUDO_USER}"
 
-	while true; do
-		read -rp "This script is meant to run as a non-root user, are you sure you want to run this ${msg}? (y/n) " yn
-		case "${yn}" in
-		[Yy]*) break ;;
-		[Nn]*) exit ;;
-		*) printf "Please answer y or n\n\n" ;;
-		esac
-	done
+  while true; do
+    read -rp "This script is meant to run as a non-root user, are you sure you want to run this ${msg}? (y/n) " yn
+    case "${yn}" in
+    [Yy]*) break ;;
+    [Nn]*) exit ;;
+    *) printf "Please answer y or n\n\n" ;;
+    esac
+  done
 }
 
 update_dotfiles() {
-	_info "UPDATE DOTFILES"
+  _info "UPDATE DOTFILES"
 
-	if [ ! -d "$DOTFILES_PATH" ]; then
-		echo "Skipping, since this is the first time you've run this script"
-		return 0
-	fi
+  if [ ! -d "$DOTFILES_PATH" ]; then
+    echo "Skipping, since this is the first time you've run this script"
+    return 0
+  fi
 
-	_local_only && return 0
+  _local_only && return 0
 
-	git -C "${DOTFILES_PATH}" fetch origin
+  git -C "${DOTFILES_PATH}" fetch origin
 
-	local new_commit_count=
-	new_commit_count="$(git -C "${DOTFILES_PATH}" rev-list ..origin --count)"
+  local new_commit_count=
+  new_commit_count="$(git -C "${DOTFILES_PATH}" rev-list ..origin --count)"
 
-	if [ "${new_commit_count}" = "0" ]; then
-		echo "Skipping, since your local dotfiles already have the latest updates"
-	else
-		# Let's merge the latest updates.
-		git -C "${DOTFILES_PATH}" merge origin
+  if [ "${new_commit_count}" = "0" ]; then
+    echo "Skipping, since your local dotfiles already have the latest updates"
+  else
+    # Let's merge the latest updates.
+    git -C "${DOTFILES_PATH}" merge origin
 
-		# Re-run this script because if an update happened, it's possible new
-		# packages are meant to be installed which means reading in their env vars.
-		exec "${0}" "${@}"
-	fi
+    # Re-run this script because if an update happened, it's possible new
+    # packages are meant to be installed which means reading in their env vars.
+    exec "${0}" "${@}"
+  fi
 }
 
 check_prereqs() {
-	_info "CHECKING SYSTEM COMPATABILITY"
+  _info "CHECKING SYSTEM COMPATABILITY"
 
-	local missing_packages=()
+  local missing_packages=()
 
-	if ! command -v "sudo" 1>/dev/null; then missing_packages+=("sudo"); fi
+  if ! command -v "sudo" 1>/dev/null; then missing_packages+=("sudo"); fi
 
-	if [[ -z "${missing_packages[*]}" ]]; then
-		echo "Everything is good to go"
-		return 0
-	fi
+  if [[ -z "${missing_packages[*]}" ]]; then
+    echo "Everything is good to go"
+    return 0
+  fi
 
-	cat <<EOF
+  cat <<EOF
 This script is going to switch to the root user to install sudo then the rest
 of the script will run as your user and use sudo as needed.
 
 EOF
 
-	case "${OS_DISTRO}" in
-	arch)
-		su -c "pacman -Syu --noconfirm ${missing_packages[*]}"
-		;;
-	debian)
-		su -c "apt-get update && apt-get install -y ${missing_packages[*]}"
-		;;
-	*) ;;
-	esac
+  case "${OS_DISTRO}" in
+  arch)
+    su -c "pacman -Syu --noconfirm ${missing_packages[*]}"
+    ;;
+  debian)
+    su -c "apt-get update && apt-get install -y ${missing_packages[*]}"
+    ;;
+  *) ;;
+  esac
 }
 
 create_initial_dirs() {
-	_info "CREATING INITIAL DIRECTORIES"
+  _info "CREATING INITIAL DIRECTORIES"
 
-	mkdir -p "$BACKUP_DIR"
+  mkdir -p "$BACKUP_DIR"
 
-	_backup_and_remove_dir "${HOME}/.config/zsh/themes"
-	_backup_and_remove_dir "${HOME}/.config/tmux/themes"
-	_backup_and_remove_dir "${HOME}/.config/bat/themes"
-	_backup_and_remove_dir "${HOME}/.config/gitui"
-	_backup_and_remove_dir "${HOME}/.config/nvim"
-	_backup_and_remove_dir "${HOME}/.config/yazi"
-	# _backup_and_remove_dir "${HOME}/.config/git"
+  _backup_and_remove_dir "${HOME}/.config/zsh/themes"
+  _backup_and_remove_dir "${HOME}/.config/tmux/themes"
+  _backup_and_remove_dir "${HOME}/.config/bat/themes"
+  _backup_and_remove_dir "${HOME}/.config/gitui"
+  _backup_and_remove_dir "${HOME}/.config/nvim"
+  _backup_and_remove_dir "${HOME}/.config/yazi"
+  # _backup_and_remove_dir "${HOME}/.config/git"
 
-	mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/git" \
-		"${HOME}/.config/wezterm" "${HOME}/.config/zsh" "${HOME}/.config/bat" \
-		"${HOME}/.config/lazygit"
+  mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/git" \
+    "${HOME}/.config/wezterm" "${HOME}/.config/zsh" "${HOME}/.config/bat" \
+    "${HOME}/.config/lazygit"
 
-	mkdir -p "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share/fonts"
+  mkdir -p "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share/fonts"
 
-	mkdir -p "${PASS_HOME}"
-	chmod 700 "${PASS_HOME}"
+  mkdir -p "${PASS_HOME}"
+  chmod 700 "${PASS_HOME}"
 
-	mkdir -p "${GPG_HOME}"
-	chmod 700 "${GPG_HOME}"
+  mkdir -p "${GPG_HOME}"
+  chmod 700 "${GPG_HOME}"
 
 }
 
 install_packages() {
-	_info "INSTALL PACKAGES"
+  _info "INSTALL PACKAGES"
 
-	if [ -n "${SKIP_SYSTEM_PACKAGES}" ]; then
-		echo "Skipping, you've chosen not to or your distro isn't fully supported"
-		return
-	fi
+  if [ -n "${SKIP_SYSTEM_PACKAGES}" ]; then
+    echo "Skipping, you've chosen not to or your distro isn't fully supported"
+    return
+  fi
 
-	cat <<EOF
+  cat <<EOF
 If you choose y, all of the system packages below will be installed:
 
 $(_display_packages)
@@ -562,133 +562,133 @@ to adjust them
 
 EOF
 
-	while true; do
-		read -rp "Do you want to install the above packages? (y/n) " yn
-		case "${yn}" in
-		[Yy]*)
-			if [ "${OS_TYPE}" == "linux" ]; then
-				if [ "${OS_DISTRO}" == "arch" ]; then
-					_install_packages_arch
-				elif [ "${OS_DISTRO}" == "debian" ]; then
-					_install_packages_debian
-				fi
-			else
-				_install_packages_macos
-			fi
+  while true; do
+    read -rp "Do you want to install the above packages? (y/n) " yn
+    case "${yn}" in
+    [Yy]*)
+      if [ "${OS_TYPE}" == "linux" ]; then
+        if [ "${OS_DISTRO}" == "arch" ]; then
+          _install_packages_arch
+        elif [ "${OS_DISTRO}" == "debian" ]; then
+          _install_packages_debian
+        fi
+      else
+        _install_packages_macos
+      fi
 
-			break
-			;;
-		[Nn]*) exit ;;
-		*) printf "Please answer y or n\n\n" ;;
-		esac
-	done
+      break
+      ;;
+    [Nn]*) exit ;;
+    *) printf "Please answer y or n\n\n" ;;
+    esac
+  done
 }
 
 clone_dotfiles() {
-	_info "CLONE DOTFILES"
+  _info "CLONE DOTFILES"
 
-	if [ -d "${DOTFILES_PATH:-}" ]; then
-		echo "Skipping, since DOTFILES_PATH already exists at '${DOTFILES_PATH}'"
-		return 0
-	fi
+  if [ -d "${DOTFILES_PATH:-}" ]; then
+    echo "Skipping, since DOTFILES_PATH already exists at '${DOTFILES_PATH}'"
+    return 0
+  fi
 
-	local default_dotfiles_path="${HOME}/dotfiles"
+  local default_dotfiles_path="${HOME}/dotfiles"
 
-	# Detect non-interactive mode (no TTY = piped input like `yes |`)
-	if [[ "$NON_INTERACTIVE" == "true" ]]; then
-		dotfiles_path="${default_dotfiles_path}"
-		echo "Detected non-interactive mode, using default DOTFILES_PATH: ${default_dotfiles_path}"
-	else
-		read -rep "Where do you want to clone these dotfiles to [${default_dotfiles_path}]? " dotfiles_path
-		echo
-	fi
+  # Detect non-interactive mode (no TTY = piped input like `yes |`)
+  if [[ "$NON_INTERACTIVE" == "true" ]]; then
+    dotfiles_path="${default_dotfiles_path}"
+    echo "Detected non-interactive mode, using default DOTFILES_PATH: ${default_dotfiles_path}"
+  else
+    read -rep "Where do you want to clone these dotfiles to [${default_dotfiles_path}]? " dotfiles_path
+    echo
+  fi
 
-	[[ -z "${dotfiles_path}" ]] && dotfiles_path="${default_dotfiles_path}"
+  [[ -z "${dotfiles_path}" ]] && dotfiles_path="${default_dotfiles_path}"
 
-	DOTFILES_PATH="${dotfiles_path//\~/"${HOME}"}"
+  DOTFILES_PATH="${dotfiles_path//\~/"${HOME}"}"
 
-	_local_only && return 0
+  _local_only && return 0
 
-	git clone "${DOTFILES_URL}" "${DOTFILES_PATH}"
+  git clone "${DOTFILES_URL}" "${DOTFILES_PATH}"
 }
 
 install_zsh_plugins() {
-	_info "INSTALL ZSH PLUGINS"
+  _info "INSTALL ZSH PLUGINS"
 
-	"${DOTFILES_PATH}/.local/bin/update-zsh-plugins"
+  "${DOTFILES_PATH}/.local/bin/update-zsh-plugins"
 }
 
 create_symlinks() {
-	_info "CREATE SYMLINKS"
+  _info "CREATE SYMLINKS"
 
-	local symlinks=(
-		"ln -fs ${DOTFILES_PATH}/.zshenv ${HOME}/.zshenv"
-		"ln -fs ${DOTFILES_PATH}/.config/zsh/.zshrc ${HOME}/.config/zsh/.zshrc"
-		"ln -fs ${DOTFILES_PATH}/.config/zsh/.zshrc.local ${HOME}/.config/zsh/.zshrc.local"
-		"ln -fs ${DOTFILES_PATH}/.config/zsh/.zprofile ${HOME}/.config/zsh/.zprofile"
-		"ln -fs ${DOTFILES_PATH}/.config/zsh/.zprofile.local ${HOME}/.config/zsh/.zprofile.local"
-		"ln -fs ${DOTFILES_PATH}/.config/zsh/.aliases ${HOME}/.config/zsh/.aliases"
-		"ln -fs ${DOTFILES_PATH}/.config/zsh/.aliases.local ${HOME}/.config/zsh/.aliases.local"
-		"ln -fs ${DOTFILES_PATH}/.config/tmux/tmux.conf ${HOME}/.config/tmux/tmux.conf"
-		"ln -fs ${DOTFILES_PATH}/.config/zsh/themes ${HOME}/.config/zsh/themes"
-		"ln -fs ${DOTFILES_PATH}/.config/tmux/themes ${HOME}/.config/tmux/themes"
-		"ln -fs ${DOTFILES_PATH}/.config/bat/themes ${HOME}/.config/bat/themes"
-		"ln -fs ${DOTFILES_PATH}/.config/git/config ${HOME}/.config/git/config"
-		"ln -fs ${DOTFILES_PATH}/.config/git/config.local ${HOME}/.config/git/config.local"
-		"ln -fs ${DOTFILES_PATH}/.config/gitui ${HOME}/.config/gitui"
-		"ln -fs ${DOTFILES_PATH}/.config/lazygit/config.yml ${HOME}/.config/lazygit/config.yml"
-		"ln -fs ${DOTFILES_PATH}/.config/nvim ${HOME}/.config/nvim"
-		"ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg.conf ${HOME}/.config/gnupg/gpg.conf"
-		"ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg-agent.conf ${HOME}/.config/gnupg/gpg-agent.conf"
-		"ln -fs ${DOTFILES_PATH}/.config/yazi ${HOME}/.config/yazi"
-		"ln -fs ${DOTFILES_PATH}/.local/bin/* ${HOME}/.local/bin"
-	)
+  local symlinks=(
+    "ln -fs ${DOTFILES_PATH}/.zshenv ${HOME}/.zshenv"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/.zshrc ${HOME}/.config/zsh/.zshrc"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/.zshrc.local ${HOME}/.config/zsh/.zshrc.local"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/.zprofile ${HOME}/.config/zsh/.zprofile"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/.zprofile.local ${HOME}/.config/zsh/.zprofile.local"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/.aliases ${HOME}/.config/zsh/.aliases"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/.aliases.local ${HOME}/.config/zsh/.aliases.local"
+    "ln -fs ${DOTFILES_PATH}/.config/tmux/tmux.conf ${HOME}/.config/tmux/tmux.conf"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/themes ${HOME}/.config/zsh/themes"
+    "ln -fs ${DOTFILES_PATH}/.config/tmux/themes ${HOME}/.config/tmux/themes"
+    "ln -fs ${DOTFILES_PATH}/.config/bat/themes ${HOME}/.config/bat/themes"
+    "ln -fs ${DOTFILES_PATH}/.config/git/config ${HOME}/.config/git/config"
+    "ln -fs ${DOTFILES_PATH}/.config/git/config.local ${HOME}/.config/git/config.local"
+    "ln -fs ${DOTFILES_PATH}/.config/gitui ${HOME}/.config/gitui"
+    "ln -fs ${DOTFILES_PATH}/.config/lazygit/config.yml ${HOME}/.config/lazygit/config.yml"
+    "ln -fs ${DOTFILES_PATH}/.config/nvim ${HOME}/.config/nvim"
+    "ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg.conf ${HOME}/.config/gnupg/gpg.conf"
+    "ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg-agent.conf ${HOME}/.config/gnupg/gpg-agent.conf"
+    "ln -fs ${DOTFILES_PATH}/.config/yazi ${HOME}/.config/yazi"
+    "ln -fs ${DOTFILES_PATH}/.local/bin/* ${HOME}/.local/bin"
+  )
 
-	local symlinks_system=()
+  local symlinks_system=()
 
-	# And if you happen to be using WSL:
-	if [ -n "${OS_IN_WSL}" ]; then
-		if [ "${OS_DISTRO}" = "arch" ]; then
-			symlinks_system+=(
-				"sudo ln -fs ${DOTFILES_PATH}/etc/archlinux/wsl.conf /etc/wsl.conf"
-			)
-		elif [ "${OS_DISTRO}" = "debian" ]; then
-			symlinks_system+=(
-				"sudo ln -fs ${DOTFILES_PATH}/etc/debian/wsl.conf /etc/wsl.conf"
-			)
-		fi
+  # And if you happen to be using WSL:
+  if [ -n "${OS_IN_WSL}" ]; then
+    if [ "${OS_DISTRO}" = "arch" ]; then
+      symlinks_system+=(
+        "sudo ln -fs ${DOTFILES_PATH}/etc/archlinux/wsl.conf /etc/wsl.conf"
+      )
+    elif [ "${OS_DISTRO}" = "debian" ]; then
+      symlinks_system+=(
+        "sudo ln -fs ${DOTFILES_PATH}/etc/debian/wsl.conf /etc/wsl.conf"
+      )
+    fi
 
-		if [ ! -e "${WIN_USER_PATH}/.wezterm.lua" ]; then
-			cp "${DOTFILES_PATH}/.config/wezterm/wezterm.lua" "${WIN_USER_PATH}/.wezterm.lua"
-			echo "Copied wezterm.lua to window users"
-		fi
-	else
-		symlinks+=(
-			"ln -fs ${DOTFILES_PATH}/.config/wezterm/wezterm.lua ${HOME}/.config/wezterm/wezterm.lua"
-		)
-	fi
+    if [ ! -e "${WIN_USER_PATH}/.wezterm.lua" ]; then
+      cp "${DOTFILES_PATH}/.config/wezterm/wezterm.lua" "${WIN_USER_PATH}/.wezterm.lua"
+      echo "Copied wezterm.lua to window users"
+    fi
+  else
+    symlinks+=(
+      "ln -fs ${DOTFILES_PATH}/.config/wezterm/wezterm.lua ${HOME}/.config/wezterm/wezterm.lua"
+    )
+  fi
 
-	if [ "${OS_DISTRO}" = "arch" ]; then
-		symlinks_system+=("sudo ln -fs ${DOTFILES_PATH}/etc/pacman.d/01-options.conf /etc/pacman.d/01-options.conf")
+  if [ "${OS_DISTRO}" = "arch" ]; then
+    symlinks_system+=("sudo ln -fs ${DOTFILES_PATH}/etc/pacman.d/01-options.conf /etc/pacman.d/01-options.conf")
 
-		if [ -f "etc/pacman.d/02-ignore.conf" ]; then
-			symlinks_system+=("sudo ln -fs ${DOTFILES_PATH}/etc/pacman.d/02-ignore.conf /etc/pacman.d/02-ignore.conf")
-		else
-			sudo rm -f "/etc/pacman.d/02-ignore.conf"
-		fi
-	fi
+    if [ -f "etc/pacman.d/02-ignore.conf" ]; then
+      symlinks_system+=("sudo ln -fs ${DOTFILES_PATH}/etc/pacman.d/02-ignore.conf /etc/pacman.d/02-ignore.conf")
+    else
+      sudo rm -f "/etc/pacman.d/02-ignore.conf"
+    fi
+  fi
 
-	printf -- "-------------------------------------------------------------------------------\n\n"
+  printf -- "-------------------------------------------------------------------------------\n\n"
 
-	for link in "${symlinks[@]}"; do
-		echo "${link}"
-	done
+  for link in "${symlinks[@]}"; do
+    echo "${link}"
+  done
 
-	for link in "${symlinks_system[@]}"; do
-		echo "${link}"
-	done
+  for link in "${symlinks_system[@]}"; do
+    echo "${link}"
+  done
 
-	cat <<EOF
+  cat <<EOF
 
 -------------------------------------------------------------------------------
 
@@ -705,88 +705,88 @@ and have existing files now would be a good time to back them up.
 
 EOF
 
-	while true; do
-		read -rep "Ready to continue? Enter y to apply them all or n to skip (y/n) " yn
-		case "${yn}" in
-		[Yy]*)
+  while true; do
+    read -rep "Ready to continue? Enter y to apply them all or n to skip (y/n) " yn
+    case "${yn}" in
+    [Yy]*)
 
-			for link in "${symlinks[@]}"; do
-				eval "${link}"
-			done
+      for link in "${symlinks[@]}"; do
+        eval "${link}"
+      done
 
-			for link in "${symlinks_system[@]}"; do
-				eval "${link}"
-			done
+      for link in "${symlinks_system[@]}"; do
+        eval "${link}"
+      done
 
-			echo "🌟 All symlinks created successfully."
+      echo "🌟 All symlinks created successfully."
 
-			break
-			;;
-		[Nn]*)
+      break
+      ;;
+    [Nn]*)
 
-			break
-			;;
-		*) echo "Please answer y or n" ;;
-		esac
-	done
+      break
+      ;;
+    *) echo "Please answer y or n" ;;
+    esac
+  done
 }
 
 configure_system_configs() {
-	_info "CONFIGURE SYSTEM CONFIGS"
+  _info "CONFIGURE SYSTEM CONFIGS"
 
-	if [ "${OS_DISTRO}" = "arch" ]; then
-		local etc_pacman_conf_path="/etc/pacman.conf"
-		if ! grep -q "Include = /etc/pacman\.d/\*\.conf" "${etc_pacman_conf_path}" 2>/dev/null; then
-			printf "\nInclude = /etc/pacman.d/*.conf\n" | sudo tee --append "${etc_pacman_conf_path}" 1>/dev/null
-		fi
-	fi
+  if [ "${OS_DISTRO}" = "arch" ]; then
+    local etc_pacman_conf_path="/etc/pacman.conf"
+    if ! grep -q "Include = /etc/pacman\.d/\*\.conf" "${etc_pacman_conf_path}" 2>/dev/null; then
+      printf "\nInclude = /etc/pacman.d/*.conf\n" | sudo tee --append "${etc_pacman_conf_path}" 1>/dev/null
+    fi
+  fi
 
-	echo "Everything that required updating was updated"
+  echo "Everything that required updating was updated"
 }
 
 configure_shell() {
-	_info "CONFIGURE SHELL (ZSH)"
+  _info "CONFIGURE SHELL (ZSH)"
 
-	local local_files=(".zshrc.local" ".zprofile.local" ".aliases.local")
-	local original_dotfiles_path="${DOTFILES_PATH}"
+  local local_files=(".zshrc.local" ".zprofile.local" ".aliases.local")
+  local original_dotfiles_path="${DOTFILES_PATH}"
 
-	for file in "${local_files[@]}"; do
-		local file_path="${HOME}/.config/zsh/${file}"
+  for file in "${local_files[@]}"; do
+    local file_path="${HOME}/.config/zsh/${file}"
 
-		if [ ! -f "${file_path}" ]; then
-			printf "# shellcheck shell=bash\n\n# Any settings defined here are gitignored\n" >"${file_path}"
-		fi
-	done
+    if [ ! -f "${file_path}" ]; then
+      printf "# shellcheck shell=bash\n\n# Any settings defined here are gitignored\n" >"${file_path}"
+    fi
+  done
 
-	local zprofile_path="${DOTFILES_PATH}/.config/zsh/.zprofile.local"
+  local zprofile_path="${DOTFILES_PATH}/.config/zsh/.zprofile.local"
 
-	if ! grep -q "^export DOTFILES_PATH=.*$" "${zprofile_path}" 2>/dev/null; then
-		printf '\nexport DOTFILES_PATH="%s"\n' "${DOTFILES_PATH}" >>"${zprofile_path}"
-	fi
+  if ! grep -q "^export DOTFILES_PATH=.*$" "${zprofile_path}" 2>/dev/null; then
+    printf '\nexport DOTFILES_PATH="%s"\n' "${DOTFILES_PATH}" >>"${zprofile_path}"
+  fi
 
-	if [ "${OS_TYPE}" == "darwin" ]; then
-		if ! grep -q "HOMEBREW_NO_ANALYTICS" "${zprofile_path}" 2>/dev/null; then
-			printf '\nexport HOMEBREW_NO_ANALYTICS=1\n' >>"${zprofile_path}"
-		fi
+  if [ "${OS_TYPE}" == "darwin" ]; then
+    if ! grep -q "HOMEBREW_NO_ANALYTICS" "${zprofile_path}" 2>/dev/null; then
+      printf '\nexport HOMEBREW_NO_ANALYTICS=1\n' >>"${zprofile_path}"
+    fi
 
-		if ! grep -q "eval.*homebrew.*shellenv" "${zprofile_path}" 2>/dev/null; then
-			local prefix="/opt/homebrew"
-			[[ "${CPU_ARCH}" == "x86_64" ]] && prefix="/usr/local"
-			# shellcheck disable=SC2016
-			printf "\neval \"\$(%s/bin/brew shellenv)\"\n" "${prefix}" >>"${zprofile_path}"
-		fi
-	else
-		# Are we in WSL 2?
-		if [ -n "${OS_IN_WSL}" ]; then
-			# This only applies if you have Docker installed without Docker Desktop
-			# and you're not using systemd.
-			if command -v docker &>/dev/null; then
-				if [ ! -d "${HOME}/.docker/desktop" ]; then
-					if [ ! -d /run/systemd/system ]; then
-						if ! grep -q "^if service docker status.*$" "${zprofile_path}" 2>/dev/null; then
-							local docker=
-							docker=$(
-								cat <<'EOF'
+    if ! grep -q "eval.*homebrew.*shellenv" "${zprofile_path}" 2>/dev/null; then
+      local prefix="/opt/homebrew"
+      [[ "${CPU_ARCH}" == "x86_64" ]] && prefix="/usr/local"
+      # shellcheck disable=SC2016
+      printf "\neval \"\$(%s/bin/brew shellenv)\"\n" "${prefix}" >>"${zprofile_path}"
+    fi
+  else
+    # Are we in WSL 2?
+    if [ -n "${OS_IN_WSL}" ]; then
+      # This only applies if you have Docker installed without Docker Desktop
+      # and you're not using systemd.
+      if command -v docker &>/dev/null; then
+        if [ ! -d "${HOME}/.docker/desktop" ]; then
+          if [ ! -d /run/systemd/system ]; then
+            if ! grep -q "^if service docker status.*$" "${zprofile_path}" 2>/dev/null; then
+              local docker=
+              docker=$(
+                cat <<'EOF'
 # Ensure Docker is running on WSL 2. This expects you've installed Docker and
 # Docker Compose directly within your WSL distro instead of Docker Desktop.
 #   - https://nickjanetakis.com/blog/install-docker-in-wsl-2-without-docker-desktop
@@ -795,214 +795,214 @@ if service docker status 2>&1 | grep -q "is not running"; then
     --exec /usr/sbin/service docker start &> /dev/null
 fi
 EOF
-							)
+              )
 
-							printf "\n\n%s" "${docker}" >>"${zprofile_path}"
-						fi
-					fi
-				fi
-			fi
-		fi
-	fi
+              printf "\n\n%s" "${docker}" >>"${zprofile_path}"
+            fi
+          fi
+        fi
+      fi
+    fi
+  fi
 
-	# Switch to zsh in a way that supports our supported OS and distros.
-	local shell_path=
-	shell_path="$(which zsh)"
+  # Switch to zsh in a way that supports our supported OS and distros.
+  local shell_path=
+  shell_path="$(which zsh)"
 
-	if ! grep -q "${shell_path}" /etc/shells; then
-		echo "${shell_path}" | sudo tee -a /etc/shells 1>/dev/null
-	fi
+  if ! grep -q "${shell_path}" /etc/shells; then
+    echo "${shell_path}" | sudo tee -a /etc/shells 1>/dev/null
+  fi
 
-	[ "${SHELL: -3}" != "zsh" ] && chsh -s "${shell_path}"
-	echo "Changed your default shell to zsh"
+  [ "${SHELL: -3}" != "zsh" ] && chsh -s "${shell_path}"
+  echo "Changed your default shell to zsh"
 
-	# shellcheck disable=SC1091
-	. "${HOME}/.config/zsh/.zprofile"
+  # shellcheck disable=SC1091
+  . "${HOME}/.config/zsh/.zprofile"
 
-	# Given the above line sets this env var if it's defined, this ensures we
-	# always use the value that was set when running this script. This is mainly
-	# to make testing this script easier in Docker since the .local files are
-	# volume mounted and this value will be different in Docker.
-	DOTFILES_PATH="${original_dotfiles_path}"
+  # Given the above line sets this env var if it's defined, this ensures we
+  # always use the value that was set when running this script. This is mainly
+  # to make testing this script easier in Docker since the .local files are
+  # volume mounted and this value will be different in Docker.
+  DOTFILES_PATH="${original_dotfiles_path}"
 
-	echo "It has been configured in '${HOME}/.config/zsh/'"
+  echo "It has been configured in '${HOME}/.config/zsh/'"
 }
 
 install_mise_packages() {
-	_info "INSTALL MISE PACKAGES"
-	# Install Mise packages.
+  _info "INSTALL MISE PACKAGES"
+  # Install Mise packages.
 
-	# Apt's packages typically have older versions since Debian and Ubuntu are
-	# stable distros. In most cases the version included is fine but we do want
-	# the latest and greatest versions for certain tools.
-	echo
-	# shellcheck disable=SC2086
-	if [ "${OS_TYPE}" == "linux" ]; then
-		if [ "${OS_DISTRO}" == "arch" ]; then
-			if [[ -n "${MISE_PACKAGES_ARCH}" ]]; then
-				for package in ${MISE_PACKAGES_ARCH}; do
-					mise use --global "$package@latest"
-					sleep 1
-				done
-			fi
-		elif [ "${OS_DISTRO}" == "debian" ]; then
-			if [[ -n "${MISE_PACKAGES_DEBIAN}" ]]; then
-				for package in ${MISE_PACKAGES_DEBIAN}; do
-					mise use --global "$package@latest"
-					sleep 1
-				done
-			fi
-		else
-			if [[ -n "${MISE_PACKAGES_BREW}" ]]; then
-				for package in ${MISE_PACKAGES_BREW}; do
-					mise use --global "$package@latest"
-					sleep 1
-				done
-			fi
-		fi
-	fi
+  # Apt's packages typically have older versions since Debian and Ubuntu are
+  # stable distros. In most cases the version included is fine but we do want
+  # the latest and greatest versions for certain tools.
+  echo
+  # shellcheck disable=SC2086
+  if [ "${OS_TYPE}" == "linux" ]; then
+    if [ "${OS_DISTRO}" == "arch" ]; then
+      if [[ -n "${MISE_PACKAGES_ARCH}" ]]; then
+        for package in ${MISE_PACKAGES_ARCH}; do
+          mise use --global "$package@latest"
+          sleep 1
+        done
+      fi
+    elif [ "${OS_DISTRO}" == "debian" ]; then
+      if [[ -n "${MISE_PACKAGES_DEBIAN}" ]]; then
+        for package in ${MISE_PACKAGES_DEBIAN}; do
+          mise use --global "$package@latest"
+          sleep 1
+        done
+      fi
+    else
+      if [[ -n "${MISE_PACKAGES_BREW}" ]]; then
+        for package in ${MISE_PACKAGES_BREW}; do
+          mise use --global "$package@latest"
+          sleep 1
+        done
+      fi
+    fi
+  fi
 
-	if [ ! -e /usr/bin/nvim ]; then
-		if [ -e "$(which nvim)" ]; then
-			sudo ln -s "$(which nvim)" /usr/bin/nvim
-			echo "Symlink nvim to /usr/bin/nvim"
-		fi
-	fi
+  if [ ! -e /usr/bin/nvim ]; then
+    if [ -e "$(which nvim)" ]; then
+      sudo ln -s "$(which nvim)" /usr/bin/nvim
+      echo "Symlink nvim to /usr/bin/nvim"
+    fi
+  fi
 
-	bat cache --build
-	sleep 5
+  bat cache --build
+  sleep 5
 }
 
 install_programming_languages() {
-	_info "INSTALL PROGRAMMING LANGUAGES"
+  _info "INSTALL PROGRAMMING LANGUAGES"
 
-	for lang in "${!MISE_LANGUAGES[@]}"; do
-		# Prevent github secondary rate limit from kicking in
-		sleep 3
+  for lang in "${!MISE_LANGUAGES[@]}"; do
+    # Prevent github secondary rate limit from kicking in
+    sleep 3
 
-		[ -z "${MISE_LANGUAGES[${lang}]}" ] && continue
+    [ -z "${MISE_LANGUAGES[${lang}]}" ] && continue
 
-		printf "\nInstalling %s...\n\n" "${MISE_LANGUAGES[${lang}]}"
-		if command -v "${HOME}/.local/share/mise/shims/${lang}" 1>/dev/null; then
-			echo "Skipping, it's already installed, run 'mise upgrade ${lang} --bump' to upgrade"
-		else
-			mise use --global "${MISE_LANGUAGES[${lang}]}"
-		fi
+    printf "\nInstalling %s...\n\n" "${MISE_LANGUAGES[${lang}]}"
+    if command -v "${HOME}/.local/share/mise/shims/${lang}" 1>/dev/null; then
+      echo "Skipping, it's already installed, run 'mise upgrade ${lang} --bump' to upgrade"
+    else
+      mise use --global "${MISE_LANGUAGES[${lang}]}"
+    fi
 
-		# Also install pnpm for Node.
-		if [ "${lang}" = "node" ]; then
-			if ! pnpm --version >/dev/null 2>&1; then
-				npm install -g pnpm
-			fi
-		fi
+    # Also install pnpm for Node.
+    if [ "${lang}" = "node" ]; then
+      if ! pnpm --version >/dev/null 2>&1; then
+        npm install -g pnpm
+      fi
+    fi
 
-		# Provide node to neovim
-		pnpm add -g neovim
+    # Provide node to neovim
+    pnpm add -g neovim
 
-	done
+  done
 }
 
 install_tools_with_python() {
-	_info "INSTALLING TOOLS WITH PYTHON PIP"
+  _info "INSTALLING TOOLS WITH PYTHON PIP"
 
-	pip install --upgrade pip
+  pip install --upgrade pip
 
-	# tldr
-	pip install --user tldr
-	printf "Installing latest tldr (better man) ... \n\n"
+  # tldr
+  pip install --user tldr
+  printf "Installing latest tldr (better man) ... \n\n"
 
-	# autocorrect previous command that entered wrongly
-	#pip3 install thefuck --user
-	#printf("Installing latest thefuck (autocorrect prompt) ... \n\n"
+  # autocorrect previous command that entered wrongly
+  #pip3 install thefuck --user
+  #printf("Installing latest thefuck (autocorrect prompt) ... \n\n"
 
-	# for neovim
-	pip install --user pynvim
+  # for neovim
+  pip install --user pynvim
 }
 
 ask_for_name() {
-	_info "ASKING FOR YOUR NAME TO CONFIGURE GIT"
+  _info "ASKING FOR YOUR NAME TO CONFIGURE GIT"
 
-	local name=
+  local name=
 
-	set +o errexit
-	name="$(git config user.name)"
-	set -o errexit
+  set +o errexit
+  name="$(git config user.name)"
+  set -o errexit
 
-	if [[ -n "${name}" ]]; then
-		echo "Skipping, since '${name}' was retrieved from your git config"
-	else
-		if [[ "$NON_INTERACTIVE" == "true" ]]; then
-			# Non-interactive mode (e.g., yes | bash install)
-			name="Default User"
-			echo "Non-interactive mode detected. Using default name: '${name}'"
-		else
-			while true; do
-				printf "What is your full name (ie. Dade Murphy)? "
-				read -r name
+  if [[ -n "${name}" ]]; then
+    echo "Skipping, since '${name}' was retrieved from your git config"
+  else
+    if [[ "$NON_INTERACTIVE" == "true" ]]; then
+      # Non-interactive mode (e.g., yes | bash install)
+      name="Default User"
+      echo "Non-interactive mode detected. Using default name: '${name}'"
+    else
+      while true; do
+        printf "What is your full name (ie. Dade Murphy)? "
+        read -r name
 
-				if [[ ${name} =~ [^[:space:]]+ ]]; then
-					break
-				else
-					printf "Please enter at least your first name\n\n"
-				fi
-			done
-		fi
-	fi
+        if [[ ${name} =~ [^[:space:]]+ ]]; then
+          break
+        else
+          printf "Please enter at least your first name\n\n"
+        fi
+      done
+    fi
+  fi
 
-	NAME="${name}"
+  NAME="${name}"
 }
 
 ask_for_email() {
-	_info "ASKING FOR YOUR EMAIL TO CONFIGURE GIT"
+  _info "ASKING FOR YOUR EMAIL TO CONFIGURE GIT"
 
-	local email=
+  local email=
 
-	set +o errexit
-	email="$(git config user.email)"
-	set -o errexit
+  set +o errexit
+  email="$(git config user.email)"
+  set -o errexit
 
-	if [[ -n "${email}" ]]; then
-		echo "Skipping, since '${email}' was retrieved from your git config"
-	else
-		if [[ "$NON_INTERACTIVE" == "true" ]]; then
-			# Non-interactive mode (e.g., yes | bash install)
-			email="default@example.com"
-			echo "Non-interactive mode detected. Using default email: '${email}'"
-		else
-			while true; do
-				printf "What is your email (ie. crash.override@example.com)? "
-				read -r email
+  if [[ -n "${email}" ]]; then
+    echo "Skipping, since '${email}' was retrieved from your git config"
+  else
+    if [[ "$NON_INTERACTIVE" == "true" ]]; then
+      # Non-interactive mode (e.g., yes | bash install)
+      email="default@example.com"
+      echo "Non-interactive mode detected. Using default email: '${email}'"
+    else
+      while true; do
+        printf "What is your email (ie. crash.override@example.com)? "
+        read -r email
 
-				if [[ ${email} =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
-					break
-				else
-					printf "Please enter a valid email address\n\n"
-				fi
-			done
-		fi
-	fi
+        if [[ ${email} =~ ^[^@]+@[^@]+\.[^@]+$ ]]; then
+          break
+        else
+          printf "Please enter a valid email address\n\n"
+        fi
+      done
+    fi
+  fi
 
-	EMAIL="${email}"
+  EMAIL="${email}"
 }
 
 create_ssh_key() {
-	_info "CREATING SSH KEY"
+  _info "CREATING SSH KEY"
 
-	local -r key_path="${HOME}/.ssh/id_ed25519"
+  local -r key_path="${HOME}/.ssh/id_ed25519"
 
-	if [[ -f "${key_path}" ]]; then
-		echo "Skipping, since a key already exists at '${key_path}'"
-	else
-		ssh-keygen -t ed25519 -C "${EMAIL}" -N "" -f "${key_path}"
-	fi
+  if [[ -f "${key_path}" ]]; then
+    echo "Skipping, since a key already exists at '${key_path}'"
+  else
+    ssh-keygen -t ed25519 -C "${EMAIL}" -N "" -f "${key_path}"
+  fi
 
-	eval "$(ssh-agent -s)"
-	ssh-add "${key_path}"
+  eval "$(ssh-agent -s)"
+  ssh-add "${key_path}"
 
-	SSH_PUBKEY=$(<"${key_path}.pub")
+  SSH_PUBKEY=$(<"${key_path}.pub")
 
-	SSH_INSTRUCTIONS=$(
-		cat <<EOF
+  SSH_INSTRUCTIONS=$(
+    cat <<EOF
 # ==============================================================================
 # 🔐 SSH Key Generated!
 # ------------------------------------------------------------------------------
@@ -1024,41 +1024,41 @@ create_ssh_key() {
 #     git clone git@github.com:user/repo.git
 # ==============================================================================
 EOF
-	)
+  )
 }
 
 create_gpg_key() {
-	_info "CREATING GPG KEY"
+  _info "CREATING GPG KEY"
 
-	local gpg_key=
+  local gpg_key=
 
-	set +o errexit
-	gpg_key="$(gpg --export --armor "${EMAIL}" 2>/dev/null)"
-	set -o errexit
+  set +o errexit
+  gpg_key="$(gpg --export --armor "${EMAIL}" 2>/dev/null)"
+  set -o errexit
 
-	if [[ "${gpg_key}" =~ "PGP PUBLIC KEY" ]]; then
-		echo "Skipping, since a key already exists for '${EMAIL}'"
-	else
-		while true; do
-			printf "Please set a passphrase (password) for your key: "
-			read -sr passphrase
+  if [[ "${gpg_key}" =~ "PGP PUBLIC KEY" ]]; then
+    echo "Skipping, since a key already exists for '${EMAIL}'"
+  else
+    while true; do
+      printf "Please set a passphrase (password) for your key: "
+      read -sr passphrase
 
-			if [[ ! ${passphrase} =~ [^[:space:]]+ ]]; then
-				printf "\nPlease enter at least 1 non-space character\n\n"
-				continue
-			fi
+      if [[ ! ${passphrase} =~ [^[:space:]]+ ]]; then
+        printf "\nPlease enter at least 1 non-space character\n\n"
+        continue
+      fi
 
-			printf "\n\nPlease confirm your passphrase: "
-			read -sr passphrase_confirm
+      printf "\n\nPlease confirm your passphrase: "
+      read -sr passphrase_confirm
 
-			[ "${passphrase}" = "${passphrase_confirm}" ] && break
+      [ "${passphrase}" = "${passphrase_confirm}" ] && break
 
-			printf "\nYour passphrase did not match, please try again\n\n"
-		done
+      printf "\nYour passphrase did not match, please try again\n\n"
+    done
 
-		printf "\n\nGenerating GPG key...\n\n"
+    printf "\n\nGenerating GPG key...\n\n"
 
-		gpg --batch --pinentry-mode loopback --gen-key <<EOF
+    gpg --batch --pinentry-mode loopback --gen-key <<EOF
      Key-Type: RSA
      Key-Length: 4096
      Subkey-Type: RSA
@@ -1069,13 +1069,13 @@ create_gpg_key() {
      Expire-Date: 1y
 EOF
 
-		gpg_key="$(gpg --export --armor "${EMAIL}" 2>/dev/null)"
-	fi
+    gpg_key="$(gpg --export --armor "${EMAIL}" 2>/dev/null)"
+  fi
 
-	GPG_PUBKEY="${gpg_key}"
+  GPG_PUBKEY="${gpg_key}"
 
-	GPG_INSTRUCTIONS=$(
-		cat <<EOF
+  GPG_INSTRUCTIONS=$(
+    cat <<EOF
 # ==============================================================================
 # 🛡️  Git Commit Signing with GPG: One More Step!
 # ------------------------------------------------------------------------------
@@ -1093,19 +1093,19 @@ EOF
 # ✅ After that, your signed commits will be marked as Verified!
 # ==============================================================================
 EOF
-	)
+  )
 }
 
 configure_git() {
-	_info "CONFIGURING GIT TO SIGN COMMITS"
+  _info "CONFIGURING GIT TO SIGN COMMITS"
 
-	local gpg_fingerprint
-	gpg_fingerprint=$(gpg --list-keys --with-colons "${EMAIL}" | awk -F: '/^fpr:/ { print $10; exit }')
+  local gpg_fingerprint
+  gpg_fingerprint=$(gpg --list-keys --with-colons "${EMAIL}" | awk -F: '/^fpr:/ { print $10; exit }')
 
-	local git_config_local_path="${DOTFILES_PATH}/.config/git/config.local"
+  local git_config_local_path="${DOTFILES_PATH}/.config/git/config.local"
 
-	if [ ! -f "${git_config_local_path}" ]; then
-		cat <<EOF >"${git_config_local_path}"
+  if [ ! -f "${git_config_local_path}" ]; then
+    cat <<EOF >"${git_config_local_path}"
 [user]
   name = ${NAME}
   email = ${EMAIL}
@@ -1128,102 +1128,102 @@ configure_git() {
 [gpg]
   program = gpg
 EOF
-	fi
-	echo "It has been configured in '$(dirname "${git_config_local_path}")'"
-	echo "✅ Git is now set to sign commits using your GPG key. Uncomment them to use it"
-	echo "🔑 GPG Fingerprint: ${gpg_fingerprint}"
+  fi
+  echo "It has been configured in '$(dirname "${git_config_local_path}")'"
+  echo "✅ Git is now set to sign commits using your GPG key. Uncomment them to use it"
+  echo "🔑 GPG Fingerprint: ${gpg_fingerprint}"
 
-	git -C "${DOTFILES_PATH}" remote set-url origin git@github.com:otakenz/dotfiles.git
+  git -C "${DOTFILES_PATH}" remote set-url origin git@github.com:otakenz/dotfiles.git
 }
 
 install_tmux_plugins() {
-	_info "INSTALL TMUX PLUGINS"
+  _info "INSTALL TMUX PLUGINS"
 
-	local plugin_path="${HOME}/.config/tmux/plugins"
-	local tpm_path="${plugin_path}/tpm"
+  local plugin_path="${HOME}/.config/tmux/plugins"
+  local tpm_path="${plugin_path}/tpm"
 
-	rm -rf "${tpm_path}"
-	git clone --depth 1 https://github.com/tmux-plugins/tpm "${tpm_path}"
+  rm -rf "${tpm_path}"
+  git clone --depth 1 https://github.com/tmux-plugins/tpm "${tpm_path}"
 
-	"${tpm_path}/bin/install_plugins"
+  "${tpm_path}/bin/install_plugins"
 }
 
 install_nvim_plugins() {
-	_info "INSTALL NEOVIM PLUGINS"
+  _info "INSTALL NEOVIM PLUGINS"
 
-	nvim +q
+  nvim +q
 
-	echo "They've been installed"
+  echo "They've been installed"
 }
 
 install_powerlevel10k() {
-	_info "INSTALL POWERLEVEL10K"
+  _info "INSTALL POWERLEVEL10K"
 
-	if [ ! -d "${HOME}/powerlevel10k" ]; then
-		git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${HOME}/powerlevel10k"
-	else
-		echo "✅ powerlevel10k already exists, skipping clone."
-	fi
+  if [ ! -d "${HOME}/powerlevel10k" ]; then
+    git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${HOME}/powerlevel10k"
+  else
+    echo "✅ powerlevel10k already exists, skipping clone."
+  fi
 }
 
 install_nerdfont() {
-	_info "INSTALL NERDFONT"
+  _info "INSTALL NERDFONT"
 
-	local font_dir="$HOME/.local/share/fonts"
-	local meslo_pattern="MesloLGS*"
-	local nerd_symbols="SymbolsNerdFont*"
+  local font_dir="$HOME/.local/share/fonts"
+  local meslo_pattern="MesloLGS*"
+  local nerd_symbols="SymbolsNerdFont*"
 
-	# Check if any Meslo Nerd Font files exist
-	if ! find "$font_dir" -type f -iname "$meslo_pattern" | grep -q .; then
-		echo "🔤 Meslo Nerd Font not found, downloading..."
-		wget -O /tmp/Meslo.zip "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/Meslo.zip"
-		unzip -o /tmp/Meslo.zip -d "$font_dir"
-	else
-		echo "✅ Meslo Nerd Font already installed."
-	fi
+  # Check if any Meslo Nerd Font files exist
+  if ! find "$font_dir" -type f -iname "$meslo_pattern" | grep -q .; then
+    echo "🔤 Meslo Nerd Font not found, downloading..."
+    wget -O /tmp/Meslo.zip "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.3.0/Meslo.zip"
+    unzip -o /tmp/Meslo.zip -d "$font_dir"
+  else
+    echo "✅ Meslo Nerd Font already installed."
+  fi
 
-	# Download and install Symbols Nerd Font if missing
-	if ! find "$font_dir" -type f -iname "$nerd_symbols" | grep -q .; then
-		echo "🔣 Symbols Nerd Font not found, downloading..."
-		wget -O /tmp/SymbolsNF.zip "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/NerdFontsSymbolsOnly.zip"
-		unzip -o /tmp/SymbolsNF.zip -d "$font_dir"
-	else
-		echo "✅ Symbols Nerd Font already installed."
-	fi
+  # Download and install Symbols Nerd Font if missing
+  if ! find "$font_dir" -type f -iname "$nerd_symbols" | grep -q .; then
+    echo "🔣 Symbols Nerd Font not found, downloading..."
+    wget -O /tmp/SymbolsNF.zip "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/NerdFontsSymbolsOnly.zip"
+    unzip -o /tmp/SymbolsNF.zip -d "$font_dir"
+  else
+    echo "✅ Symbols Nerd Font already installed."
+  fi
 
-	fc-cache -fv
+  fc-cache -fv
 }
 
 install_wezterm() {
-	_info "INSTALL WEZTERM"
+  _info "INSTALL WEZTERM"
 
-	if [ -z "${OS_IN_WSL}" ]; then
-		if command -v wezterm &>/dev/null; then
-			echo "Skipping, since wezterm is already installed"
-			return 0
-		fi
-		curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /etc/apt/keyrings/wezterm-fury.gpg
-		echo 'deb [signed-by=/etc/apt/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
-		sudo apt update && sudo apt install wezterm
-	else
-		if command -v wezterm.exe &>/dev/null; then
-			echo "Skipping, since wezterm is already installed"
-			return 0
-		fi
+  if [ -z "${OS_IN_WSL}" ]; then
+    if command -v wezterm &>/dev/null; then
+      echo "Skipping, since wezterm is already installed"
+      return 0
+    fi
+    curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /etc/apt/keyrings/wezterm-fury.gpg
+    echo 'deb [signed-by=/etc/apt/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
+    sudo apt update && sudo apt install wezterm
+  else
+    if command -v wezterm.exe &>/dev/null; then
+      echo "Skipping, since wezterm is already installed"
+      return 0
+    fi
 
-		if [ -d /mnt/c/Program\ Files/WezTerm/ ] || [ -d /c/Program\ Files/WezTerm/ ]; then
-			echo "Skipping, since wezterm is already installed"
-			return 0
-		fi
+    if [ -d /mnt/c/Program\ Files/WezTerm/ ] || [ -d /c/Program\ Files/WezTerm/ ]; then
+      echo "Skipping, since wezterm is already installed"
+      return 0
+    fi
 
-		"${WIN_USER_PATH}/AppData/Local/Microsoft/WindowsApps/winget.exe" install wez.wezterm
-	fi
+    "${WIN_USER_PATH}/AppData/Local/Microsoft/WindowsApps/winget.exe" install wez.wezterm
+  fi
 }
 
 healthcheck() {
-	_info "CHECK INFORMATION AND VERSIONS"
+  _info "CHECK INFORMATION AND VERSIONS"
 
-	cat <<EOF
+  cat <<EOF
 :: Dotfiles path:
 
 ${DOTFILES_PATH}
@@ -1244,30 +1244,30 @@ $(nvim --version)
 
 EOF
 
-	fastfetch
+  fastfetch
 }
 
 completed_message() {
-	_info "SHOWING SSH PUBKEY"
-	echo "$SSH_PUBKEY"
-	echo
-	echo "$SSH_INSTRUCTIONS"
+  _info "SHOWING SSH PUBKEY"
+  echo "$SSH_PUBKEY"
+  echo
+  echo "$SSH_INSTRUCTIONS"
 
-	_info "SHOWING GPG PUBKEY"
-	echo "$GPG_PUBKEY"
-	echo
-	echo "$GPG_INSTRUCTIONS"
+  _info "SHOWING GPG PUBKEY"
+  echo "$GPG_PUBKEY"
+  echo
+  echo "$GPG_INSTRUCTIONS"
 
-	_info "EVERYTHING WORKED"
+  _info "EVERYTHING WORKED"
 
-	cat <<EOF
+  cat <<EOF
 You can safely close this terminal.
 
 The next time you open your terminal everything will be ready to go!
 EOF
 
-	if [ "${OS_TYPE}" == "darwin" ]; then
-		cat <<EOF
+  if [ "${OS_TYPE}" == "darwin" ]; then
+    cat <<EOF
 
 P.S., it looks like you're on macOS.
 
@@ -1277,16 +1277,16 @@ Profiles -> Keys (tab) and then change your ALT keys to use "Esc+" instead of
 
 If you're not using iTerm2 you may still need to do similar steps.
 EOF
-	fi
+  fi
 }
 
 case "${1:-}" in
 --update | -u)
-	ONLY_UPDATE=1
-	;;
+  ONLY_UPDATE=1
+  ;;
 --skip-system-packages | -S) ;;
 --help | -h)
-	cat <<EOF
+  cat <<EOF
 Usage examples:
 
 # Pull in remote updates and run the script to update your dotfiles.
@@ -1301,12 +1301,12 @@ LOCAL=1 ./install
 # Show this help menu.
 ./install --help
 EOF
-	exit
-	;;
+  exit
+  ;;
 *)
-	[ -n "${1:-}" ] && _error "'${1}' is not a supported flag"
+  [ -n "${1:-}" ] && _error "'${1}' is not a supported flag"
 
-	;;
+  ;;
 esac
 
 detect_env
