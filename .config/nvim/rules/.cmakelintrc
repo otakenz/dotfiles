@@ -1,1 +1,1 @@
-filter=-linelength,-whitespace/tabs
+filter=-linelength,-whitespace/tabs,-whitespace/mismatch
