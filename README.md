@@ -1,5 +1,15 @@
 # dotfiles
 
+Welcome to my dotfiles! This is a collection of my personal tools and
+configurations for a productive development environment. My whole setup can be
+configured in mere minutes through a single **install** script. This setup is
+cater for me to work efficiently on multiple platforms, including Windows (WSL2),
+Ubuntu, Archlinux.
+
+If you would like to try it out, you can do so in a Docker container without
+modifying your machine. This is a great way to test it out before installing it
+on your machine. Instruction is provided below.
+
 ## 📓Supported platforms
 
 - Archlinux
@@ -32,11 +42,40 @@ rm /tmp/install 2>/dev/null || true && curl -sS https://raw.githubusercontent.co
 && chmod +x /tmp/install && bash /tmp/install
 ```
 
-### (Optional) Change remote url to ssh
+## Experience it
+
+**Try it out in Docker without modifying your system:**
 
 ```sh
-git remote set-url origin git@github.com:otakenz/dotfiles.git
+# Start a Debian container, we're passing in an env var to be explicit we're in Docker.
+docker container run --rm -it --env-file .env -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app debian:stable-slim bash
+
+# Copy / paste all 3 lines into the container's prompt and run it.
+#
+# Since we can't open a new terminal in a container we'll need to manually
+# launch zsh and source a few files. That's what the last line is doing.
+apt-get update && apt-get install -y curl \
+  && bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install) \
+  && zsh -c ". ~/.config/zsh/.zprofile && . ~/.config/zsh/.zshrc; zsh -i"
 ```
+
+**Local Test with docker**
+
+```sh
+git clone https://github.com/otakenz/dotfiles.git
+cd ~/dotfiles
+
+docker container run --rm -it --env-file .env -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app debian:stable-slim bash
+
+# Local test only
+apt-get update && apt-get install -y curl \
+  && LOCAL=1 bash install \
+  && zsh -c ". ~/.config/zsh/.zprofile && . ~/.config/zsh/.zshrc; zsh -i"
+```
+
+_Keep in mind with the Docker set up, unless your terminal is already
+configured to use Tokyonight Moon then the colors may look off. That's because
+your local terminal's config will not get automatically updated._
 
 ## 📝 Install script
 
@@ -143,9 +182,37 @@ mise list-all <package>
 - ~/.config/nvim/lua/config/options.lua (custom options for your neovim)
 - ~/.config/nvim/lua/config/lazy.lua (instruct neovim to load Lazyvim's plugin and your custom plugin)
 
-#### Plugins (special mentioned)
+#### Neovim Plugins (special mentioned)
 
--
+There are many plugins that I use, but here are some of the most essential ones:
+
+- Markdown preview ([iamcco/markdown-preview.nvim](https://github.com/iamcco/markdown-preview.nvim))
+  > I use this to preview my markdown files, it will open a browser window
+- LazyVim ([LazyVim/LazyVim](https://github.com/LazyVim/LazyVim))
+  > This is the upstream neovim config, I use this as a base on top of my own neovim
+  > config, due to Lua programming language, it is very easy to extend and
+  > modify
+- Package manager ([folke/lazy.nvim](https://github.com/folke/lazy.nvim))
+  > Have a good UI to manager all the plugins for your Neovim
+- Syntax highlighter ([nvim-treesitter/nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter))
+  > Support many languages, the syntax highlighting is fast and accurate
+- Mason ([williamboman/mason.nvim](https://github.com/mason-org/mason.nvim))
+  > This is a package manager for neovim's lsp/formatters/linters/dap
+- Formatter ([steverac/conform.nvim](https://github.com/stevearc/conform.nvim))
+  > Formatter for many languages, it is fast and accurate
+- Linter ([mfussenegger/nvim-lint](https://github.com/mfussenegger/nvim-lint))
+  > Provides additional linter for many languages that is not supported by lsp
+- which-key ([folke/which-key.nvim](https://github.com/folke/which-key.nvim))
+  > This is a keybinding helper, it will show you the available keybindings
+- Auto-completion ([saghen/blink.cmp](https://github.com/Saghen/blink.cmp))
+  > This is a completion engine for neovim
+- Search and replace ([MagicDuck/grug-far.nvim](https://github.com/MagicDuck/grug-far.nvim))
+  > This is a search and replace tool for neovim
+- Multicursor ([jake-stewart/multicursor.nvim](https://github.com/jake-stewart/multicursor.nvim))
+  > This is a multi-cursor tool for neovim, to smart edit multiple lines at once
+- Github Copilot ([zbirenbaum/copilot.lua](https://github.com/zbirenbaum/copilot.lua) and [CopilotC-Nvim/CopilotChat.nvim](https://github.com/CopilotC-Nvim/CopilotChat.nvim))
+  > Copilot and Copilot Chat plugins for neovim, allow you to use Copilot in
+  > neovim and chat with it
 
 ### 8. Tmux (v3.4+ or latest)
 
@@ -159,41 +226,6 @@ tmux attach -t dev
 # Kill a session
 tmux kill-session -t dev
 ```
-
-## Experience it
-
-**Try it in Docker without modifying your system:**
-
-```sh
-# Start a Debian container, we're passing in an env var to be explicit we're in Docker.
-docker container run --rm -it --env-file .env -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app debian:stable-slim bash
-
-# Copy / paste all 3 lines into the container's prompt and run it.
-#
-# Since we can't open a new terminal in a container we'll need to manually
-# launch zsh and source a few files. That's what the last line is doing.
-apt-get update && apt-get install -y curl \
-  && bash <(curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install) \
-  && zsh -c ". ~/.config/zsh/.zprofile && . ~/.config/zsh/.zshrc; zsh -i"
-```
-
-**Local Test with docker**
-
-```sh
-git clone https://github.com/otakenz/dotfiles.git
-cd ~/dotfiles
-
-docker container run --rm -it --env-file .env -e "IN_CONTAINER=1" -v "${PWD}:/app" -w /app debian:stable-slim bash
-
-# Local test only
-apt-get update && apt-get install -y curl \
-  && LOCAL=1 bash install \
-  && zsh -c ". ~/.config/zsh/.zprofile && . ~/.config/zsh/.zshrc; zsh -i"
-```
-
-_Keep in mind with the Docker set up, unless your terminal is already
-configured to use Tokyonight Moon then the colors may look off. That's because
-your local terminal's config will not get automatically updated._
 
 ## 📗 Troubleshooting:
 
