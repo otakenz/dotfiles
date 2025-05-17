@@ -39,7 +39,7 @@ export PNPM_HOME="${pnpm_bin}"
 # Since this is prepend, last one will be the first one found.
 prepend_path "${HOME}/.local/bin"
 prepend_path "${HOME}/.cargo/bin"
-prepend_path pnpm_bin
+prepend_path "${pnpm_bin}"
 prepend_path "${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims"
 prepend_path "${XDG_DATA_HOME:-$HOME/.local/share}/nvim/mason/bin"
 
