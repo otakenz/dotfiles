@@ -152,7 +152,7 @@ mise use -g <package>@<version>
 mise list-all <package>
 ```
 
-- node@22.14, python@3.13, go@1.23, lua@5.4, rust@stable
+- node@22.14, python@3.13, go@1.24, lua@5.4, rust@stable
 
 ### 6. CLI Tools (special mentioned)
 

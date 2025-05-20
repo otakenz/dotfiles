@@ -23,6 +23,7 @@ local M = {
 		"gopls", -- language server
 		"gofumpt", -- formatter
 		"goimports", -- formatter
+		"golines", -- formatter
 		"golangci-lint", -- linter
 		"delve", -- dap
 
@@ -192,7 +193,7 @@ return {
 				luau = { "stylua" },
 
 				-- Golang
-				go = { "goimports" },
+				go = { "goimports", "golines" },
 
 				-- Rust
 				rust = { "rustfmt" },
