@@ -193,7 +193,8 @@ return {
 				luau = { "stylua" },
 
 				-- Golang
-				go = { "goimports", "golines" },
+				go = { "goimports" },
+				-- go = { "goimports", "golines" },
 
 				-- Rust
 				rust = { "rustfmt" },
