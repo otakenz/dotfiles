@@ -523,6 +523,23 @@ export SSL_CERT_FILE=<path_to>/<proxy.crt
 wsl.exe --manage <distro_name> --set-default-user <username_in_distro>
 ```
 
+### 15. uv TLS issue when (uv pip sync requirement.txt)
+
+Your system CA store is correct (as shown by `openssl`), but `uv` is still failing with `invalid peer certificate: UnknownIssuer`. This usually means:
+
+- `uv` (via `rustls-tls-native-roots`) is not picking up your system CA store as expected.
+- There may be a conflict with custom CA environment variables.
+- You are behind a corporate proxy that intercepts SSL, and its CA is not trusted by the system or not compatible with `rustls`.
+
+**Unset Python/Node CA environment variables**
+These can interfere with native TLS detection:
+
+```sh
+unset SSL_CERT_FILE
+unset REQUESTS_CA_BUNDLE
+unset NODE_EXTRA_CA_CERTS
+```
+
 ## 👑 Credits:
 
 1. [Nick Janetakis](https://github.com/nickjj/dotfiles)
