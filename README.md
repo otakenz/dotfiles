@@ -124,7 +124,7 @@ The install script will setup the following on your system:
 - Unzip the installed NerdFonts to %USERPROFILE%/.local/share/fonts
 - Choose the fonts style and click "install"
 
-### 4. zsh (Z shell - modern shell)
+### 4. zsh (Modern Terminal Shell)
 
 - ~/.config/zsh/.zshrc (zsh configurations)
 - ~/.config/zsh/.zshrc (to add machine specifics config)
@@ -168,7 +168,7 @@ mise list-all <package>
 - [yazi](https://github.com/sxyazi/yazi) (blazingly fast and fancy TUI file manager)
 - [zoxide](https://github.com/ajeetdsouza/zoxide) (cd with memory)
 
-### 7. Neovim (v0.10+ or latest)
+### 7. Neovim (Text Editor, v0.10+ or latest)
 
 - [Lazy.nvim](https://github.com/folke/lazy.nvim) (Modern neovim package manager with lazy-loading feature)
 - [Lazyvim](https://github.com/LazyVim/LazyVim) (Upstream Neovim config on top of my neovim configs)
@@ -214,7 +214,7 @@ There are many plugins that I use, but here are some of the most essential ones:
   > Copilot and Copilot Chat plugins for neovim, allow you to use Copilot in
   > neovim and chat with it
 
-### 8. Tmux (v3.4+ or latest)
+### 8. Tmux (Terminal Multiplexor, v3.4+ or latest)
 
 - ~/.config/tmux/tmux.conf (tmux configuration file)
 
