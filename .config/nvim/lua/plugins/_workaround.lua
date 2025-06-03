@@ -1,4 +1,9 @@
 return {
-	-- { "mason-org/mason.nvim", version = "1.11.0" },
-	-- { "mason-org/mason-lspconfig.nvim", version = "1.32.0" },
+	-- ISSUE: https://github.com/Saghen/blink.cmp/issues/1727#issuecomment-2867452782
+	{
+		"saghen/blink.cmp",
+		opts = {
+			fuzzy = { implementation = "lua" },
+		},
+	},
 }
