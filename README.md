@@ -227,6 +227,15 @@ tmux attach -t dev
 tmux kill-session -t dev
 ```
 
+## 🧰 Additional tools:
+
+Here are some additional tools that I use in my development environment:
+
+1. Super productivity ([super-productivity](https://github.com/johannesjo/super-productivity))
+
+- I use this to organize my work, it is a time tracking and task management tool
+- I break my work into small tasks and track my time spent on each task
+
 ## 📗 Troubleshooting:
 
 ### 1. Managing multiple github accounts using SSH
