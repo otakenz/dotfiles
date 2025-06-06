@@ -96,6 +96,7 @@ DEBIAN_PACKAGES="
   rsync
   tree
   unzip
+  usbutils
   wget
   whois
   wl-clipboard
@@ -106,28 +107,41 @@ DEBIAN_PACKAGES="
 
 BREW_PACKAGES="
   bash
+  bat
   bc
   btop
   curl
   diffutils
+  dust
+  eza
   fastfetch
   fd
+	fontconfig
   fzf
   git
   git-delta
   gnupg
   htop
+  imagemagick
   jq
+  lazygit
   mise
   pass
+  pinentry
+  poppler
   pwgen
-  usbutils
   ripgrep
   rsync
+	shellcheck
+	shfmt
   tmux
+  tree
+  wezterm
   wget
   xz
+	yazi
   zsh
+	zoxide
 "
 MISE_PACKAGES_ARCH="neovim"
 
@@ -140,8 +154,8 @@ MISE_PACKAGES_DEBIAN="
   fd
   fzf
   gitui
-  lazygit
   jq
+  lazygit
   neovim
   ripgrep
   tmux
@@ -291,6 +305,10 @@ _install_packages_macos() {
 
   # shellcheck disable=SC2086
   brew install ${BREW_PACKAGES}
+
+  # Install packages manually since they don't exist elsewhere.
+  [ -d "$HOME/.fzf-git.sh" ] || git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
+  printf "Installing fzf-git.sh ...\n\n"
 }
 
 _display_packages_output() {
@@ -415,7 +433,7 @@ detect_env() {
     fi
 
     # Are we in WSL2 ?
-    if grep -q "\-WSL2" /proc/version; then
+    if [[ "$(uname -a)" == *"WSL2"* ]]; then
       OS_IN_WSL=1
       WIN_USER_PATH=$(_get_win_users_path)
     fi
@@ -852,21 +870,36 @@ install_mise_packages() {
           sleep 1
         done
       fi
-    else
-      if [[ -n "${MISE_PACKAGES_BREW}" ]]; then
-        for package in ${MISE_PACKAGES_BREW}; do
-          mise use --global "$package@latest"
-          sleep 1
-        done
-      fi
+    fi
+  elif [ "${OS_TYPE}" == "darwin" ]; then
+    if [[ -n "${MISE_PACKAGES_MACOS}" ]]; then
+      for package in ${MISE_PACKAGES_MACOS}; do
+        mise use --global "$package@latest"
+        sleep 1
+      done
     fi
   fi
 
-  if [ ! -e /usr/bin/nvim ]; then
-    if [ -e "$(which nvim)" ]; then
-      sudo ln -s "$(which nvim)" /usr/bin/nvim
-      echo "Symlink nvim to /usr/bin/nvim"
+  # Only proceed if nvim is installed
+  if [ -x "$(which nvim)" ]; then
+    if [[ "$OS_TYPE" == "linux" ]]; then
+      TARGET="/usr/bin/nvim"
+    elif [[ "$OS_TYPE" == "darwin" ]]; then
+      TARGET="/opt/homebrew/bin/nvim"
+    else
+      echo "Unsupported OS: $OS_TYPE"
+      exit 1
     fi
+
+    # Only create symlink if it doesn't exist
+    if [ ! -e "$TARGET" ]; then
+      echo "Creating symlink: $TARGET -> $(which nvim)"
+      sudo ln -s "$(which nvim)" "$TARGET"
+    else
+      echo "Symlink or file already exists at $TARGET"
+    fi
+  else
+    echo "nvim not found in PATH"
   fi
 
   bat cache --build
@@ -1203,6 +1236,10 @@ install_nerdfont() {
 
 install_wezterm() {
   _info "INSTALL WEZTERM"
+
+  if [ "${OS_TYPE}" == "darwin" ]; then
+    return 0
+  fi
 
   if [ -z "${OS_IN_WSL}" ]; then
     if command -v wezterm &>/dev/null; then

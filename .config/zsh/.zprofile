@@ -44,7 +44,7 @@ prepend_path "${XDG_DATA_HOME:-$HOME/.local/share}/mise/shims"
 prepend_path "${XDG_DATA_HOME:-$HOME/.local/share}/nvim/mason/bin"
 
 # Manually appendWindowsPath
-if grep -q "\-WSL2" /proc/version; then
+if [[ "$(uname -a)" == *"WSL2"* ]]; then
   append_path "/c/Windows"
   append_path "/c/Program Files/WezTerm"
   # append_path "/c/Program Files/usbipd-win"

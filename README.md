@@ -14,18 +14,29 @@ on your machine. Instruction is provided below.
 
 - Archlinux
 - Ubuntu 22+
-- macOS (not yet tested)
+- macOS (tested on Apple Silicon macOS 15)
 - wsl2 (Archlinux/ Ubuntu22+)
 
 ## 🔗 Requirements
 
 - git
 - curl
-- bash 4+
+- bash 4+ (macOS needs to install bash 4+ via brew as it ships with bash 3.2,
+  before running the install script)
 - [Docker](https://docs.docker.com/engine/install/) (for experience it or local test)
 - [PowerToys](https://github.com/microsoft/PowerToys) (For Windows, to swap esc and caps key bind)
 
 ## 🔨 Installation
+
+macOS install bash 4+ first
+
+```sh
+# Apple silicon macOS
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
+  && eval "$(/opt/homebrew/bin/brew shellenv)" \
+  && brew install bash \
+  && bash
+```
 
 ### Local way
 
