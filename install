@@ -116,7 +116,6 @@ BREW_PACKAGES="
   eza
   fastfetch
   fd
-	fontconfig
   fzf
   git
   git-delta
@@ -127,21 +126,21 @@ BREW_PACKAGES="
   lazygit
   mise
   pass
-  pinentry
+  pinentry-mac
   poppler
   pwgen
   ripgrep
   rsync
-	shellcheck
-	shfmt
+  shellcheck
+  shfmt
   tmux
   tree
   wezterm
   wget
   xz
-	yazi
+  yazi
   zsh
-	zoxide
+  zoxide
 "
 MISE_PACKAGES_ARCH="neovim"
 
@@ -657,7 +656,6 @@ create_symlinks() {
     "ln -fs ${DOTFILES_PATH}/.config/lazygit/config.yml ${HOME}/.config/lazygit/config.yml"
     "ln -fs ${DOTFILES_PATH}/.config/nvim ${HOME}/.config/nvim"
     "ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg.conf ${HOME}/.config/gnupg/gpg.conf"
-    "ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg-agent.conf ${HOME}/.config/gnupg/gpg-agent.conf"
     "ln -fs ${DOTFILES_PATH}/.config/yazi ${HOME}/.config/yazi"
     "ln -fs ${DOTFILES_PATH}/.local/bin/* ${HOME}/.local/bin"
   )
@@ -694,6 +692,12 @@ create_symlinks() {
     else
       sudo rm -f "/etc/pacman.d/02-ignore.conf"
     fi
+  fi
+
+  if [ "${OS_TYPE}" == "darwin" ]; then
+    "ln -fs ${DOTFILES_PATH}/.config/gnupg/macos/gpg-agent.conf ${HOME}/.config/gnupg/gpg-agent.conf"
+  else
+    "ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg-agent.conf ${HOME}/.config/gnupg/gpg-agent.conf"
   fi
 
   printf -- "-------------------------------------------------------------------------------\n\n"
@@ -1209,7 +1213,12 @@ install_powerlevel10k() {
 install_nerdfont() {
   _info "INSTALL NERDFONT"
 
-  local font_dir="$HOME/.local/share/fonts"
+  if [ "${OS_TYPE}" == "darwin" ]; then
+    local font_dir="$HOME/Library/Fonts"
+  elif [ "${OS_TYPE}" == "linux" ]; then
+    local font_dir="$HOME/.local/share/fonts"
+  fi
+
   local meslo_pattern="MesloLGS*"
   local nerd_symbols="SymbolsNerdFont*"
 
@@ -1231,7 +1240,9 @@ install_nerdfont() {
     echo "✅ Symbols Nerd Font already installed."
   fi
 
-  fc-cache -fv
+  if [ "${OS_TYPE}" == "linux" ]; then
+    fc-cache -fv
+  fi
 }
 
 install_wezterm() {
