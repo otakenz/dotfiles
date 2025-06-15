@@ -9,7 +9,7 @@ return {
 		end,
 	},
 	{
-		"blink.cmp",
+		"Saghen/blink.cmp",
 		opts = {
 			keymap = {
 				preset = "enter",
