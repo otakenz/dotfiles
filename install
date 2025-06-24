@@ -142,7 +142,10 @@ BREW_PACKAGES="
   zsh
   zoxide
 "
-MISE_PACKAGES_ARCH="neovim"
+MISE_PACKAGES_ARCH="
+  neovim
+  uv
+"
 
 MISE_PACKAGES_DEBIAN="
   bat
@@ -158,11 +161,15 @@ MISE_PACKAGES_DEBIAN="
   neovim
   ripgrep
   tmux
+  uv
   yazi
   zoxide
 "
 
-MISE_PACKAGES_MACOS="neovim"
+MISE_PACKAGES_MACOS="
+  neovim
+  uv
+"
 
 # Used to configure git
 NAME=

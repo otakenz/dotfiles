@@ -176,6 +176,7 @@ mise list-all <package>
 - [lazygit](https://github.com/jesseduffield/lazygit) (another git TUI, written in go, can be spawned inside neovim)
 - [ripgrep](https://github.com/BurntSushi/ripgrep) (ultra fast regex search on files)
 - [tldr](https://github.com/tldr-pages/tldr) (cheatsheet for console commands)
+- [uv](https://github.com/astral-sh/uv) (An extremely fast Python package and project manager, written in Rust.)
 - [yazi](https://github.com/sxyazi/yazi) (blazingly fast and fancy TUI file manager)
 - [zoxide](https://github.com/ajeetdsouza/zoxide) (cd with memory)
 
