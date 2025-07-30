@@ -702,9 +702,9 @@ create_symlinks() {
   fi
 
   if [ "${OS_TYPE}" == "darwin" ]; then
-    "ln -fs ${DOTFILES_PATH}/.config/gnupg/macos/gpg-agent.conf ${HOME}/.config/gnupg/gpg-agent.conf"
+    symlinks+=("ln -fs ${DOTFILES_PATH}/.config/gnupg/macos/gpg-agent.conf ${HOME}/.config/gnupg/gpg-agent.conf")
   else
-    "ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg-agent.conf ${HOME}/.config/gnupg/gpg-agent.conf"
+    symlinks+=("ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg-agent.conf ${HOME}/.config/gnupg/gpg-agent.conf")
   fi
 
   printf -- "-------------------------------------------------------------------------------\n\n"
