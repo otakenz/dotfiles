@@ -208,7 +208,7 @@ There are many plugins that I use, but here are some of the most essential ones:
   > Have a good UI to manager all the plugins for your Neovim
 - Syntax highlighter ([nvim-treesitter/nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter))
   > Support many languages, the syntax highlighting is fast and accurate
-- Mason ([williamboman/mason.nvim](https://github.com/mason-org/mason.nvim))
+- Mason ([mason-org/mason.nvim](https://github.com/mason-org/mason.nvim))
   > This is a package manager for neovim's lsp/formatters/linters/dap
 - Formatter ([steverac/conform.nvim](https://github.com/stevearc/conform.nvim))
   > Formatter for many languages, it is fast and accurate
