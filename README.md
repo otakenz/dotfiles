@@ -561,6 +561,10 @@ unset REQUESTS_CA_BUNDLE
 unset NODE_EXTRA_CA_CERTS
 ```
 
+### 16. How to build custom kernel for wsl2
+
+[Nice youtube guide and still relevant in 2025](https://www.youtube.com/watch?v=t_YnACEPmrM)
+
 ## 👑 Credits:
 
 1. [Nick Janetakis](https://github.com/nickjj/dotfiles)
