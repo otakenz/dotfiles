@@ -53,6 +53,7 @@ PACMAN_PACKAGES="
   pinentry
   poppler
   pwgen
+	readline
   ripgrep
   rsync
   tmux
@@ -86,6 +87,7 @@ DEBIAN_PACKAGES="
   iproute2
   libncurses5-dev
   libncursesw5-dev
+	libreadline-dev
   lld
   netcat-openbsd
   openssh-server
@@ -129,6 +131,7 @@ BREW_PACKAGES="
   pinentry-mac
   poppler
   pwgen
+	readline
   ripgrep
   rsync
   shellcheck
@@ -179,9 +182,9 @@ declare -A MISE_LANGUAGES
 MISE_LANGUAGES=(
   ["node"]="node@22.14"
   ["python"]="python@3.13"
-  ["go"]="go@1.23"
-  ["lua"]="lua@5.4"
-  ["rust"]="rust@stable"
+  ["go"]="go@latest"
+  ["lua"]="lua@5.1.5"
+  ["rust"]="rust@nightly"
 )
 
 CPU_ARCH="$(uname -m)"

@@ -4,13 +4,10 @@ gui:
       - "◡◡"
       - "⊙⊙"
       - "◠◠"
-
 git:
-  paging:
-    pager: delta --paging=never
+  pagers:
+    - pager: delta --paging=never
   log:
     showWholeGraph: true
-
   overrideGpg: true
-
 confirmOnQuit: false
