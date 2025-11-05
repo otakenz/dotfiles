@@ -25,6 +25,8 @@ alias sz='source ${ZDOTDIR}/.zprofile && source ${ZDOTDIR}/.zshrc'
 
 alias debug-zsh="zsh -xv 2> zsh.log"
 
+alias avante='nvim -c "lua vim.defer_fn(function()require(\"avante.api\").zen_mode()end, 100)"'
+
 alias ll="ls -alF"
 alias la="ls -A"
 alias gs="git status"
