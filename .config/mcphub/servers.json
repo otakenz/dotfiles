@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "sequentialthinking": {
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "mcp/sequentialthinking"
+      ],
+      "command": "docker",
+      "disabled": false
+    }
+  },
+  "nativeMCPServers": {
+    "mcphub": {
+      "autoApprove": [],
+      "disabled": false
+    },
+    "neovim": {
+      "autoApprove": [],
+      "disabled": false,
+      "disabled_tools": [
+        "delete_items",
+        "write_file",
+        "read_multiple_files",
+        "read_file",
+        "move_item",
+        "list_directory",
+        "find_files",
+        "execute_lua",
+        "execute_command",
+        "edit_file"
+      ]
+    }
+  }
+}

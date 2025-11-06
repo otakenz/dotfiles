@@ -22,6 +22,9 @@ MAP(
 MAP("i", "<C-p>", "<esc><Cmd>m .-2<CR>==gi", { desc = "Move Up" })
 MAP("i", "<C-n>", "<esc><Cmd>m .+1<CR>==gi", { desc = "Move Down" })
 
+-- Map <leader>h to :MCPHub (open MCPHub window)
+MAP("n", "<leader>h", ":MCPHub<CR>", { desc = "Open MCPHub window" })
+
 -- In visual mode, map Ctrl+k/j to move the current line/blocks up/down by count
 MAP(
 	"x",
