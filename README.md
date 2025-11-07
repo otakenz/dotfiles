@@ -194,6 +194,19 @@ mise list-all <package>
 - ~/.config/nvim/lua/config/options.lua (custom options for your neovim)
 - ~/.config/nvim/lua/config/lazy.lua (instruct neovim to load Lazyvim's plugin and your custom plugin)
 
+### 8. [OpenCode](https://opencode.ai/docs/)
+
+**OpenCode** is a powerful terminal-based AI coding agent that brings intelligent code assistance directly to your shell. It supports multiple AI providers (OpenAI, Claude, Gemini, Groq, Copilot, and more) and can automate coding, debugging, and file operations in your projects.
+
+```sh
+# Initial OpenCode setup
+opencode auth login
+
+# For project setup, generate AGENTS.md file
+opencode
+/init
+```
+
 #### Neovim Plugins (special mentioned)
 
 There are many plugins that I use, but here are some of the most essential ones:

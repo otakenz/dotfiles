@@ -4,20 +4,21 @@ return {
 
 		opts = {
 			mode = "agentic", -- or "legacy"
-			provider = "copilot",
 			rules = {
 				project_dir = ".avante/rules", -- relative to project root, can also be an absolute path
 				global_dir = "~/.config/avante/rules", -- absolute path
 			},
-			providers = {
-				copilot = {
-					model = "gpt-4.1",
-					-- model = "gpt-5-mini",
-					disable_tools = false, -- disables all tools when true
-					-- To selectively disable tools (like only 'python'), use:
-					-- disabled_tools = { "python" },
-				},
-			},
+			provider = "opencode",
+			-- provider = "copilot",
+			-- providers = {
+			-- 	copilot = {
+			-- 		model = "gpt-4.1",
+			-- 		-- model = "gpt-5-mini",
+			-- 		disable_tools = false, -- disables all tools when true
+			-- 		-- To selectively disable tools (like only 'python'), use:
+			-- 		-- disabled_tools = { "python" },
+			-- 	},
+			-- },
 			behaviour = {
 				auto_set_keymaps = true,
 				auto_suggestions = false,

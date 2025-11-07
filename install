@@ -127,6 +127,7 @@ BREW_PACKAGES="
   jq
   lazygit
   mise
+	opencode
   pass
   pinentry-mac
   poppler
@@ -146,7 +147,9 @@ BREW_PACKAGES="
   zoxide
 "
 MISE_PACKAGES_ARCH="
+  gh
   neovim
+	opencode
   uv
 "
 
@@ -158,10 +161,12 @@ MISE_PACKAGES_DEBIAN="
   eza
   fd
   fzf
+	gh
   gitui
   jq
   lazygit
   neovim
+	opencode
   ripgrep
   tmux
   uv
@@ -170,6 +175,7 @@ MISE_PACKAGES_DEBIAN="
 "
 
 MISE_PACKAGES_MACOS="
+	gh
   neovim
   uv
 "
@@ -668,6 +674,7 @@ create_symlinks() {
     "ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg.conf ${HOME}/.config/gnupg/gpg.conf"
     "ln -fs ${DOTFILES_PATH}/.config/yazi ${HOME}/.config/yazi"
     "ln -fs ${DOTFILES_PATH}/.config/mcphub/servers.json ${HOME}/.config/mcphub/servers.json"
+    "ln -fs ${DOTFILES_PATH}/.config/opencode/opencode.jsonc ${HOME}/.config/opencode/opencode.jsonc"
     "ln -fs ${DOTFILES_PATH}/.local/bin/* ${HOME}/.local/bin"
   )
 
