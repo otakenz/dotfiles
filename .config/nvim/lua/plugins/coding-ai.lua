@@ -1,36 +1,5 @@
 return {
 	{
-		"yetone/avante.nvim",
-
-		opts = {
-			mode = "agentic", -- or "legacy"
-			rules = {
-				project_dir = ".avante/rules", -- relative to project root, can also be an absolute path
-				global_dir = "~/.config/avante/rules", -- absolute path
-			},
-			provider = "opencode",
-			-- provider = "copilot",
-			-- providers = {
-			-- 	copilot = {
-			-- 		model = "gpt-4.1",
-			-- 		-- model = "gpt-5-mini",
-			-- 		disable_tools = false, -- disables all tools when true
-			-- 		-- To selectively disable tools (like only 'python'), use:
-			-- 		-- disabled_tools = { "python" },
-			-- 	},
-			-- },
-			behaviour = {
-				auto_set_keymaps = true,
-				auto_suggestions = false,
-			},
-			windows = {
-				width = 45,
-			},
-		},
-		keys = false,
-	},
-
-	{
 		"ravitemer/mcphub.nvim",
 		dependencies = {
 			"nvim-lua/plenary.nvim",
@@ -49,5 +18,45 @@ return {
 				}, -- Files to look for when detecting project boundaries (VS Code format supported)
 			},
 		},
+	},
+	{
+		"NickvanDyke/opencode.nvim",
+		dependencies = {
+			"folke/snacks.nvim",
+			opts = { input = {}, picker = {}, terminal = {} },
+		},
+		config = function()
+			vim.g.opencode_opts = {
+				-- Your configuration, if any — see `lua/opencode/config.lua`, or "goto definition".
+				provider = {
+					enabled = "snacks",
+					snacks = {
+						win = {
+							enter = true, -- Stay in the editor after opening the terminal
+						},
+					},
+				},
+			}
+
+			-- Required for `opts.auto_reload`.
+			vim.o.autoread = true
+
+			-- Keymaps for opencode.nvim
+			vim.keymap.set({ "n", "x" }, "<leader>aa", function()
+				require("opencode").ask("@this: ", { submit = true })
+			end, { desc = "Ask opencode" })
+
+			vim.keymap.set({ "n", "x" }, "<leader>ap", function()
+				require("opencode").select()
+			end, { desc = "Execute opencode action…" })
+
+			vim.keymap.set({ "n", "x" }, "<leader>ad", function()
+				require("opencode").prompt("@this")
+			end, { desc = "Add to opencode" })
+
+			vim.keymap.set({ "n", "t" }, "<leader>at", function()
+				require("opencode").toggle()
+			end, { desc = "Toggle opencode" })
+		end,
 	},
 }

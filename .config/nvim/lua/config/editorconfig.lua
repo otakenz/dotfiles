@@ -2,11 +2,7 @@
 -- https://github.com/sxyazi/dotfiles/blob/main/nvim/lua/editconfig.lua
 local function apply(bufnr, config)
 	local path = vim.fs.normalize(vim.api.nvim_buf_get_name(bufnr))
-	if
-		vim.bo[bufnr].buftype ~= ""
-		or not vim.bo[bufnr].modifiable
-		or path == ""
-	then
+	if vim.bo[bufnr].buftype ~= "" or not vim.bo[bufnr].modifiable or path == "" then
 		return
 	end
 
@@ -22,7 +18,7 @@ local function apply(bufnr, config)
 	}
 
 	-- YAML
-	if path:find("%.ya?ml$") then
+	if vim.bo.filetype == "markdown" or path:find("%.ya?ml$") then
 		default.indent_style = "space"
 	end
 
@@ -43,15 +39,12 @@ local function apply(bufnr, config)
 end
 
 local group = vim.api.nvim_create_augroup("AutoEditorConfig", { clear = true })
-vim.api.nvim_create_autocmd(
-	{ "BufNewFile", "BufReadPost", "BufFilePost", "FileChangedShellPost" },
-	{
-		group = group,
-		callback = function(args)
-			local opts = vim.b[args.buf]
-			opts.editorconfig = opts.editorconfig or {}
+vim.api.nvim_create_autocmd({ "BufNewFile", "BufReadPost", "BufFilePost", "FileChangedShellPost" }, {
+	group = group,
+	callback = function(args)
+		local opts = vim.b[args.buf]
+		opts.editorconfig = opts.editorconfig or {}
 
-			apply(args.buf, opts.editorconfig)
-		end,
-	}
-)
+		apply(args.buf, opts.editorconfig)
+	end,
+})
