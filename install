@@ -53,7 +53,7 @@ PACMAN_PACKAGES="
   pinentry
   poppler
   pwgen
-	readline
+  readline
   ripgrep
   rsync
   tmux
@@ -87,7 +87,7 @@ DEBIAN_PACKAGES="
   iproute2
   libncurses5-dev
   libncursesw5-dev
-	libreadline-dev
+  libreadline-dev
   lld
   netcat-openbsd
   openssh-server
@@ -127,12 +127,12 @@ BREW_PACKAGES="
   jq
   lazygit
   mise
-	opencode
+  opencode
   pass
   pinentry-mac
   poppler
   pwgen
-	readline
+  readline
   ripgrep
   rsync
   shellcheck
@@ -149,7 +149,7 @@ BREW_PACKAGES="
 MISE_PACKAGES_ARCH="
   gh
   neovim
-	opencode
+  opencode
   uv
 "
 
@@ -161,12 +161,12 @@ MISE_PACKAGES_DEBIAN="
   eza
   fd
   fzf
-	gh
+  gh
   gitui
   jq
   lazygit
   neovim
-	opencode
+  opencode
   ripgrep
   tmux
   uv
@@ -175,7 +175,7 @@ MISE_PACKAGES_DEBIAN="
 "
 
 MISE_PACKAGES_MACOS="
-	gh
+  gh
   neovim
   uv
 "
@@ -563,7 +563,7 @@ create_initial_dirs() {
 
   mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/git" \
     "${HOME}/.config/wezterm" "${HOME}/.config/zsh" "${HOME}/.config/bat" \
-    "${HOME}/.config/lazygit" "${HOME}/.config/mcphub"
+    "${HOME}/.config/lazygit" "${HOME}/.config/mcphub" "${HOME}/.config/opencode"
 
   mkdir -p "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share/fonts"
 
@@ -663,21 +663,21 @@ create_symlinks() {
     "ln -fs ${DOTFILES_PATH}/.config/zsh/.aliases ${HOME}/.config/zsh/.aliases"
     "ln -fs ${DOTFILES_PATH}/.config/zsh/.aliases.local ${HOME}/.config/zsh/.aliases.local"
     "ln -fs ${DOTFILES_PATH}/.config/tmux/tmux.conf ${HOME}/.config/tmux/tmux.conf"
-    "ln -fs ${DOTFILES_PATH}/.config/zsh/themes ${HOME}/.config/zsh/themes"
-    "ln -fs ${DOTFILES_PATH}/.config/tmux/themes ${HOME}/.config/tmux/themes"
-    "ln -fs ${DOTFILES_PATH}/.config/bat/themes ${HOME}/.config/bat/themes"
-    "ln -fs ${DOTFILES_PATH}/.config/git/config ${HOME}/.config/git/config"
+    "ln -fs ${DOTFILES_PATH}/.config/zsh/themes ${HOME}/.config/zsh"
+    "ln -fs ${DOTFILES_PATH}/.config/tmux/themes ${HOME}/.config/tmux"
+    "ln -fs ${DOTFILES_PATH}/.config/bat/themes ${HOME}/.config/bat"
+    "ln -fs ${DOTFILES_PATH}/.config/git/config ${HOME}/.config/git"
     "ln -fs ${DOTFILES_PATH}/.config/git/config.local ${HOME}/.config/git/config.local"
-    "ln -fs ${DOTFILES_PATH}/.config/gitui ${HOME}/.config/gitui"
+    "ln -fs ${DOTFILES_PATH}/.config/gitui ${HOME}/.config"
     "ln -fs ${DOTFILES_PATH}/.config/lazygit/config.yml ${HOME}/.config/lazygit/config.yml"
-    "ln -fs ${DOTFILES_PATH}/.config/nvim ${HOME}/.config/nvim"
+    "ln -fs ${DOTFILES_PATH}/.config/nvim ${HOME}/.config"
     "ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg.conf ${HOME}/.config/gnupg/gpg.conf"
-    "ln -fs ${DOTFILES_PATH}/.config/yazi ${HOME}/.config/yazi"
+    "ln -fs ${DOTFILES_PATH}/.config/yazi ${HOME}/.config"
     "ln -fs ${DOTFILES_PATH}/.config/mcphub/servers.json ${HOME}/.config/mcphub/servers.json"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/opencode.json ${HOME}/.config/opencode/opencode.json"
-    "ln -fs ${DOTFILES_PATH}/.config/opencode/command ${HOME}/.config/opencode/command"
-    "ln -fs ${DOTFILES_PATH}/.config/opencode/agent ${HOME}/.config/opencode/agent"
-    "ln -fs ${DOTFILES_PATH}/.config/opencode/prompts ${HOME}/.config/opencode/prompts"
+    "ln -fs ${DOTFILES_PATH}/.config/opencode/command ${HOME}/.config/opencode"
+    "ln -fs ${DOTFILES_PATH}/.config/opencode/agent ${HOME}/.config/opencode"
+    "ln -fs ${DOTFILES_PATH}/.config/opencode/prompts ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.local/bin/* ${HOME}/.local/bin"
   )
 
