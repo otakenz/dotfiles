@@ -51,6 +51,9 @@ if [[ "$(uname -a)" == *"WSL2"* ]]; then
   # append_path "/c/Program Files/usbipd-win/WSL"
   append_path "/c/Users/$(/c/Windows/System32/cmd.exe /c 'echo %USERNAME%' 2>/dev/null |
     tr -d '\r')/AppData/Local/Programs/Microsoft VS Code/bin"
+
+  # Set Microsoft Edge as the default browser for WSL
+  export BROWSER='sh -c "\"/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" \"$@\"" _'
 fi
 
 export PATH

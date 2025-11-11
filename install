@@ -42,6 +42,7 @@ PACMAN_PACKAGES="
   lazygit
   lld
   less
+  lsof
   man-db
   man-pages
   mise
@@ -118,6 +119,7 @@ BREW_PACKAGES="
   eza
   fastfetch
   fd
+  ffmpeg
   fzf
   git
   git-delta

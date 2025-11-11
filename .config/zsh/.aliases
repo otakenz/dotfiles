@@ -115,3 +115,12 @@ y() {
   fi
   rm -f -- "$tmp"
 }
+
+# Use Windows Explorer for xdg-open in WSL
+xdg-open() {
+  if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
+    explorer.exe "$@"
+  else
+    command xdg-open "$@"
+  fi
+}
