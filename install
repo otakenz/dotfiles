@@ -186,11 +186,11 @@ EMAIL=
 
 declare -A MISE_LANGUAGES
 MISE_LANGUAGES=(
-  ["node"]="node@24"
-  ["python"]="python@3.13"
-  ["go"]="go@latest"
-  ["lua"]="lua@5.1.5"
-  ["rust"]="rust@nightly"
+  ["node"]="24"
+  ["python"]="3.13"
+  ["go"]="latest"
+  ["lua"]="5.1.5"
+  ["rust"]="nightly"
 )
 
 CPU_ARCH="$(uname -m)"
@@ -666,7 +666,7 @@ create_symlinks() {
     "ln -fs ${DOTFILES_PATH}/.config/zsh/themes ${HOME}/.config/zsh"
     "ln -fs ${DOTFILES_PATH}/.config/tmux/themes ${HOME}/.config/tmux"
     "ln -fs ${DOTFILES_PATH}/.config/bat/themes ${HOME}/.config/bat"
-    "ln -fs ${DOTFILES_PATH}/.config/git/config ${HOME}/.config/git"
+    "ln -fs ${DOTFILES_PATH}/.config/git/config ${HOME}/.config/git/config"
     "ln -fs ${DOTFILES_PATH}/.config/git/config.local ${HOME}/.config/git/config.local"
     "ln -fs ${DOTFILES_PATH}/.config/gitui ${HOME}/.config"
     "ln -fs ${DOTFILES_PATH}/.config/lazygit/config.yml ${HOME}/.config/lazygit/config.yml"
@@ -884,14 +884,28 @@ install_mise_packages() {
     if [ "${OS_DISTRO}" == "arch" ]; then
       if [[ -n "${MISE_PACKAGES_ARCH}" ]]; then
         for package in ${MISE_PACKAGES_ARCH}; do
-          mise use --global "$package@latest"
+          # Check if the package is already installed
+          if mise current "$package" >/dev/null 2>&1; then
+            echo "$package already installed, upgrading..."
+            mise upgrade "$package"
+          else
+            echo "$package not installed, installing latest..."
+            mise use --global "$package@latest"
+          fi
           sleep 1
         done
       fi
     elif [ "${OS_DISTRO}" == "debian" ]; then
       if [[ -n "${MISE_PACKAGES_DEBIAN}" ]]; then
         for package in ${MISE_PACKAGES_DEBIAN}; do
-          mise use --global "$package@latest"
+          # Check if the package is already installed
+          if mise current "$package" >/dev/null 2>&1; then
+            echo "$package already installed, upgrading..."
+            mise upgrade "$package"
+          else
+            echo "$package not installed, installing latest..."
+            mise use --global "$package@latest"
+          fi
           sleep 1
         done
       fi
@@ -899,7 +913,14 @@ install_mise_packages() {
   elif [ "${OS_TYPE}" == "darwin" ]; then
     if [[ -n "${MISE_PACKAGES_MACOS}" ]]; then
       for package in ${MISE_PACKAGES_MACOS}; do
-        mise use --global "$package@latest"
+        # Check if the package is already installed
+        if mise current "$package" >/dev/null 2>&1; then
+          echo "$package already installed, upgrading..."
+          mise upgrade "$package"
+        else
+          echo "$package not installed, installing latest..."
+          mise use --global "$package@latest"
+        fi
         sleep 1
       done
     fi
@@ -934,37 +955,38 @@ install_mise_packages() {
 install_programming_languages() {
   _info "INSTALL PROGRAMMING LANGUAGES"
 
+  # Install each language at the specified version
   for lang in "${!MISE_LANGUAGES[@]}"; do
-    # Prevent github secondary rate limit from kicking in
-    sleep 3
+    version="${MISE_LANGUAGES[$lang]}"
+    [ -z "$version" ] && continue
 
-    [ -z "${MISE_LANGUAGES[${lang}]}" ] && continue
-
-    printf "\nInstalling %s...\n\n" "${MISE_LANGUAGES[${lang}]}"
-    if command -v "${HOME}/.local/share/mise/shims/${lang}" 1>/dev/null; then
-      echo "Skipping, it's already installed, run 'mise upgrade ${lang} --bump' to upgrade"
+    # Get the installed version (e.g., 3.13 from python python@3.13)
+    # Check if the language is installed
+    if mise current "$lang" >/dev/null 2>&1; then
+      echo "$lang is already installed, upgrading..."
+      mise upgrade "$lang"
     else
-      mise use --global "${MISE_LANGUAGES[${lang}]}"
-    fi
-
-    # Also install pnpm for Node.
-    if [ "${lang}" = "node" ]; then
-      if ! pnpm --version >/dev/null 2>&1; then
-        npm install -g pnpm
+      echo "$lang is not installed, installing $lang@$version..."
+      sleep 3
+      if ! mise use --global "$lang@$version"; then
+        echo "Failed to install $lang@$version" >&2
+        continue
       fi
     fi
-
-    # Also install Yarn for Node.
-    if [ "${lang}" = "node" ]; then
-      if ! yarn --version >/dev/null 2>&1; then
-        npm install --unsafe-perm=true --allow-root --global yarn
-      fi
-    fi
-
-    # Provide node to neovim
-    yarn global add neovim
-
   done
+
+  # Node.js post-install: install pnpm, yarn, and neovim globally if node was in the list
+  if [[ -n "${MISE_LANGUAGES[node]+x}" ]]; then
+    if ! command -v pnpm >/dev/null 2>&1; then
+      npm install -g pnpm
+    fi
+    if ! command -v yarn >/dev/null 2>&1; then
+      npm install --unsafe-perm=true --allow-root --global yarn
+    fi
+    if command -v yarn >/dev/null 2>&1; then
+      yarn global add neovim
+    fi
+  fi
 }
 
 install_tools_with_python() {
@@ -1371,6 +1393,9 @@ Usage examples:
 # Only pull in remote updates and exit early.
 ./install --update
 
+# Skip system package installation (Arch, apt, etc).
+./install --skip-system-packages
+
 # Update your dotfiles with whatever version of this script that exists locally.
 LOCAL=1 ./install
 
@@ -1390,7 +1415,12 @@ warn_root
 update_dotfiles "${@}" && [ -n "${ONLY_UPDATE}" ] && exit
 check_prereqs
 create_initial_dirs
-install_packages
+# Only install system packages if not skipped
+if [ -z "$SKIP_SYSTEM_PACKAGES" ]; then
+  install_packages
+else
+  echo "Skipping system package installation (--skip-system-packages or -S used)"
+fi
 clone_dotfiles
 install_zsh_plugins
 create_symlinks
