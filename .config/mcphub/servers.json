@@ -1,5 +1,9 @@
 {
   "mcpServers": {
+    "context7": {
+      "type": "streamable-http",
+      "url": "https://mcp.context7.com/mcp"
+    },
     "sequentialthinking": {
       "args": [
         "run",

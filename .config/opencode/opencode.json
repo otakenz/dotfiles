@@ -3,5 +3,11 @@
 	"autoupdate": false,
 	"share": "disabled",
 	"theme": "tokyonight",
-	"model": "github-copilot/gpt-4.1"
+	"model": "github-copilot/gpt-4.1",
+	"mcp": {
+		"mcphub": {
+			"type": "remote",
+			"url": "http://localhost:37373/mcp"
+		}
+	}
 }
