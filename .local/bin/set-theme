@@ -27,7 +27,7 @@ def get_windows_user():
 
 TERMINALS = {
     "windows-terminal": {
-        "path": f"/c/Users/{get_windows_user()}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json",  # noqa: E501
+        "path": f"/mnt/c/Users/{get_windows_user()}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json",  # noqa: E501
         "matches": [
             {
                 "find": '"colorScheme": ".*"',

@@ -431,9 +431,9 @@ appendWindowsPath = false # set this to false
 - Markdown preview not working due to cmd.exe not found
 
 ```sh
-# Example in order to use cmd.exe which is located in /c/Windows/System32
+# Example in order to use cmd.exe which is located in /mnt/c/Windows/System32
 # Manually appendWindowsPath to ~/.config/zsh/.zprofile.local
-win_path="/c/Windows/System32"
+win_path="/mnt/c/Windows/System32"
 if [[ ":$PATH:" != *":$win_path:"* ]]; then
   export PATH="$PATH:$win_path"
 fi
@@ -547,7 +547,7 @@ export SSL_CERT_FILE=<path_to>/<proxy.crt
 
 - This is due to the outdated ConPTY delivered in earlier version of WezTerm
   > As of May2025 latest release is that of Feb2024, but it is still outdated
-- **window admin privilege required** To fix this we need to replace the conpty.dll and OpenConsole.exe in the WezTerm installation folder, with the one in ~/dotfiles/c/Program Files/WezTerm/\*.
+- **window admin privilege required** To fix this we need to replace the conpty.dll and OpenConsole.exe in the WezTerm installation folder, with the one in ~/dotfiles/mnt/c/Program Files/WezTerm/\*.
   > Typically located at C:\Program Files\WezTerm
 
 ### 14. WSL starts with root instead of user

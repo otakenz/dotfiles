@@ -18,6 +18,7 @@ PACMAN_PACKAGES="
   base-devel
   bat
   bc
+  dnsutils
   bison
   btop
   chafa
@@ -74,6 +75,7 @@ PACMAN_PACKAGES="
 DEBIAN_PACKAGES="
   7zip
   bc
+  dnsutils
   bison
   build-essential
   curl
@@ -453,12 +455,6 @@ detect_env() {
     if [[ "$(uname -a)" == *"WSL2"* ]]; then
       OS_IN_WSL=1
       WIN_USER_PATH=$(_get_win_users_path)
-    fi
-
-    # Adjust packages depending on which display server is in use.
-    if [[ -z "${WAYLAND_DISPLAY}" ]]; then
-      DEBIAN_PACKAGES="${DEBIAN_PACKAGES//wl-clipboard/xclip}"
-      PACMAN_PACKAGES="${PACMAN_PACKAGES//wl-clipboard/xclip}"
     fi
 
     ;;
