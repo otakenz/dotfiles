@@ -45,15 +45,15 @@ prepend_path "${XDG_DATA_HOME:-$HOME/.local/share}/nvim/mason/bin"
 
 # Manually appendWindowsPath
 if [[ "$(uname -a)" == *"WSL2"* ]]; then
-  append_path "/c/Windows"
-  append_path "/c/Program Files/WezTerm"
-  # append_path "/c/Program Files/usbipd-win"
-  # append_path "/c/Program Files/usbipd-win/WSL"
-  append_path "/c/Users/$(/c/Windows/System32/cmd.exe /c 'echo %USERNAME%' 2>/dev/null |
+  append_path "/mnt/c/Windows"
+  append_path "/mnt/c/Program Files/WezTerm"
+  # append_path "/mnt/c/Program Files/usbipd-win"
+  # append_path "/mnt/c/Program Files/usbipd-win/WSL"
+  append_path "/mnt/c/Users/$(/mnt/c/Windows/System32/cmd.exe /c 'echo %USERNAME%' 2>/dev/null |
     tr -d '\r')/AppData/Local/Programs/Microsoft VS Code/bin"
 
   # Set Microsoft Edge as the default browser for WSL
-  export BROWSER='sh -c "\"/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" \"$@\"" _'
+  export BROWSER='sh -c "\"/mnt/c/Program Files (x86)/Microsoft/Edge/Application/msedge.exe\" \"$@\"" _'
 fi
 
 export PATH

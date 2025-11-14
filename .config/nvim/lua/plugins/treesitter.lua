@@ -29,6 +29,7 @@ return {
 				"go",
 				"gomod",
 				"gosum",
+				"ini",
 				-- "html",
 				"javascript",
 				"json",
