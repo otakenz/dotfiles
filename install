@@ -9,6 +9,7 @@
 set -o errexit
 
 SKIP_SYSTEM_PACKAGES="${1:-}"
+IS_WORK_PC=0
 
 ONLY_UPDATE=
 
@@ -672,7 +673,6 @@ create_symlinks() {
     "ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg.conf ${HOME}/.config/gnupg/gpg.conf"
     "ln -fs ${DOTFILES_PATH}/.config/yazi ${HOME}/.config"
     "ln -fs ${DOTFILES_PATH}/.config/mcphub/servers.json ${HOME}/.config/mcphub/servers.json"
-    "ln -fs ${DOTFILES_PATH}/.config/opencode/opencode.json ${HOME}/.config/opencode/opencode.json"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/command ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/agent ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/prompts ${HOME}/.config/opencode"
@@ -700,6 +700,17 @@ create_symlinks() {
   else
     symlinks+=(
       "ln -fs ${DOTFILES_PATH}/.config/wezterm/wezterm.lua ${HOME}/.config/wezterm/wezterm.lua"
+    )
+  fi
+
+  # Set WORK_PC=1 in .zprofile.local if --work-pc flag is present
+  if [ "$IS_WORK_PC" = "1" ]; then
+    symlinks+=(
+      "ln -fs ${DOTFILES_PATH}/.config/opencode/opencode_work.json ${HOME}/.config/opencode/opencode.json"
+    )
+  else
+    symlinks+=(
+      "ln -fs ${DOTFILES_PATH}/.config/opencode/opencode.json ${HOME}/.config/opencode/opencode.json"
     )
   fi
 
@@ -1376,13 +1387,17 @@ EOF
   fi
 }
 
-case "${1:-}" in
---update | -u)
-  ONLY_UPDATE=1
-  ;;
---skip-system-packages | -S) ;;
---help | -h)
-  cat <<EOF
+for arg in "$@"; do
+  case "$arg" in
+  --work-pc)
+    IS_WORK_PC=1
+    ;;
+  --update | -u)
+    ONLY_UPDATE=1
+    ;;
+  --skip-system-packages | -S) ;;
+  --help | -h)
+    cat <<EOF
 Usage examples:
 
 # Pull in remote updates and run the script to update your dotfiles.
@@ -1397,16 +1412,19 @@ Usage examples:
 # Update your dotfiles with whatever version of this script that exists locally.
 LOCAL=1 ./install
 
+# Enable work PC mode (sets WORK_PC=1 in .zprofile.local)
+./install --work-pc
+
 # Show this help menu.
 ./install --help
 EOF
-  exit
-  ;;
-*)
-  [ -n "${1:-}" ] && _error "'${1}' is not a supported flag"
-
-  ;;
-esac
+    exit
+    ;;
+  *)
+    [ -n "${1:-}" ] && _error "'${1}' is not a supported flag"
+    ;;
+  esac
+done
 
 detect_env
 warn_root

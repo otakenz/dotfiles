@@ -8,7 +8,7 @@ return {
 		opts = {
 			auto_approve = false, -- Auto approve all MCP tool calls
 			port = 37373,
-			shutdown_delay = 10 * 60 * 60 * 000,
+			shutdown_delay = 600 * 60 * 000,
 			global_env = {}, -- Global environment variables available to all MCP servers (can be a table or a function returning a table)
 			workspace = {
 				enabled = true, -- Enable project-local configuration files
