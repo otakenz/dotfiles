@@ -8,6 +8,18 @@
 		"mcphub": {
 			"type": "remote",
 			"url": "http://localhost:37373/mcp"
+		},
+		"mcp-atlassian": {
+			"type": "local",
+			"command": [
+				"docker",
+				"run",
+				"--rm",
+				"-i",
+				"--env-file",
+				"{env:HOME}/dotfiles/.config/mcp-atlassian/.env",
+				"ghcr.io/sooperset/mcp-atlassian:latest"
+			]
 		}
 	},
 	"keybinds": {
