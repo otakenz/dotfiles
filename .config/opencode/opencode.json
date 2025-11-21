@@ -5,9 +5,19 @@
 	"theme": "tokyonight",
 	"model": "github-copilot/gpt-4.1",
 	"mcp": {
-		"mcphub": {
+		"context7": {
 			"type": "remote",
-			"url": "http://localhost:37373/mcp"
+			"url": "https://mcp.context7.com/mcp"
+		},
+		"sequentialthinking": {
+			"type": "local",
+			"command": [
+				"docker",
+				"run",
+				"--rm",
+				"-i",
+				"mcp/sequentialthinking:latest"
+			]
 		}
 	},
 	"keybinds": {

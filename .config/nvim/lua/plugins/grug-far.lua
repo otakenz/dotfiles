@@ -11,15 +11,9 @@ return {
 			pattern = { "grug-far" },
 			callback = function()
 				MAP({ "i", "n", "x" }, "<A-h>", function()
-					local state = unpack(
-						require("grug-far")
-							.get_instance(0)
-							:toggle_flags({ "--hidden", "--glob !.git/" })
-					)
-					vim.notify(
-						"grug-far: toggled --hidden --glob !.git/ "
-							.. (state and "ON" or "OFF")
-					)
+					local state =
+						unpack(require("grug-far").get_instance(0):toggle_flags({ "--hidden", "--glob !.git/" }))
+					vim.notify("grug-far: toggled --hidden --glob !.git/ " .. (state and "ON" or "OFF"))
 				end, { desc = "Toggle Hidden Files", buffer = true })
 			end,
 		})
@@ -28,12 +22,8 @@ return {
 			pattern = { "grug-far" },
 			callback = function()
 				MAP({ "i", "n", "x" }, "<A-i>", function()
-					local state = unpack(
-						require("grug-far").get_instance(0):toggle_flags({ "--no-ignore" })
-					)
-					vim.notify(
-						"grug-far: toggled --no-ignore " .. (state and "ON" or "OFF")
-					)
+					local state = unpack(require("grug-far").get_instance(0):toggle_flags({ "--no-ignore" }))
+					vim.notify("grug-far: toggled --no-ignore " .. (state and "ON" or "OFF"))
 				end, { desc = "Toggle Ignored Files", buffer = true })
 			end,
 		})
@@ -78,11 +68,7 @@ return {
 					search = search:sub(3)
 				end
 				-- Remove surround if "word" search (such as when pressing `*`)
-				if
-					search
-					and vim.startswith(search, "\\<")
-					and vim.endswith(search, "\\>")
-				then
+				if search and vim.startswith(search, "\\<") and vim.endswith(search, "\\>") then
 					search = "\\b" .. search:sub(3, -3) .. "\\b"
 				end
 				require("grug-far").open({

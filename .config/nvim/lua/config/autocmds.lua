@@ -1,8 +1,7 @@
 -- Autocmds are automatically loaded on the VeryLazy event.
 -- Default autocmds that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
 
-local cursorline_group =
-	vim.api.nvim_create_augroup("cursorline", { clear = true })
+local cursorline_group = vim.api.nvim_create_augroup("cursorline", { clear = true })
 vim.api.nvim_create_autocmd({ "VimEnter", "WinEnter", "BufWinEnter" }, {
 	group = cursorline_group,
 	callback = function()
@@ -36,10 +35,7 @@ vim.api.nvim_create_autocmd("FileType", {
 vim.api.nvim_create_autocmd({ "BufNewFile", "BufRead" }, {
 	pattern = { "*.yaml", "*.yml" },
 	callback = function()
-		if
-			vim.fn.getline(1):match("^apiVersion:")
-			or vim.fn.getline(2):match("^apiVersion:")
-		then
+		if vim.fn.getline(1):match("^apiVersion:") or vim.fn.getline(2):match("^apiVersion:") then
 			vim.opt_local.filetype = "helm"
 		end
 	end,
@@ -70,10 +66,7 @@ vim.api.nvim_create_autocmd("BufWritePost", {
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = { "cpp", "c" },
 	callback = function()
-		local comment_hl = vim.api.nvim_get_hl(
-			0,
-			{ name = "@lsp.type.comment.cpp", link = true }
-		) or {}
+		local comment_hl = vim.api.nvim_get_hl(0, { name = "@lsp.type.comment.cpp", link = true }) or {}
 		local new_bg = "#444a73"
 
 		-- List of LSP semantic token types to update

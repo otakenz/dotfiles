@@ -1,26 +1,5 @@
 return {
 	{
-		"ravitemer/mcphub.nvim",
-		dependencies = {
-			"nvim-lua/plenary.nvim",
-		},
-		build = "npm install -g mcp-hub@latest", -- Installs `mcp-hub` node binary globally
-		opts = {
-			auto_approve = false, -- Auto approve all MCP tool calls
-			port = 37373,
-			shutdown_delay = 600 * 60 * 000,
-			global_env = {}, -- Global environment variables available to all MCP servers (can be a table or a function returning a table)
-			workspace = {
-				enabled = true, -- Enable project-local configuration files
-				look_for = {
-					".mcphub/servers.json",
-					".vscode/mcp.json",
-					".cursor/mcp.json",
-				}, -- Files to look for when detecting project boundaries (VS Code format supported)
-			},
-		},
-	},
-	{
 		"NickvanDyke/opencode.nvim",
 		dependencies = {
 			"folke/snacks.nvim",

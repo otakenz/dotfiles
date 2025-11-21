@@ -562,7 +562,7 @@ create_initial_dirs() {
 
   mkdir -p "${HOME}/.config/tmux/plugins" "${HOME}/.config/git" \
     "${HOME}/.config/wezterm" "${HOME}/.config/zsh" "${HOME}/.config/bat" \
-    "${HOME}/.config/lazygit" "${HOME}/.config/mcphub" "${HOME}/.config/opencode"
+    "${HOME}/.config/lazygit" "${HOME}/.config/opencode"
 
   mkdir -p "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share/fonts"
 
@@ -672,7 +672,6 @@ create_symlinks() {
     "ln -fs ${DOTFILES_PATH}/.config/nvim ${HOME}/.config"
     "ln -fs ${DOTFILES_PATH}/.config/gnupg/gpg.conf ${HOME}/.config/gnupg/gpg.conf"
     "ln -fs ${DOTFILES_PATH}/.config/yazi ${HOME}/.config"
-    "ln -fs ${DOTFILES_PATH}/.config/mcphub/servers.json ${HOME}/.config/mcphub/servers.json"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/command ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/agent ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/prompts ${HOME}/.config/opencode"
