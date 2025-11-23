@@ -22,7 +22,6 @@ PACMAN_PACKAGES="
   dnsutils
   bison
   btop
-  bun
   chafa
   clang
   curl
@@ -154,9 +153,10 @@ BREW_PACKAGES="
   zoxide
 "
 MISE_PACKAGES_ARCH="
+  bun
   gh
   neovim
-  aqua:sst/opencode
+  ubi:sst/opencode
   uv
 "
 
@@ -174,7 +174,7 @@ MISE_PACKAGES_DEBIAN="
   jq
   lazygit
   neovim
-  aqua:sst/opencode
+  ubi:sst/opencode
   ripgrep
   tmux
   uv
