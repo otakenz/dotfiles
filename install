@@ -678,6 +678,7 @@ create_symlinks() {
     "ln -fs ${DOTFILES_PATH}/.config/opencode/command ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/agent ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/prompts ${HOME}/.config/opencode"
+    "ln -fs ${DOTFILES_PATH}/.config/secret ${HOME}/.config"
     "ln -fs ${DOTFILES_PATH}/.local/bin/* ${HOME}/.local/bin"
   )
 
@@ -1368,6 +1369,14 @@ completed_message() {
   echo "$GPG_INSTRUCTIONS"
 
   _info "EVERYTHING WORKED"
+
+  # --- Secret .env setup reminder ---
+  cat <<EOF
+Make sure to create the required .env files in each secret/*/ directory (e.g., secret/github/.env).
+
+Please refer to .env.example file for available variables.
+These files are gitignored and required for secret-dependent features to work.
+EOF
 
   cat <<EOF
 You can safely close this terminal.

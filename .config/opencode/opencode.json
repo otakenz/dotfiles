@@ -14,11 +14,26 @@
 			"command": [
 				"docker",
 				"run",
-				"--rm",
 				"-i",
+				"--rm",
 				"mcp/sequentialthinking:latest"
 			]
+		},
+		"github": {
+			"type": "local",
+			"command": [
+				"docker",
+				"run",
+				"-i",
+				"--rm",
+				"--env-file",
+				"{env:HOME}/.config/secret/github/.env",
+				"ghcr.io/github/github-mcp-server:latest"
+			]
 		}
+	},
+	"tools": {
+		"github*": false
 	},
 	"keybinds": {
 		"session_child_cycle": "shift+right",

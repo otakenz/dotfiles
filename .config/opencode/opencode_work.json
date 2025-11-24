@@ -14,8 +14,8 @@
 			"command": [
 				"docker",
 				"run",
-				"--rm",
 				"-i",
+				"--rm",
 				"mcp/sequentialthinking:latest"
 			]
 		},
@@ -24,13 +24,29 @@
 			"command": [
 				"docker",
 				"run",
-				"--rm",
 				"-i",
+				"--rm",
 				"--env-file",
-				"{env:HOME}/dotfiles/.config/mcp-atlassian/.env",
+				"{env:HOME}/.config/secret/mcp-atlassian/.env",
 				"ghcr.io/sooperset/mcp-atlassian:latest"
 			]
+		},
+		"github": {
+			"type": "local",
+			"command": [
+				"docker",
+				"run",
+				"-i",
+				"--rm",
+				"--env-file",
+				"{env:HOME}/.config/secret/github/.env",
+				"ghcr.io/github/github-mcp-server:latest"
+			]
 		}
+	},
+	"tools": {
+		"mcp-atlassian*": false,
+		"github*": false
 	},
 	"keybinds": {
 		"session_child_cycle": "shift+right",
