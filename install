@@ -156,7 +156,7 @@ MISE_PACKAGES_ARCH="
   bun
   gh
   neovim
-  ubi:sst/opencode
+  opencode
   uv
 "
 
@@ -174,7 +174,7 @@ MISE_PACKAGES_DEBIAN="
   jq
   lazygit
   neovim
-  ubi:sst/opencode
+  opencode
   ripgrep
   tmux
   uv
