@@ -116,9 +116,10 @@ BREW_PACKAGES="
   bat
   bc
   btop
-  bun
+  colima
   curl
   diffutils
+  docker
   dust
   eza
   fastfetch
@@ -328,6 +329,10 @@ _install_packages_macos() {
 
   # shellcheck disable=SC2086
   brew install ${BREW_PACKAGES}
+
+  colima start
+
+  brew services start colima
 
   # Install packages manually since they don't exist elsewhere.
   [ -d "$HOME/.fzf-git.sh" ] || git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh

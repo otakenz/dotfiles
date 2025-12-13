@@ -42,9 +42,12 @@ local group = vim.api.nvim_create_augroup("AutoEditorConfig", { clear = true })
 vim.api.nvim_create_autocmd({ "BufNewFile", "BufReadPost", "BufFilePost", "FileChangedShellPost" }, {
 	group = group,
 	callback = function(args)
-		local opts = vim.b[args.buf]
-		opts.editorconfig = opts.editorconfig or {}
-
-		apply(args.buf, opts.editorconfig)
+		if not vim.b[args.buf] then
+			vim.b[args.buf] = {}
+		end
+		if not vim.b[args.buf].editorconfig then
+			vim.b[args.buf].editorconfig = {}
+		end
+		apply(args.buf, vim.b[args.buf].editorconfig)
 	end,
 })
