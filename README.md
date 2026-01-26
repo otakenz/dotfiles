@@ -205,9 +205,22 @@ opencode auth login
 # For project setup, generate AGENTS.md file
 opencode
 /init
+
+# Setup skills for OpenCode
+https://opencode.ai/docs/skills/#use-an-example
+
 ```
 
-#### Neovim Plugins (special mentioned)
+#### Claude-skills
+
+1. [obra/superpowers](https://github.com/obra/superpowers) A framework that comes with a set of skills for software development
+2. [anthropics/skills](https://github.com/anthropics/skills) Official claude skill list
+3. [travisvn/awesome-claude-skills](https://github.com/travisvn/awesome-claude-skills) Community curated list of Claude skills
+4. [ComposioHQ/awesome-claude-skills](https://github.com/ComposioHQ/awesome-claude-skills) Community curated list of Claude skills
+5. [skillsmp](https://skillsmp.com/) Marketplace for Claude skills, be aware of malicious skills
+6. [claude-skill-antivirus](https://github.com/claude-world/claude-skill-antivirus/tree/main) An example of claude-skill scanner for malicious skills.
+
+### 9. Neovim Plugins (special mentioned)
 
 There are many plugins that I use, but here are some of the most essential ones:
 
@@ -239,7 +252,7 @@ There are many plugins that I use, but here are some of the most essential ones:
   > Copilot and Copilot Chat plugins for neovim, allow you to use Copilot in
   > neovim and chat with it
 
-### 8. Tmux (Terminal Multiplexor, v3.4+ or latest)
+### 10. Tmux (Terminal Multiplexor, v3.4+ or latest)
 
 - ~/.config/tmux/tmux.conf (tmux configuration file)
 

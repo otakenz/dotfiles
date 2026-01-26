@@ -683,6 +683,7 @@ create_symlinks() {
     "ln -fs ${DOTFILES_PATH}/.config/opencode/command ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/agent ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/prompts ${HOME}/.config/opencode"
+    "ln -fs ${DOTFILES_PATH}/.config/opencode/skills ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.config/secret ${HOME}/.config"
     "ln -fs ${DOTFILES_PATH}/.local/bin/* ${HOME}/.local/bin"
   )
