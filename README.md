@@ -220,6 +220,20 @@ https://opencode.ai/docs/skills/#use-an-example
 5. [skillsmp](https://skillsmp.com/) Marketplace for Claude skills, be aware of malicious skills
 6. [claude-skill-antivirus](https://github.com/claude-world/claude-skill-antivirus/tree/main) An example of claude-skill scanner for malicious skills.
 
+#### Opencode Plugin
+
+1. [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode)
+
+- Agent Orchestration Framework for OpenCode
+- This project enable this by default, so you have to enter the installation
+  prompt from the oh-my-opencode README to enable it.
+- By default uses Github Copilot and Google Antigravity subscription free plan
+  or not.
+
+2. [obra/superpowers](https://github.com/obra/superpowers)
+
+- User need to install this using installation prompt from the project's README
+
 ### 9. Neovim Plugins (special mentioned)
 
 There are many plugins that I use, but here are some of the most essential ones:
