@@ -6,7 +6,7 @@
 	},
 	"agents": {
 		"sisyphus": {
-			"model": "google/antigravity-claude-opus-4-6-thinking",
+			"model": "github-copilot/claude-opus-4.6",
 			"variant": "max"
 		},
 		"hephaestus": {
@@ -18,20 +18,20 @@
 			"variant": "high"
 		},
 		"librarian": {
-			"model": "google/antigravity-claude-sonnet-4-5"
+			"model": "opencode/minimax-m2.5-free"
 		},
 		"explore": {
-			"model": "github-copilot/claude-haiku-4.5"
+			"model": "opencode/minimax-m2.5-free"
 		},
 		"multimodal-looker": {
-			"model": "google/gemini-3-flash-preview"
+			"model": "github-copilot/gpt-5.2"
 		},
 		"prometheus": {
-			"model": "google/antigravity-claude-opus-4-6-thinking",
+			"model": "github-copilot/claude-opus-4.6",
 			"variant": "max"
 		},
 		"metis": {
-			"model": "google/antigravity-claude-opus-4-6-thinking",
+			"model": "github-copilot/claude-opus-4.6",
 			"variant": "max"
 		},
 		"momus": {
@@ -39,12 +39,12 @@
 			"variant": "medium"
 		},
 		"atlas": {
-			"model": "google/antigravity-claude-sonnet-4-5"
+			"model": "github-copilot/claude-sonnet-4.5"
 		}
 	},
 	"categories": {
 		"visual-engineering": {
-			"model": "google/gemini-3-pro-preview"
+			"model": "opencode/glm-5"
 		},
 		"ultrabrain": {
 			"model": "github-copilot/gpt-5.2-codex",
@@ -55,20 +55,20 @@
 			"variant": "medium"
 		},
 		"artistry": {
-			"model": "google/gemini-3-pro-preview",
+			"model": "github-copilot/gpt-5.2",
 			"variant": "high"
 		},
 		"quick": {
 			"model": "github-copilot/claude-haiku-4.5"
 		},
 		"unspecified-low": {
-			"model": "google/antigravity-claude-sonnet-4-5"
+			"model": "github-copilot/claude-sonnet-4.5"
 		},
 		"unspecified-high": {
-			"model": "google/antigravity-claude-sonnet-4-5"
+			"model": "github-copilot/claude-opus-4.6"
 		},
 		"writing": {
-			"model": "google/gemini-3-flash-preview"
+			"model": "github-copilot/claude-sonnet-4.5"
 		}
 	}
 }

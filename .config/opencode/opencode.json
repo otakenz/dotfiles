@@ -3,7 +3,12 @@
 	"autoupdate": false,
 	"share": "disabled",
 	"theme": "tokyonight",
-	"model": "opencode/kimi-k2.5-free",
+	"model": "opencode/big-pickle",
+	"agent": {
+		"compaction": {
+			"model": "opencode/big-pickle"
+		}
+	},
 	"mcp": {
 		"context7": {
 			"type": "remote",
