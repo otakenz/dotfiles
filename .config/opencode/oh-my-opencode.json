@@ -1,38 +1,42 @@
 {
 	"$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+	"google_auth": false,
 	"sisyphus_agent": {
 		"default_builder_enabled": true
 	},
 	"agents": {
 		"sisyphus": {
-			"model": "google/antigravity-claude-opus-4-5-thinking",
+			"model": "google/antigravity-claude-opus-4-6-thinking",
 			"variant": "max"
 		},
 		"hephaestus": {
-			"model": "opencode/kimi-k2.5-free"
+			"model": "github-copilot/gpt-5.2-codex",
+			"variant": "medium"
 		},
 		"oracle": {
-			"model": "opencode/kimi-k2.5-free"
+			"model": "github-copilot/gpt-5.2",
+			"variant": "high"
 		},
 		"librarian": {
 			"model": "google/antigravity-claude-sonnet-4-5"
 		},
 		"explore": {
-			"model": "google/antigravity-gemini-3-flash"
+			"model": "github-copilot/claude-haiku-4.5"
 		},
 		"multimodal-looker": {
-			"model": "google/antigravity-gemini-3-flash"
+			"model": "google/gemini-3-flash-preview"
 		},
 		"prometheus": {
-			"model": "google/antigravity-claude-opus-4-5-thinking",
+			"model": "google/antigravity-claude-opus-4-6-thinking",
 			"variant": "max"
 		},
 		"metis": {
-			"model": "google/antigravity-claude-opus-4-5-thinking",
+			"model": "google/antigravity-claude-opus-4-6-thinking",
 			"variant": "max"
 		},
 		"momus": {
-			"model": "opencode/kimi-k2.5-free"
+			"model": "github-copilot/gpt-5.2",
+			"variant": "medium"
 		},
 		"atlas": {
 			"model": "google/antigravity-claude-sonnet-4-5"
@@ -40,20 +44,22 @@
 	},
 	"categories": {
 		"visual-engineering": {
-			"model": "google/antigravity-gemini-3-pro"
+			"model": "google/gemini-3-pro-preview"
 		},
 		"ultrabrain": {
-			"model": "opencode/kimi-k2.5-free"
+			"model": "github-copilot/gpt-5.2-codex",
+			"variant": "xhigh"
 		},
 		"deep": {
-			"model": "opencode/kimi-k2.5-free"
+			"model": "github-copilot/gpt-5.2-codex",
+			"variant": "medium"
 		},
 		"artistry": {
-			"model": "google/antigravity-gemini-3-pro",
+			"model": "google/gemini-3-pro-preview",
 			"variant": "high"
 		},
 		"quick": {
-			"model": "google/antigravity-gemini-3-flash"
+			"model": "github-copilot/claude-haiku-4.5"
 		},
 		"unspecified-low": {
 			"model": "google/antigravity-claude-sonnet-4-5"
@@ -62,7 +68,7 @@
 			"model": "google/antigravity-claude-sonnet-4-5"
 		},
 		"writing": {
-			"model": "google/antigravity-gemini-3-flash"
+			"model": "google/gemini-3-flash-preview"
 		}
 	}
 }

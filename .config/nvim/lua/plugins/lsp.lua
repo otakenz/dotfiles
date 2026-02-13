@@ -8,7 +8,7 @@ local M = {
 		-- Clang
 		"clangd", -- language server
 		"clang-format", -- formatter
-		"codelldb", -- dap
+		-- "codelldb", -- dap
 
 		-- CMake
 		"neocmakelsp", -- language server
@@ -25,7 +25,7 @@ local M = {
 		"goimports", -- formatter
 		"golines", -- formatter
 		"golangci-lint", -- linter
-		"delve", -- dap
+		-- "delve", -- dap
 
 		-- Github Action
 		"actionlint", -- linter
@@ -38,7 +38,7 @@ local M = {
 		-- Python
 		"pyright", -- language server
 		"ruff", -- formatter
-		"debugpy", -- dap
+		-- "debugpy", -- dap
 
 		-- Rust
 		"rust-analyzer", -- language server
