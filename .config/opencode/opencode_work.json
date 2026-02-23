@@ -233,6 +233,69 @@
 					}
 				}
 			}
+		},
+		"aumovio-vio": {
+			"npm": "@ai-sdk/openai-compatible",
+			"name": "AUMOVIO VIO",
+			"options": {
+				"baseURL": "https://vio.automotive-wan.com:446",
+				"apiKey": "{env:VIO_API_TOKEN}",
+				"headers": {
+					"Authorization": "Bearer {env:VIO_API_TOKEN}",
+					"useLegacyCompletionsEndpoint": "false",
+					"X-Tenant-ID": "default_tenant",
+					"username": "{env:VIO_API_USERNAME}",
+					"token": "{env:VIO_API_TOKEN}"
+				}
+			},
+			"models": {
+				"VIO:Claude 4.5 Sonnet": {
+					"name": "Claude Sonnet 4.5",
+					"limit": {
+						"context": 200000,
+						"output": 64000
+					}
+				},
+				"VIO:Claude 4.5 opus": {
+					"name": "Claude Opus 4.5",
+					"limit": {
+						"context": 200000,
+						"output": 64000
+					},
+					"modalities": {
+						"input": ["text", "image"],
+						"output": ["text"]
+					}
+				},
+				"VIO:Grok-4-fast-non-reasoning": {
+					"name": "Grok 4 fast (Non-Reasoning)",
+					"limit": {
+						"context": 200000,
+						"output": 30000
+					}
+				},
+				"VIO:Gpt-5.1": {
+					"name": "GPT 5.1",
+					"limit": {
+						"context": 400000,
+						"output": 128000
+					}
+				},
+				"VIO:GPT-5-high": {
+					"name": "GPT 5 (high)",
+					"limit": {
+						"context": 400000,
+						"output": 128000
+					}
+				},
+				"VIO:GPT-OSS-120B": {
+					"name": "GPT OSS 120B",
+					"limit": {
+						"context": 131072,
+						"output": 131072
+					}
+				}
+			}
 		}
 	}
 }

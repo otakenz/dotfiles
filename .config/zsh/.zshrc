@@ -191,6 +191,10 @@ autoload -U colors && colors
 # Enable comments when working in an interactive shell
 setopt interactive_comments
 
+# Exporting secret into environment variables
+# source "${XDG_CONFIG_HOME:-$HOME/.config}/secret/vio/.env"
+export $(grep -v '^#' "${XDG_CONFIG_HOME:-$HOME/.config}/secret/vio/.env" | xargs)
+
 # Load aliases
 # shellcheck disable=SC1091
 [ -f "${XDG_CONFIG_HOME}/zsh/.aliases" ] && . "${XDG_CONFIG_HOME}/zsh/.aliases"

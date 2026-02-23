@@ -18,10 +18,10 @@
 			"variant": "high"
 		},
 		"librarian": {
-			"model": "opencode/minimax-m2.5-free"
+			"model": "github-copilot/claude-haiku-4.5"
 		},
 		"explore": {
-			"model": "opencode/minimax-m2.5-free"
+			"model": "github-copilot/claude-haiku-4.5"
 		},
 		"multimodal-looker": {
 			"model": "github-copilot/gpt-5.2"
