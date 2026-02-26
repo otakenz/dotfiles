@@ -193,7 +193,7 @@ setopt interactive_comments
 
 # Exporting secret into environment variables
 # source "${XDG_CONFIG_HOME:-$HOME/.config}/secret/vio/.env"
-export $(grep -v '^#' "${XDG_CONFIG_HOME:-$HOME/.config}/secret/vio/.env" | xargs)
+export "$(grep -v '^#' "${XDG_CONFIG_HOME:-$HOME/.config}/secret/vio/.env" | xargs)"
 
 # Load aliases
 # shellcheck disable=SC1091
