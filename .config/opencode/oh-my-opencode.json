@@ -1,17 +1,9 @@
 {
 	"$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
-	"google_auth": false,
-	"sisyphus_agent": {
-		"default_builder_enabled": true
-	},
 	"agents": {
 		"sisyphus": {
 			"model": "github-copilot/claude-opus-4.6",
 			"variant": "max"
-		},
-		"hephaestus": {
-			"model": "github-copilot/gpt-5.2-codex",
-			"variant": "medium"
 		},
 		"oracle": {
 			"model": "github-copilot/gpt-5.2",
@@ -40,19 +32,20 @@
 		},
 		"atlas": {
 			"model": "github-copilot/claude-sonnet-4.6"
+		},
+		"hephaestus": {
+			"model": "github-copilot/gpt-5.2-codex",
+			"variant": "medium"
 		}
 	},
 	"categories": {
 		"visual-engineering": {
-			"model": "github-copilot/gemini-2.5-pro"
+			"model": "github-copilot/gemini-2.5-pro",
+			"variant": "high"
 		},
 		"ultrabrain": {
 			"model": "github-copilot/gpt-5.2-codex",
 			"variant": "xhigh"
-		},
-		"deep": {
-			"model": "github-copilot/gpt-5.2-codex",
-			"variant": "medium"
 		},
 		"artistry": {
 			"model": "github-copilot/gpt-5.2",
@@ -69,6 +62,14 @@
 		},
 		"writing": {
 			"model": "github-copilot/claude-sonnet-4.6"
+		},
+		"deep": {
+			"model": "github-copilot/gpt-5.2-codex",
+			"variant": "medium"
 		}
+	},
+	"google_auth": false,
+	"sisyphus_agent": {
+		"default_builder_enabled": true
 	}
 }
