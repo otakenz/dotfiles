@@ -1,6 +1,10 @@
 return {
 	{
+		-- https://github.com/folke/snacks.nvim/pull/2768
+		-- Using fork until PR is merged
 		"folke/snacks.nvim",
+		url = "https://github.com/otakenz/snacks.nvim.git",
+		branch = "fix/grep-file-sep-nil-guard",
 		init = function()
 			vim.g.snacks_animate = false
 		end,
