@@ -605,6 +605,59 @@ unset NODE_EXTRA_CA_CERTS
 
 [Nice youtube guide and still relevant in 2025](https://www.youtube.com/watch?v=t_YnACEPmrM)
 
+### 17. How to renew a GPG key (before it expires)
+
+GPG keys do **not** auto-renew. Check your key's expiry and renew it before it lapses — once expired,
+git commits will fail to sign until renewed. The key ID stays the same after renewal, so no git config
+changes are needed. One key per machine is recommended for isolation.
+
+```sh
+# Step 1: Find the key ID and check expiry
+gpg --list-secret-keys --keyid-format=long
+# Look for: sec  rsa4096/<KEY_ID>  ... [expires: YYYY-MM-DD]
+```
+
+```sh
+# Step 2: Open the GPG edit shell
+gpg --edit-key <KEY_ID>
+```
+
+```sh
+# Step 3: Extend the PRIMARY key
+# At the gpg> prompt:
+expire
+# Enter duration, e.g. 1y for one year
+1y
+# Confirm
+y
+```
+
+```sh
+# Step 4: Select and extend the SUBKEY
+# At the gpg> prompt (the * marks the selected subkey):
+key 1
+expire
+1y
+y
+```
+
+```sh
+# Step 5: Save and exit
+save
+```
+
+```sh
+# Step 6: Re-export the public key and re-upload to GitHub
+# (The expiry date is embedded in the public key, so GitHub needs the updated version)
+gpg --armor --export <KEY_ID>
+# Paste the output at: https://github.com/settings/keys → "New GPG key"
+# The old expired key entry on GitHub can be deleted afterwards
+```
+
+> **Note:** If you use this key for git commit signing (`commit.gpgsign = true`), any in-flight
+> commits on local branches should be re-amended after renewal so they carry a valid signature
+> before pushing. Use `git commit --amend --no-edit` in each affected repo.
+
 ## 👑 Credits:
 
 1. [Nick Janetakis](https://github.com/nickjj/dotfiles)
