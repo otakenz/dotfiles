@@ -30,3 +30,4 @@ etc/pacman.d/02-ignore.conf.example
 node_modules/
 .config/opencode/skills/*
 *.bk*
+*.bak*

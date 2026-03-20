@@ -53,7 +53,8 @@
     "github*": false
   },
   "plugin": [
-    "oh-my-opencode"
+    "oh-my-opencode",
+    "superpowers@git+https://github.com/obra/superpowers.git"
   ],
   "provider": {
     "aumovio-vio": {
