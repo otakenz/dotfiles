@@ -5,7 +5,10 @@
 	"model": "opencode/big-pickle",
 	"agent": {
 		"compaction": {
-			"model": "opencode/big-pickle"
+			"model": "opencode/big-pickle",
+			"auto": false,
+			"prune": true,
+			"reserved": 10000
 		}
 	},
 	"mcp": {
@@ -39,5 +42,8 @@
 	"tools": {
 		"github*": false
 	},
-	"plugin": ["oh-my-opencode@latest"]
+	"plugin": [
+		"oh-my-opencode@latest",
+		"superpowers@git+https://github.com/obra/superpowers.git"
+	]
 }
