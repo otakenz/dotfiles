@@ -56,7 +56,7 @@
 		"github*": false
 	},
 	"plugin": [
-		"oh-my-opencode",
+		"oh-my-openagent",
 		"superpowers@git+https://github.com/obra/superpowers.git"
 	],
 	"provider": {
