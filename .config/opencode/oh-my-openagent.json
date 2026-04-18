@@ -2,8 +2,7 @@
 	"$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
 	"agents": {
 		"sisyphus": {
-			"model": "opencode-go/kimi-k2.5",
-			"variant": "medium"
+			"model": "opencode-go/kimi-k2.5"
 		},
 		"oracle": {
 			"model": "github-copilot/gpt-5.4",
