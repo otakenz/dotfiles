@@ -2,17 +2,31 @@
 	"$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
 	"agents": {
 		"sisyphus": {
-			"model": "opencode-go/kimi-k2.5"
+			"model": "opencode-go/kimi-k2.6"
+		},
+		"hephaestus": {
+			"model": "github-copilot/gpt-5.4",
+			"variant": "medium"
 		},
 		"oracle": {
 			"model": "github-copilot/gpt-5.4",
 			"variant": "high"
 		},
 		"librarian": {
-			"model": "github-copilot/claude-haiku-4.5"
+			"model": "github-copilot/claude-haiku-4.5",
+			"fallback_models": [
+				{
+					"model": "opencode-go/deepseek-v4-flash"
+				}
+			]
 		},
 		"explore": {
-			"model": "github-copilot/claude-haiku-4.5"
+			"model": "github-copilot/claude-haiku-4.5",
+			"fallback_models": [
+				{
+					"model": "opencode-go/deepseek-v4-flash"
+				}
+			]
 		},
 		"multimodal-looker": {
 			"model": "github-copilot/gpt-5.4"
@@ -30,11 +44,20 @@
 			"variant": "xhigh"
 		},
 		"atlas": {
-			"model": "github-copilot/claude-sonnet-4.6"
+			"model": "github-copilot/claude-sonnet-4.6",
+			"fallback_models": [
+				{
+					"model": "opencode-go/kimi-k2.6"
+				}
+			]
 		},
-		"hephaestus": {
-			"model": "github-copilot/gpt-5.4",
-			"variant": "medium"
+		"sisyphus-junior": {
+			"model": "github-copilot/claude-sonnet-4.6",
+			"fallback_models": [
+				{
+					"model": "opencode-go/kimi-k2.6"
+				}
+			]
 		}
 	},
 	"categories": {
@@ -46,26 +69,46 @@
 			"model": "github-copilot/gpt-5.4",
 			"variant": "xhigh"
 		},
+		"deep": {
+			"model": "github-copilot/gpt-5.4",
+			"variant": "medium"
+		},
 		"artistry": {
 			"model": "github-copilot/gpt-5.4",
 			"variant": "medium"
 		},
 		"quick": {
-			"model": "github-copilot/claude-haiku-4.5"
+			"model": "github-copilot/claude-haiku-4.5",
+			"fallback_models": [
+				{
+					"model": "opencode-go/deepseek-v4-flash"
+				}
+			]
 		},
 		"unspecified-low": {
-			"model": "github-copilot/claude-sonnet-4.6"
+			"model": "github-copilot/claude-sonnet-4.6",
+			"fallback_models": [
+				{
+					"model": "opencode-go/kimi-k2.6"
+				}
+			]
 		},
 		"unspecified-high": {
 			"model": "github-copilot/claude-opus-4.6",
+			"fallback_models": [
+				{
+					"model": "opencode-go/kimi-k2.6"
+				}
+			],
 			"variant": "thinking"
 		},
 		"writing": {
-			"model": "github-copilot/claude-sonnet-4.6"
-		},
-		"deep": {
-			"model": "github-copilot/gpt-5.4",
-			"variant": "medium"
+			"model": "github-copilot/claude-sonnet-4.6",
+			"fallback_models": [
+				{
+					"model": "opencode-go/kimi-k2.6"
+				}
+			]
 		}
 	},
 	"google_auth": false,
