@@ -2,52 +2,52 @@
 	"$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
 	"agents": {
 		"sisyphus": {
-			"model": "opencode-go/kimi-k2.6"
+			"model": "opencode-go/kimi-k2.7-code"
 		},
 		"hephaestus": {
-			"model": "github-copilot/gpt-5.4",
+			"model": "github-copilot/gpt-5.5",
 			"variant": "medium"
 		},
 		"oracle": {
-			"model": "github-copilot/gpt-5.4",
+			"model": "github-copilot/gpt-5.5",
 			"variant": "high"
 		},
 		"librarian": {
-			"model": "github-copilot/claude-haiku-4.5",
+			"model": "opencode-go/deepseek-v4-flash",
 			"fallback_models": [
 				{
-					"model": "opencode-go/deepseek-v4-flash"
+					"model": "github-copilot/claude-haiku-4.5"
 				}
 			]
 		},
 		"explore": {
-			"model": "github-copilot/claude-haiku-4.5",
+			"model": "opencode-go/deepseek-v4-flash",
 			"fallback_models": [
 				{
-					"model": "opencode-go/deepseek-v4-flash"
+					"model": "github-copilot/claude-haiku-4.5"
 				}
 			]
 		},
 		"multimodal-looker": {
-			"model": "github-copilot/gpt-5.4"
+			"model": "github-copilot/gpt-5.5"
 		},
 		"prometheus": {
-			"model": "github-copilot/claude-opus-4.6",
-			"variant": "thinking"
+			"model": "github-copilot/claude-opus-4.8",
+			"variant": "high"
 		},
 		"metis": {
-			"model": "github-copilot/claude-opus-4.6",
-			"variant": "thinking"
+			"model": "github-copilot/claude-opus-4.8",
+			"variant": "high"
 		},
 		"momus": {
-			"model": "github-copilot/gpt-5.4",
+			"model": "github-copilot/gpt-5.5",
 			"variant": "xhigh"
 		},
 		"atlas": {
 			"model": "github-copilot/claude-sonnet-4.6",
 			"fallback_models": [
 				{
-					"model": "opencode-go/kimi-k2.6"
+					"model": "opencode-go/kimi-k2.7-code"
 				}
 			]
 		},
@@ -55,33 +55,33 @@
 			"model": "github-copilot/claude-sonnet-4.6",
 			"fallback_models": [
 				{
-					"model": "opencode-go/kimi-k2.6"
+					"model": "opencode-go/kimi-k2.7-code"
 				}
 			]
 		}
 	},
 	"categories": {
 		"visual-engineering": {
-			"model": "github-copilot/claude-opus-4.6",
-			"variant": "thinking"
+			"model": "github-copilot/claude-opus-4.8",
+			"variant": "high"
 		},
 		"ultrabrain": {
-			"model": "github-copilot/gpt-5.4",
+			"model": "github-copilot/gpt-5.5",
 			"variant": "xhigh"
 		},
 		"deep": {
-			"model": "github-copilot/gpt-5.4",
+			"model": "github-copilot/gpt-5.5",
 			"variant": "medium"
 		},
 		"artistry": {
-			"model": "github-copilot/gpt-5.4",
+			"model": "github-copilot/gpt-5.5",
 			"variant": "medium"
 		},
 		"quick": {
-			"model": "github-copilot/claude-haiku-4.5",
+			"model": "opencode-go/deepseek-v4-flash",
 			"fallback_models": [
 				{
-					"model": "opencode-go/deepseek-v4-flash"
+					"model": "github-copilot/claude-haiku-4.5"
 				}
 			]
 		},
@@ -89,24 +89,24 @@
 			"model": "github-copilot/claude-sonnet-4.6",
 			"fallback_models": [
 				{
-					"model": "opencode-go/kimi-k2.6"
+					"model": "opencode-go/kimi-k2.7-code"
 				}
 			]
 		},
 		"unspecified-high": {
-			"model": "github-copilot/claude-opus-4.6",
+			"model": "github-copilot/claude-opus-4.8",
 			"fallback_models": [
 				{
-					"model": "opencode-go/kimi-k2.6"
+					"model": "opencode-go/kimi-k2.7-code"
 				}
 			],
-			"variant": "thinking"
+			"variant": "high"
 		},
 		"writing": {
 			"model": "github-copilot/claude-sonnet-4.6",
 			"fallback_models": [
 				{
-					"model": "opencode-go/kimi-k2.6"
+					"model": "opencode-go/kimi-k2.7-code"
 				}
 			]
 		}

@@ -192,10 +192,12 @@ autoload -U colors && colors
 setopt interactive_comments
 
 # Exporting secret into environment variables
-# source "${XDG_CONFIG_HOME:-$HOME/.config}/secret/vio/.env"
 ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/secret/vio/.env"
 if [ -f "$ENV_FILE" ]; then
-	export "$(grep -v '^#' "$ENV_FILE" | xargs)"
+    set -a
+    # shellcheck source=/dev/null
+    source "$ENV_FILE"
+    set +a
 fi
 
 # Load aliases
