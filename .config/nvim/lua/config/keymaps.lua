@@ -35,3 +35,7 @@ MAP("v", "<S-Tab>", "<gv", { desc = "Indent left" })
 MAP({ "n" }, "<leader>r", ":%s///g<Left><Left>", { desc = "Search and replace" })
 
 MAP({ "x" }, "<leader>r", ":s///g<Left><Left>", { desc = "Search and replace (Visual)" })
+
+-- jump between conflict markers only
+MAP("n", "]x", "/^<<<<<\\|^>>>>\\|^|||||||" .. "<CR>", { desc = "Next conflict" })
+MAP("n", "[x", "?^<<<<<\\|^>>>>\\|^|||||||" .. "<CR>", { desc = "Prev conflict" })
