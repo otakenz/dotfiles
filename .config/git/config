@@ -33,7 +33,7 @@
   prompt = false
 
 [mergetool "nvimdiff"]
-  cmd = "nvim -d \"$MERGED\" \"$LOCAL\" \"$BASE\" \"$REMOTE\" -c 'wincmd J | wincmd ='"
+  cmd = "nvim -d \"$MERGED\" \"$LOCAL\" \"$BASE\" \"$REMOTE\" -c 'set diffopt-=linematch:40 | wincmd J | wincmd ='"
 
 [include]
   path = ~/.config/git/config.local

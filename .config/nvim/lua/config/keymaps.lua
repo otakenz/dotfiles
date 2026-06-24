@@ -41,6 +41,6 @@ MAP("n", "]x", "/^<<<<<\\|^>>>>\\|^|||||||" .. "<CR>", { desc = "Next conflict" 
 MAP("n", "[x", "?^<<<<<\\|^>>>>\\|^|||||||" .. "<CR>", { desc = "Prev conflict" })
 
 -- Git conflict resolution: accept changes from LOCAL, BASE, or REMOTE
-MAP("n", "<leader>al", ":diffget //2<CR>", { desc = "Accept LOCAL" })
-MAP("n", "<leader>ab", ":diffget //3<CR>", { desc = "Accept BASE" })
-MAP("n", "<leader>ar", ":diffget //4<CR>", { desc = "Accept REMOTE" })
+MAP("n", "<leader>al", ":diffget LO<CR>", { desc = "Accept LOCAL" })
+MAP("n", "<leader>ab", ":diffget BA<CR>", { desc = "Accept BASE" })
+MAP("n", "<leader>ar", ":diffget RE<CR>", { desc = "Accept REMOTE" })
