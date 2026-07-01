@@ -44,7 +44,7 @@
 			"variant": "xhigh"
 		},
 		"atlas": {
-			"model": "github-copilot/claude-sonnet-4.6",
+			"model": "github-copilot/claude-sonnet-5",
 			"fallback_models": [
 				{
 					"model": "opencode-go/kimi-k2.7-code"
@@ -52,7 +52,7 @@
 			]
 		},
 		"sisyphus-junior": {
-			"model": "github-copilot/claude-sonnet-4.6",
+			"model": "github-copilot/claude-sonnet-5",
 			"fallback_models": [
 				{
 					"model": "opencode-go/kimi-k2.7-code"
@@ -86,7 +86,7 @@
 			]
 		},
 		"unspecified-low": {
-			"model": "github-copilot/claude-sonnet-4.6",
+			"model": "github-copilot/claude-sonnet-5",
 			"fallback_models": [
 				{
 					"model": "opencode-go/kimi-k2.7-code"
@@ -103,7 +103,7 @@
 			"variant": "high"
 		},
 		"writing": {
-			"model": "github-copilot/claude-sonnet-4.6",
+			"model": "github-copilot/claude-sonnet-5",
 			"fallback_models": [
 				{
 					"model": "opencode-go/kimi-k2.7-code"

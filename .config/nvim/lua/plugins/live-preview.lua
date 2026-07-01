@@ -1,5 +1,8 @@
 return {
-  "brianhuster/live-preview.nvim",
+  -- TODO: switch back to upstream when PR is merged
+  -- "brianhuster/live-preview.nvim",
+  "otakenz/live-preview.nvim",
+  branch = "feat/auto-assign-port",
   cmd = "LivePreview",
   keys = {
     { "<leader>hp", "<cmd>LivePreview start<cr>", desc = "Preview Start" },
@@ -8,6 +11,6 @@ return {
   },
   opts = {
     browser = "explorer.exe",
-    port = 8080,
+    port = 0,  -- 0 = auto-assign any free port
   },
 }
