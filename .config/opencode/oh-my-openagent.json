@@ -5,11 +5,11 @@
 			"model": "opencode-go/kimi-k2.7-code"
 		},
 		"hephaestus": {
-			"model": "github-copilot/gpt-5.5",
+			"model": "github-copilot/gpt-5.6-sol",
 			"variant": "medium"
 		},
 		"oracle": {
-			"model": "github-copilot/gpt-5.5",
+			"model": "github-copilot/gpt-5.6-sol",
 			"variant": "high"
 		},
 		"librarian": {
@@ -29,7 +29,7 @@
 			]
 		},
 		"multimodal-looker": {
-			"model": "github-copilot/gpt-5.5"
+			"model": "github-copilot/gpt-5.6-sol"
 		},
 		"prometheus": {
 			"model": "github-copilot/claude-opus-4.8",
@@ -40,7 +40,7 @@
 			"variant": "high"
 		},
 		"momus": {
-			"model": "github-copilot/gpt-5.5",
+			"model": "github-copilot/gpt-5.6-sol",
 			"variant": "xhigh"
 		},
 		"atlas": {
@@ -66,15 +66,15 @@
 			"variant": "high"
 		},
 		"ultrabrain": {
-			"model": "github-copilot/gpt-5.5",
+			"model": "github-copilot/gpt-5.6-sol",
 			"variant": "xhigh"
 		},
 		"deep": {
-			"model": "github-copilot/gpt-5.5",
+			"model": "github-copilot/gpt-5.6-sol",
 			"variant": "medium"
 		},
 		"artistry": {
-			"model": "github-copilot/gpt-5.5",
+			"model": "github-copilot/gpt-5.6-sol",
 			"variant": "medium"
 		},
 		"quick": {

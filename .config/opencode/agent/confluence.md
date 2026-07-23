@@ -1,6 +1,7 @@
 ---
 description: "Access mcp server for confluence"
 mode: subagent
+model: opencode-go/deepseek-v4-pro
 tools:
   write: true
   edit: true
