@@ -65,28 +65,15 @@
 			"name": "AUMOVIO VIO",
 			"options": {
 				"baseURL": "https://vio.automotive-wan.com:446",
-				"apiKey": "{env:VIO_API_TOKEN}"
+				"apiKey": "{env:VIO_API_TOKEN}",
+				"defaultHeaders": {
+					"useLegacyCompletionsEndpoint": "false",
+					"X-Tenant-ID": "default_tenant"
+				}
 			},
 			"models": {
-				"VIO:Claude 4.6 Sonnet": {
-					"name": "Claude Sonnet 4.6",
-					"limit": {
-						"context": 1000000,
-						"output": 64000
-					},
-					"modalities": {
-						"input": ["text", "image", "pdf"],
-						"output": ["text"]
-					},
-					"variants": {
-						"medium": { "reasoningEffort": "medium" },
-						"high": { "reasoningEffort": "high" },
-						"xhigh": { "reasoningEffort": "xhigh" },
-						"max": { "reasoningEffort": "max" }
-					}
-				},
-				"VIO:Claude 4.6 opus": {
-					"name": "Claude Opus 4.6",
+				"VIO:Claude 5 Sonnet": {
+					"name": "Claude Sonnet 5",
 					"limit": {
 						"context": 1000000,
 						"output": 128000
@@ -102,8 +89,25 @@
 						"max": { "reasoningEffort": "max" }
 					}
 				},
-				"VIO:DeepSeek V4 Pro": {
-					"name": "DeepSeek V4 Pro",
+				"VIO:Claude 4.8 Opus": {
+					"name": "Claude Opus 4.8",
+					"limit": {
+						"context": 1000000,
+						"output": 128000
+					},
+					"modalities": {
+						"input": ["text", "image", "pdf"],
+						"output": ["text"]
+					},
+					"variants": {
+						"medium": { "reasoningEffort": "medium" },
+						"high": { "reasoningEffort": "high" },
+						"xhigh": { "reasoningEffort": "xhigh" },
+						"max": { "reasoningEffort": "max" }
+					}
+				},
+				"VIO:DeepSeek-V4.Pro (Azure)": {
+					"name": "DeepSeek V4 Pro (Azure)",
 					"limit": {
 						"context": 1000000,
 						"output": 383000
