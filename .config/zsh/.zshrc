@@ -192,7 +192,7 @@ autoload -U colors && colors
 setopt interactive_comments
 
 # Exporting secret into environment variables
-ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/secret/vio/.env"
+ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/secret/llmi/.env"
 if [ -f "$ENV_FILE" ]; then
     set -a
     # shellcheck source=/dev/null

@@ -60,61 +60,69 @@
 		"superpowers@git+https://github.com/obra/superpowers.git"
 	],
 	"provider": {
-		"aumovio-vio": {
-			"npm": "@ai-sdk/openai-compatible",
-			"name": "AUMOVIO VIO",
+		"aumovio-llmi": {
+			"npm": "@ai-sdk/openai",
+			"name": "AUMOVIO LLMi",
 			"options": {
-				"baseURL": "https://vio.automotive-wan.com:446",
-				"apiKey": "{env:VIO_API_TOKEN}",
-				"defaultHeaders": {
-					"useLegacyCompletionsEndpoint": "false",
-					"X-Tenant-ID": "default_tenant"
-				}
+				"baseURL": "https://llm-gateway.ve42034x.automotive-wan.com:443/v1",
+				"apiKey": "{env:LLMi_API_TOKEN}",
+				"Authorization": "Bearer {env:LLMi_API_TOKEN}"
 			},
 			"models": {
-				"VIO:Claude 5 Sonnet": {
-					"name": "Claude Sonnet 5",
-					"limit": {
-						"context": 1000000,
-						"output": 128000
-					},
-					"modalities": {
-						"input": ["text", "image", "pdf"],
-						"output": ["text"]
-					},
-					"variants": {
-						"medium": { "reasoningEffort": "medium" },
-						"high": { "reasoningEffort": "high" },
-						"xhigh": { "reasoningEffort": "xhigh" },
-						"max": { "reasoningEffort": "max" }
-					}
-				},
-				"VIO:Claude 4.8 Opus": {
+				"claude-4-8-opus-v1:0": {
 					"name": "Claude Opus 4.8",
 					"limit": {
 						"context": 1000000,
 						"output": 128000
-					},
-					"modalities": {
-						"input": ["text", "image", "pdf"],
-						"output": ["text"]
-					},
-					"variants": {
-						"medium": { "reasoningEffort": "medium" },
-						"high": { "reasoningEffort": "high" },
-						"xhigh": { "reasoningEffort": "xhigh" },
-						"max": { "reasoningEffort": "max" }
 					}
 				},
-				"VIO:DeepSeek-V4.Pro (Azure)": {
-					"name": "DeepSeek V4 Pro (Azure)",
+				"claude-5-0-sonnet-v1:0": {
+					"name": "Claude Sonnet 5.0",
 					"limit": {
 						"context": 1000000,
-						"output": 383000
-					},
-					"modalities": {
-						"input": ["text"],
-						"output": ["text"]
+						"output": 128000
+					}
+				},
+				"vertex_ai/claude-opus-5": {
+					"name": "Claude Opus 5.0",
+					"limit": {
+						"context": 1000000,
+						"output": 128000
+					}
+				},
+				"gpt-5.6-luna": {
+					"name": "GPT 5.6 Luna",
+					"limit": {
+						"context": 922000,
+						"output": 128000
+					}
+				},
+				"gpt-5.6-terra": {
+					"name": "GPT 5.6 Terra",
+					"limit": {
+						"context": 922000,
+						"output": 128000
+					}
+				},
+				"gpt-5.6-sol": {
+					"name": "GPT 5.6 Sol",
+					"limit": {
+						"context": 922000,
+						"output": 128000
+					}
+				},
+				"DeepSeek-V4-Flash-0731": {
+					"name": "DeepSeek V4 Flash",
+					"limit": {
+						"context": 1000000,
+						"output": 384000
+					}
+				},
+				"DeepSeek-V4-Pro": {
+					"name": "DeepSeek V4 Pro",
+					"limit": {
+						"context": 1000000,
+						"output": 384000
 					}
 				}
 			}
