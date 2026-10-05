@@ -19,43 +19,36 @@
 			]
 		},
 		"hephaestus": {
-			"model": "github-copilot/gpt-6-sol",
+			"model": "github-copilot/gpt-6.1-sol",
 			"variant": "medium",
-			"fallback_models": [
-				{ "model": "aumovio-llmi/gpt-5.6-sol" },
-				{ "model": "opencode-go/deepseek-v4-pro" }
-			]
+			"fallback_models": [{ "model": "opencode-go/deepseek-v4-pro" }]
 		},
 		"oracle": {
-			"model": "github-copilot/gpt-6-sol",
+			"model": "github-copilot/gpt-6.1-sol",
 			"variant": "high",
-			"fallback_models": [
-				{ "model": "aumovio-llmi/gpt-5.6-sol" },
-				{ "model": "opencode-go/deepseek-v4-pro" }
-			]
+			"fallback_models": [{ "model": "opencode-go/deepseek-v4-pro" }]
 		},
 		"librarian": {
-			"model": "opencode-go/deepseek-v4-flash",
+			"model": "github-copilot/gpt-6-luna",
 			"variant": "max",
 			"fallback_models": [
+				{ "model": "opencode-go/deepseek-v4-flash" },
 				{ "model": "aumovio-llmi/DeepSeek-V4-Flash-0731" },
 				{ "model": "github-copilot/claude-haiku-4.5" }
 			]
 		},
 		"explore": {
-			"model": "opencode-go/deepseek-v4-flash",
+			"model": "github-copilot/gpt-6-luna",
 			"variant": "max",
 			"fallback_models": [
+				{ "model": "opencode-go/deepseek-v4-flash" },
 				{ "model": "aumovio-llmi/DeepSeek-V4-Flash-0731" },
 				{ "model": "github-copilot/claude-haiku-4.5" }
 			]
 		},
 		"multimodal-looker": {
-			"model": "github-copilot/gpt-6-sol",
-			"fallback_models": [
-				{ "model": "aumovio-llmi/gpt-5.6-sol" },
-				{ "model": "opencode-go/deepseek-v4-pro" }
-			]
+			"model": "github-copilot/gpt-6.1-sol",
+			"fallback_models": [{ "model": "opencode-go/deepseek-v4-pro" }]
 		},
 		"prometheus": {
 			"model": "github-copilot/claude-opus-5.5",
@@ -74,22 +67,19 @@
 			]
 		},
 		"momus": {
-			"model": "github-copilot/gpt-6-sol",
+			"model": "github-copilot/gpt-6.1-sol",
 			"variant": "xhigh",
-			"fallback_models": [
-				{ "model": "aumovio-llmi/gpt-5.6-sol" },
-				{ "model": "opencode-go/deepseek-v4-pro" }
-			]
+			"fallback_models": [{ "model": "opencode-go/deepseek-v4-pro" }]
 		},
 		"atlas": {
-			"model": "github-copilot/claude-sonnet-5",
+			"model": "github-copilot/claude-sonnet-5.5",
 			"fallback_models": [
 				{ "model": "aumovio-llmi/claude-5-0-sonnet-v1:0" },
 				{ "model": "opencode-go/kimi-k2.7-code" }
 			]
 		},
 		"sisyphus-junior": {
-			"model": "github-copilot/claude-sonnet-5",
+			"model": "github-copilot/claude-sonnet-5.5",
 			"fallback_models": [
 				{ "model": "aumovio-llmi/claude-5-0-sonnet-v1:0" },
 				{ "model": "opencode-go/kimi-k2.7-code" }
@@ -106,28 +96,19 @@
 			]
 		},
 		"ultrabrain": {
-			"model": "github-copilot/gpt-6-sol",
+			"model": "github-copilot/gpt-6.1-sol",
 			"variant": "xhigh",
-			"fallback_models": [
-				{ "model": "aumovio-llmi/gpt-5.6-sol" },
-				{ "model": "opencode-go/deepseek-v4-pro" }
-			]
+			"fallback_models": [{ "model": "opencode-go/deepseek-v4-pro" }]
 		},
 		"deep": {
-			"model": "github-copilot/gpt-6-sol",
+			"model": "github-copilot/gpt-6.1-sol",
 			"variant": "medium",
-			"fallback_models": [
-				{ "model": "aumovio-llmi/gpt-5.6-sol" },
-				{ "model": "opencode-go/deepseek-v4-pro" }
-			]
+			"fallback_models": [{ "model": "opencode-go/deepseek-v4-pro" }]
 		},
 		"artistry": {
-			"model": "github-copilot/gpt-6-sol",
+			"model": "github-copilot/gpt-6.1-sol",
 			"variant": "medium",
-			"fallback_models": [
-				{ "model": "aumovio-llmi/gpt-5.6-sol" },
-				{ "model": "opencode-go/qwen3.7-plus" }
-			]
+			"fallback_models": [{ "model": "opencode-go/qwen3.7-plus" }]
 		},
 		"quick": {
 			"model": "github-copilot/gpt-6-luna",
@@ -139,7 +120,7 @@
 			]
 		},
 		"unspecified-low": {
-			"model": "github-copilot/claude-sonnet-5",
+			"model": "github-copilot/claude-sonnet-5.5",
 			"fallback_models": [
 				{ "model": "aumovio-llmi/claude-5-0-sonnet-v1:0" },
 				{ "model": "opencode-go/kimi-k2.7-code" }
@@ -154,7 +135,7 @@
 			]
 		},
 		"writing": {
-			"model": "github-copilot/claude-sonnet-5",
+			"model": "github-copilot/claude-sonnet-5.5",
 			"fallback_models": [
 				{ "model": "aumovio-llmi/claude-5-0-sonnet-v1:0" },
 				{ "model": "opencode-go/kimi-k2.7-code" }
