@@ -187,7 +187,7 @@ mise list-all <package>
   > Checkout the upstream LazyVim's [config](https://github.com/LazyVim/LazyVim/tree/main/lua/lazyvim/config) and
   > [plugins](https://github.com/LazyVim/LazyVim/tree/main/lua/lazyvim/plugins) and
   > [extra plugins](https://github.com/LazyVim/LazyVim/tree/main/lua/lazyvim/plugins/extras) (not installed by default) \
-  >  Then adjust your customisation accordingly below
+  > Then adjust your customisation accordingly below
 - ~/.config/nvim/lua/plugins/\* (put your customisation of plugins here)
 - ~/.config/nvim/lua/config/autocmds.lua (put your custom autocmd here)
 - ~/.config/nvim/lua/config/keymaps.lua (put your custom keybindings here)
@@ -531,7 +531,7 @@ sudo systemctl enable <mount_name>.mount
 
 - If you enable mirrored networkingMode and autoProxy, WSL2 will import proxy settings from Windows
 - If you are then also behind corporate proxy which employ PAC, when the VPN auto renew proxy settings, \
-   WSL2 will not be able to access the internet which probably caused by "WSL_PAC_URL" become unset
+  WSL2 will not be able to access the internet which probably caused by "WSL_PAC_URL" become unset
   > .wslconfig
 
 ```sh
@@ -657,6 +657,35 @@ gpg --armor --export <KEY_ID>
 > **Note:** If you use this key for git commit signing (`commit.gpgsign = true`), any in-flight
 > commits on local branches should be re-amended after renewal so they carry a valid signature
 > before pushing. Use `git commit --amend --no-edit` in each affected repo.
+
+### 18. apt fails with `401 Server authentication required` behind corporate proxy (curl works)
+
+- Symptom: `curl -v --proxy $http_proxy https://<example-apt-repo>/dists/*/InRelease` returns
+  `200 Connection established`, but `sudo apt update` fails with:
+  `401 Server authentication required [IP: <transparent-proxy-ip> <port>]`
+- Cause: `sudo` strips env, so apt never sees `$http_proxy`. It falls back to the
+  transparent (intercepting) proxy (`<transparent-proxy-ip>:<port>` = `<transparent-proxy-host>`)
+  without auth, while curl uses the explicit (authenticated forward) proxy
+  `<explicit-proxy-host>:<port>` (`<explicit-proxy-ip>`) with Basic auth.
+- Find hostnames:
+
+```sh
+getent hosts <transparent-proxy-ip>
+getent hosts <explicit-proxy-host>
+```
+
+- Fix: point apt at the explicit proxy (no creds in world-readable file):
+
+```sh
+sudo tee /etc/apt/apt.conf.d/99proxy >/dev/null <<EOF
+Acquire::http::Proxy "http://<explicit-proxy-host>:<port>/";
+Acquire::https::Proxy "http://<explicit-proxy-host>:<port>/";
+EOF
+```
+
+- Notes: `export http_proxy="http://USER:PASS@HOST:PORT"` format still applies to curl/shell,
+  but `sudo apt` needs the files above. Truly passwordless only works with a local
+  NTLM/Kerberos forwarder (e.g. `px`) listening on `127.0.0.1:3128`.
 
 ## 👑 Credits:
 
