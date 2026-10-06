@@ -205,7 +205,6 @@ MISE_LANGUAGES=(
 CPU_ARCH="$(uname -m)"
 OS_TYPE="$(uname | tr "[:upper:]" "[:lower:]")"
 OS_DISTRO=
-DEBIAN_VERSION="$(lsb_release -a 2>/dev/null | grep '^Release:' | awk '{print $2}')"
 OS_IN_WSL=
 WIN_USER_PATH=
 

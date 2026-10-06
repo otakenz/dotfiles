@@ -194,10 +194,10 @@ setopt interactive_comments
 # Exporting secret into environment variables
 ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/secret/llmi/.env"
 if [ -f "$ENV_FILE" ]; then
-    set -a
-    # shellcheck source=/dev/null
-    source "$ENV_FILE"
-    set +a
+	set -a
+	# shellcheck source=/dev/null
+	source "$ENV_FILE"
+	set +a
 fi
 
 # Load aliases
