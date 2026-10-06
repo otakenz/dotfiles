@@ -893,33 +893,26 @@ install_mise_packages() {
   # stable distros. In most cases the version included is fine but we do want
   # the latest and greatest versions for certain tools.
   echo
+  # Ensure mise shims are on PATH for non-interactive shells. Without this,
+  # `command -v nvim/bat` fails even when mise has the tools installed.
+  export PATH="${HOME}/.local/bin:${HOME}/.local/share/mise/shims:${PATH}"
   # shellcheck disable=SC2086
   if [ "${OS_TYPE}" == "linux" ]; then
     if [ "${OS_DISTRO}" == "arch" ]; then
       if [[ -n "${MISE_PACKAGES_ARCH}" ]]; then
         for package in ${MISE_PACKAGES_ARCH}; do
-          # Check if the package is already installed
-          if mise current "$package" >/dev/null 2>&1; then
-            echo "$package already installed, upgrading..."
-            mise upgrade "$package"
-          else
-            echo "$package not installed, installing latest..."
-            mise use --global "$package@latest"
-          fi
+          # NOTE: do NOT use `mise current` to check - it only checks config,
+          # not installed binaries. `mise use` is idempotent, so just ensure.
+          echo "Ensuring $package@latest..."
+          mise use --global "$package@latest"
           sleep 1
         done
       fi
     elif [ "${OS_DISTRO}" == "debian" ]; then
       if [[ -n "${MISE_PACKAGES_DEBIAN}" ]]; then
         for package in ${MISE_PACKAGES_DEBIAN}; do
-          # Check if the package is already installed
-          if mise current "$package" >/dev/null 2>&1; then
-            echo "$package already installed, upgrading..."
-            mise upgrade "$package"
-          else
-            echo "$package not installed, installing latest..."
-            mise use --global "$package@latest"
-          fi
+          echo "Ensuring $package@latest..."
+          mise use --global "$package@latest"
           sleep 1
         done
       fi
@@ -927,21 +920,17 @@ install_mise_packages() {
   elif [ "${OS_TYPE}" == "darwin" ]; then
     if [[ -n "${MISE_PACKAGES_MACOS}" ]]; then
       for package in ${MISE_PACKAGES_MACOS}; do
-        # Check if the package is already installed
-        if mise current "$package" >/dev/null 2>&1; then
-          echo "$package already installed, upgrading..."
-          mise upgrade "$package"
-        else
-          echo "$package not installed, installing latest..."
-          mise use --global "$package@latest"
-        fi
+        echo "Ensuring $package@latest..."
+        mise use --global "$package@latest"
         sleep 1
       done
     fi
   fi
 
+  mise reshim 2>/dev/null || true
+
   # Only proceed if nvim is installed
-  if [ -x "$(which nvim)" ]; then
+  if command -v nvim >/dev/null 2>&1; then
     if [[ "$OS_TYPE" == "linux" ]]; then
       TARGET="/usr/bin/nvim"
     elif [[ "$OS_TYPE" == "darwin" ]]; then
@@ -953,8 +942,8 @@ install_mise_packages() {
 
     # Only create symlink if it doesn't exist
     if [ ! -e "$TARGET" ]; then
-      echo "Creating symlink: $TARGET -> $(which nvim)"
-      sudo ln -s "$(which nvim)" "$TARGET"
+      echo "Creating symlink: $TARGET -> $(command -v nvim)"
+      sudo ln -s "$(command -v nvim)" "$TARGET"
     else
       echo "Symlink or file already exists at $TARGET"
     fi
@@ -962,7 +951,11 @@ install_mise_packages() {
     echo "nvim not found in PATH"
   fi
 
-  bat cache --build
+  if command -v bat >/dev/null 2>&1; then
+    bat cache --build
+  else
+    echo "bat not found in PATH, skipping cache build"
+  fi
   sleep 5
 }
 
@@ -975,17 +968,13 @@ install_programming_languages() {
     [ -z "$version" ] && continue
 
     # Get the installed version (e.g., 3.13 from python python@3.13)
-    # Check if the language is installed
-    if mise current "$lang" >/dev/null 2>&1; then
-      echo "$lang is already installed, upgrading..."
-      mise upgrade "$lang"
-    else
-      echo "$lang is not installed, installing $lang@$version..."
-      sleep 3
-      if ! mise use --global "$lang@$version"; then
-        echo "Failed to install $lang@$version" >&2
-        continue
-      fi
+    # NOTE: `mise current` only checks config, not binaries - `mise use` is
+    # idempotent, so always ensure the pinned version is installed.
+    echo "Ensuring $lang@$version..."
+    sleep 3
+    if ! mise use --global "$lang@$version"; then
+      echo "Failed to install $lang@$version" >&2
+      continue
     fi
   done
 
