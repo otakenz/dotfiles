@@ -864,7 +864,13 @@ EOF
     echo "${shell_path}" | sudo tee -a /etc/shells 1>/dev/null
   fi
 
-  [ "${SHELL: -3}" != "zsh" ] && chsh -s "${shell_path}"
+  if grep -q "^${USER}:" /etc/passwd; then
+    [ "${SHELL: -3}" != "zsh" ] && chsh -s "${shell_path}"
+  else
+    echo "Centrally managed user, skipping chsh"
+    # fallback: exec zsh from bash
+    grep -q "exec.*zsh" ~/.bashrc || echo '[ -x /usr/bin/zsh ] && exec /usr/bin/zsh' >>~/.bashrc
+  fi
   echo "Changed your default shell to zsh"
 
   # shellcheck disable=SC1091
