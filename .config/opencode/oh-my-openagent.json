@@ -29,21 +29,21 @@
 			"fallback_models": [{ "model": "opencode-go/deepseek-v4-pro" }]
 		},
 		"librarian": {
-			"model": "github-copilot/gpt-6-luna",
+			"model": "github-copilot/claude-haiku-5.5",
 			"variant": "max",
 			"fallback_models": [
 				{ "model": "opencode-go/deepseek-v4-flash" },
 				{ "model": "aumovio-llmi/DeepSeek-V4-Flash-0731" },
-				{ "model": "github-copilot/claude-haiku-4.5" }
+				{ "model": "github-copilot/gpt-6-luna" }
 			]
 		},
 		"explore": {
-			"model": "github-copilot/gpt-6-luna",
+			"model": "github-copilot/claude-haiku-5.5",
 			"variant": "max",
 			"fallback_models": [
 				{ "model": "opencode-go/deepseek-v4-flash" },
 				{ "model": "aumovio-llmi/DeepSeek-V4-Flash-0731" },
-				{ "model": "github-copilot/claude-haiku-4.5" }
+				{ "model": "github-copilot/gpt-6-luna" }
 			]
 		},
 		"multimodal-looker": {
@@ -111,12 +111,12 @@
 			"fallback_models": [{ "model": "opencode-go/qwen3.7-plus" }]
 		},
 		"quick": {
-			"model": "github-copilot/gpt-6-luna",
+			"model": "github-copilot/claude-haiku-5.5",
 			"variant": "low",
 			"fallback_models": [
 				{ "model": "opencode-go/deepseek-v4-flash" },
 				{ "model": "aumovio-llmi/DeepSeek-V4-Flash-0731" },
-				{ "model": "github-copilot/claude-haiku-4.5" }
+				{ "model": "github-copilot/gpt-6-luna" }
 			]
 		},
 		"unspecified-low": {
