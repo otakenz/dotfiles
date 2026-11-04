@@ -1,0 +1,20 @@
+{
+	// Auto-capture + profile learning run through an existing opencode provider.
+	// The model must support structured JSON output via opencode's session API.
+	"opencodeProvider": "opencode-go",
+	"opencodeModel": "claude-haiku-5-5",
+	"opencodeTimeoutMs": 180000,
+
+	// Local embeddings (downloaded from Hugging Face on first use, then cached).
+	"embeddingModel": "Xenova/nomic-embed-text-v1",
+	"embeddingUseTaskPrefixes": true,
+
+	// Web UI: http://127.0.0.1:4747
+	"webServerEnabled": true,
+	"webServerPort": 4747,
+	"webServerHost": "127.0.0.1",
+
+	"storagePath": "~/.opencode-mem/data",
+	"autoCaptureEnabled": true,
+	"autoUpdate": true
+}
