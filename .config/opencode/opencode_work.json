@@ -27,7 +27,7 @@
 					"--rm",
 					"--env-file",
 					"{env:HOME}/.config/secret/mcp-atlassian/.env",
-					"ghcr.io/sooperset/mcp-atlassian:latest"
+					"ghcr.io/sooperset/mcp-atlassian:0.24.6"
 				]
 			}
 		}
