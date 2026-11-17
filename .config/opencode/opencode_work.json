@@ -1,72 +1,84 @@
 {
 	"$schema": "https://opencode.ai/config.json",
-	"autoupdate": false,
+	"update": "disable",
 	"share": "disabled",
 	"model": "opencode/big-pickle",
-	"agent": {
+	"compaction": {
+		"auto": false,
+		"buffer": 10000
+	},
+	"agents": {
 		"compaction": {
-			"model": "opencode/big-pickle",
-			"auto": false,
-			"prune": true,
-			"reserved": 10000
+			"model": "opencode/big-pickle"
 		}
 	},
 	"mcp": {
-		"context7": {
-			"type": "remote",
-			"url": "https://mcp.context7.com/mcp"
-		},
-		"sequentialthinking": {
-			"type": "local",
-			"command": [
-				"docker",
-				"run",
-				"-i",
-				"--rm",
-				"mcp/sequentialthinking:latest"
-			]
-		},
-		"mcp-atlassian": {
-			"type": "local",
-			"command": [
-				"docker",
-				"run",
-				"-i",
-				"--rm",
-				"--env-file",
-				"{env:HOME}/.config/secret/mcp-atlassian/.env",
-				"ghcr.io/sooperset/mcp-atlassian:latest"
-			]
-		},
-		"github": {
-			"type": "local",
-			"command": [
-				"docker",
-				"run",
-				"-i",
-				"--rm",
-				"--env-file",
-				"{env:HOME}/.config/secret/github/.env",
-				"ghcr.io/github/github-mcp-server:latest"
-			]
+		"servers": {
+			"context7": {
+				"type": "remote",
+				"url": "https://mcp.context7.com/mcp"
+			},
+			"sequentialthinking": {
+				"type": "local",
+				"command": [
+					"docker",
+					"run",
+					"-i",
+					"--rm",
+					"mcp/sequentialthinking:latest"
+				]
+			},
+			"mcp-atlassian": {
+				"type": "local",
+				"command": [
+					"docker",
+					"run",
+					"-i",
+					"--rm",
+					"--env-file",
+					"{env:HOME}/.config/secret/mcp-atlassian/.env",
+					"ghcr.io/sooperset/mcp-atlassian:latest"
+				]
+			},
+			"github": {
+				"type": "local",
+				"command": [
+					"docker",
+					"run",
+					"-i",
+					"--rm",
+					"--env-file",
+					"{env:HOME}/.config/secret/github/.env",
+					"ghcr.io/github/github-mcp-server:latest"
+				]
+			}
 		}
 	},
-	"tools": {
-		"mcp-atlassian*": false,
-		"github*": false
-	},
-	"plugin": [
-		"oh-my-openagent",
+	"permissions": [
+		{
+			"action": "mcp-atlassian*",
+			"resource": "*",
+			"effect": "deny"
+		},
+		{
+			"action": "github*",
+			"resource": "*",
+			"effect": "deny"
+		}
+	],
+	"plugins": [
 		"superpowers@git+https://github.com/obra/superpowers.git",
 		"opencode-mem@latest"
 	],
-	"provider": {
+	"providers": {
 		"aumovio-llmi": {
-			"npm": "@ai-sdk/openai",
 			"name": "AUMOVIO LLMi",
-			"options": {
+			"package": "aisdk:@ai-sdk/openai",
+			"settings": {
 				"baseURL": "https://llm-gateway.ve42034x.automotive-wan.com:443/v1",
-				"apiKey": "{env:LLMi_API_TOKEN}",
+				"apiKey": "{env:LLMi_API_TOKEN}"
+			},
+			"headers": {
 				"Authorization": "Bearer {env:LLMi_API_TOKEN}"
 			},
 			"models": {

@@ -211,6 +211,10 @@ https://opencode.ai/docs/skills/#use-an-example
 
 ```
 
+This setup installs OpenCode v2 (requires mise >= 2026.10.9; older mise versions
+install v1). Terminal settings live in `~/.config/opencode/cli.json`; the legacy
+`tui.json` is no longer used.
+
 #### Claude-skills
 
 1. [obra/superpowers](https://github.com/obra/superpowers) A framework that comes with a set of skills for software development
@@ -222,17 +226,15 @@ https://opencode.ai/docs/skills/#use-an-example
 
 #### Opencode Plugin
 
-1. [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode)
-
-- Agent Orchestration Framework for OpenCode
-- This project enable this by default, so you have to enter the installation
-  prompt from the oh-my-opencode README to enable it.
-- By default uses Github Copilot and Google Antigravity subscription free plan
-  or not.
-
-2. [obra/superpowers](https://github.com/obra/superpowers)
+1. [obra/superpowers](https://github.com/obra/superpowers)
 
 - User need to install this using installation prompt from the project's README
+- OpenCode v2 support requires v6.4.1 or later
+
+2. [opencode-mem](https://github.com/tickernelz/opencode-mem)
+
+- Persistent memory using local vector search
+- OpenCode v2 support requires 2.42.0 or later (`plugins` config key)
 
 ### 9. Neovim Plugins (special mentioned)
 

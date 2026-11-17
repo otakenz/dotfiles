@@ -1,0 +1,22 @@
+{
+  "$schema": "https://opencode.ai/v2/cli.json",
+  "theme": {
+    "name": "tokyonight",
+    "mode": "dark"
+  },
+  "keybinds": {
+    "session.first": "ctrl+g",
+    "session.last": "ctrl+shift+g"
+  },
+  "diffs": {
+    "wrap": "word"
+  },
+  "session": {
+    "sidebar": "auto",
+    "scrollbar": false,
+    "thinking": "show",
+    "verbosity": "medium"
+  },
+  "animations": true,
+  "highlights": true
+}

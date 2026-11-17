@@ -1,49 +1,55 @@
 {
 	"$schema": "https://opencode.ai/config.json",
-	"autoupdate": false,
+	"update": "disable",
 	"share": "disabled",
 	"model": "opencode/big-pickle",
-	"agent": {
+	"compaction": {
+		"auto": false,
+		"buffer": 10000
+	},
+	"agents": {
 		"compaction": {
-			"model": "opencode/big-pickle",
-			"auto": false,
-			"prune": true,
-			"reserved": 10000
+			"model": "opencode/big-pickle"
 		}
 	},
 	"mcp": {
-		"context7": {
-			"type": "remote",
-			"url": "https://mcp.context7.com/mcp"
-		},
-		"sequentialthinking": {
-			"type": "local",
-			"command": [
-				"docker",
-				"run",
-				"-i",
-				"--rm",
-				"mcp/sequentialthinking:latest"
-			]
-		},
-		"github": {
-			"type": "local",
-			"command": [
-				"docker",
-				"run",
-				"-i",
-				"--rm",
-				"--env-file",
-				"{env:HOME}/.config/secret/github/.env",
-				"ghcr.io/github/github-mcp-server:latest"
-			]
+		"servers": {
+			"context7": {
+				"type": "remote",
+				"url": "https://mcp.context7.com/mcp"
+			},
+			"sequentialthinking": {
+				"type": "local",
+				"command": [
+					"docker",
+					"run",
+					"-i",
+					"--rm",
+					"mcp/sequentialthinking:latest"
+				]
+			},
+			"github": {
+				"type": "local",
+				"command": [
+					"docker",
+					"run",
+					"-i",
+					"--rm",
+					"--env-file",
+					"{env:HOME}/.config/secret/github/.env",
+					"ghcr.io/github/github-mcp-server:latest"
+				]
+			}
 		}
 	},
-	"tools": {
-		"github*": false
-	},
-	"plugin": [
-		"oh-my-openagent",
+	"permissions": [
+		{
+			"action": "github*",
+			"resource": "*",
+			"effect": "deny"
+		}
+	],
+	"plugins": [
 		"superpowers@git+https://github.com/obra/superpowers.git",
 		"opencode-mem@latest"
 	]
