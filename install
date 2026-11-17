@@ -52,7 +52,7 @@ PACMAN_PACKAGES="
   openbsd-netcat
   openssh
   pacman-contrib
-  pass
+  gopass
   pinentry
   poppler
   pwgen
@@ -95,7 +95,6 @@ DEBIAN_PACKAGES="
   lld
   netcat-openbsd
   openssh-server
-  pass
   pinentry-qt
   poppler-utils
   pwgen
@@ -135,7 +134,7 @@ BREW_PACKAGES="
   lazygit
   mise
   opencode
-  pass
+  gopass
   pinentry-mac
   poppler
   pwgen
@@ -172,6 +171,7 @@ MISE_PACKAGES_DEBIAN="
   fzf
   gh
   gitui
+  gopass
   jq
   lazygit
   neovim
@@ -212,7 +212,6 @@ DOTFILES_URL="${DOTFILES_URL:-https://github.com/otakenz/dotfiles}"
 DOTFILES_PATH="${DOTFILES_PATH:-${HOME}/dotfiles}"
 
 GPG_HOME="${GNUPGHOME:-"${HOME}/.config/gnupg"}"
-PASS_HOME="${PASSWORD_STORE_DIR:-"${HOME}/.config/password-store"}"
 
 SSH_INSTRUCTIONS=
 SSH_PUBKEY=
@@ -562,9 +561,6 @@ create_initial_dirs() {
     "${HOME}/.config/lazygit" "${HOME}/.config/opencode"
 
   mkdir -p "${HOME}/.cache/zsh" "${HOME}/.local/bin" "${HOME}/.local/share/fonts"
-
-  mkdir -p "${PASS_HOME}"
-  chmod 700 "${PASS_HOME}"
 
   mkdir -p "${GPG_HOME}"
   chmod 700 "${GPG_HOME}"
