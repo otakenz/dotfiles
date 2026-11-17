@@ -18,16 +18,6 @@
 				"type": "remote",
 				"url": "https://mcp.context7.com/mcp"
 			},
-			"sequentialthinking": {
-				"type": "local",
-				"command": [
-					"docker",
-					"run",
-					"-i",
-					"--rm",
-					"mcp/sequentialthinking:latest"
-				]
-			},
 			"mcp-atlassian": {
 				"type": "local",
 				"command": [
@@ -39,29 +29,12 @@
 					"{env:HOME}/.config/secret/mcp-atlassian/.env",
 					"ghcr.io/sooperset/mcp-atlassian:latest"
 				]
-			},
-			"github": {
-				"type": "local",
-				"command": [
-					"docker",
-					"run",
-					"-i",
-					"--rm",
-					"--env-file",
-					"{env:HOME}/.config/secret/github/.env",
-					"ghcr.io/github/github-mcp-server:latest"
-				]
 			}
 		}
 	},
 	"permissions": [
 		{
 			"action": "mcp-atlassian*",
-			"resource": "*",
-			"effect": "deny"
-		},
-		{
-			"action": "github*",
 			"resource": "*",
 			"effect": "deny"
 		}

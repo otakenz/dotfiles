@@ -17,38 +17,9 @@
 			"context7": {
 				"type": "remote",
 				"url": "https://mcp.context7.com/mcp"
-			},
-			"sequentialthinking": {
-				"type": "local",
-				"command": [
-					"docker",
-					"run",
-					"-i",
-					"--rm",
-					"mcp/sequentialthinking:latest"
-				]
-			},
-			"github": {
-				"type": "local",
-				"command": [
-					"docker",
-					"run",
-					"-i",
-					"--rm",
-					"--env-file",
-					"{env:HOME}/.config/secret/github/.env",
-					"ghcr.io/github/github-mcp-server:latest"
-				]
 			}
 		}
 	},
-	"permissions": [
-		{
-			"action": "github*",
-			"resource": "*",
-			"effect": "deny"
-		}
-	],
 	"plugins": [
 		"superpowers@git+https://github.com/obra/superpowers.git",
 		"opencode-mem@latest"
