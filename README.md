@@ -290,6 +290,11 @@ Here are some additional tools that I use in my development environment:
 - I use this to organize my work, it is a time tracking and task management tool
 - I break my work into small tasks and track my time spent on each task
 
+## 📄 Docs
+
+- [`docs/key-management.pdf`](docs/key-management.pdf) — key and password-store layout, command
+  reference, key rotation, and how GPG keys compare with SSH keys.
+
 ## 📗 Troubleshooting:
 
 ### 1. Managing multiple github accounts using SSH
@@ -326,6 +331,8 @@ Here are some additional tools that I use in my development environment:
   ```
   git config --list
   ```
+- The key model behind this setup — one GPG primary per trust domain with per-machine subkeys, and
+  one SSH key per machine — is described in [`docs/key-management.pdf`](docs/key-management.pdf).
 
 ### 2. Git Commit Freeze Due to GPG Lock issue
 
@@ -611,7 +618,8 @@ unset NODE_EXTRA_CA_CERTS
 
 GPG keys do **not** auto-renew. Check your key's expiry and renew it before it lapses — once expired,
 git commits will fail to sign until renewed. The key ID stays the same after renewal, so no git config
-changes are needed. One key per machine is recommended for isolation.
+changes are needed. One primary key per trust domain, with per-machine subkeys, is the recommended model
+(see [`docs/key-management.pdf`](docs/key-management.pdf), rotation section).
 
 ```sh
 # Step 1: Find the key ID and check expiry
