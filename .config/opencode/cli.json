@@ -6,7 +6,21 @@
   },
   "keybinds": {
     "session.first": "ctrl+g",
-    "session.last": "ctrl+shift+g"
+    "session.last": "ctrl+shift+g",
+    "session.tab.next": [
+      "ctrl+tab",
+      "alt+down",
+      "<leader>tab"
+    ],
+    "session.tab.previous": [
+      "ctrl+shift+tab",
+      "alt+up",
+      "<leader>shift+tab"
+    ],
+    "session.tab.reopen": [
+      "ctrl+shift+t",
+      "<leader>shift+t"
+    ]
   },
   "diffs": {
     "wrap": "word"
