@@ -360,7 +360,7 @@ model) to implement. Authors run on Claude, `cpp-reviewer` on GPT for a second o
 Project know-how goes into
 each repo's `.agents/skills/` so Copilot and OpenCode teammates share it. The global
 `.config/opencode/AGENTS.md` holds rules for every session, including when a new skill or
-subagent is worth adding.
+subagent is worth adding. Walkthrough with diagrams: [`docs/agent-workflow.pdf`](docs/agent-workflow.pdf).
 
 ### 9. Neovim Plugins (special mentioned)
 
@@ -420,6 +420,9 @@ Here are some additional tools that I use in my development environment:
 
 - [`docs/key-management.pdf`](docs/key-management.pdf) — key model, new-machine flow, which action
   to take, rotation, restore from backup, command reference, and GPG versus SSH.
+- [`docs/agent-workflow.pdf`](docs/agent-workflow.pdf) — how the OpenCode primaries (`plan`, `build`,
+  `coder`) and subagents work together, which model runs where, and the steps from an idea to a
+  merged change. Rebuild with `python3 docs/src/agent-workflow.py`.
 - AI-workflow notes live in a separate, private wiki repo of your own (optional). Clone it with
   `./install --wiki <git-url>` to `~/wiki/ai-workflow` (or `AI_WIKI_DIR`). If it has an
   `instructions.md`, OpenCode loads it as personal rules; `test/ai-inventory.sh` checks its
