@@ -308,15 +308,33 @@ install v1). Terminal settings live in `~/.config/opencode/cli.json`; the legacy
 
 #### Opencode Plugin
 
-1. [obra/superpowers](https://github.com/obra/superpowers)
+One plugin per layer, essentials only; see
+[`docs/ai-workflow/concepts/plugin-layers.md`](docs/ai-workflow/concepts/plugin-layers.md)
+and [the decision](docs/ai-workflow/decisions/2026-11-19-essential-plugins.md).
+Add plugins by editing `opencode.json` / `opencode_work.json` here, not with
+`opencode plugin add` (it rewrites the symlinked config).
+
+1. [obra/superpowers](https://github.com/obra/superpowers) (workflow)
 
 - User need to install this using installation prompt from the project's README
 - OpenCode v2 support requires v6.4.1 or later
 
-2. [opencode-mem](https://github.com/tickernelz/opencode-mem)
+2. [opencode-mem](https://github.com/tickernelz/opencode-mem) (memory)
 
 - Persistent memory using local vector search
 - OpenCode v2 support requires 2.42.0 or later (`plugins` config key)
+
+3. [cc-safety-net](https://github.com/kenryu42/cc-safety-net) (safety)
+
+- Blocks destructive commands and reads of SSH keys / `.env` files before they run
+- OpenCode v2 support requires 2.0.6 or later; needs Node.js 22+
+
+4. [opencode-quota](https://github.com/slkiser/opencode-quota) (observability)
+
+- `/quota` and `/quota_usage`: limits, tokens and cost for Copilot and OpenCode Go
+- Requires OpenCode 2.0.26 or later and Node.js 22.13+
+
+Context management uses V2's built-in compaction (`compaction.auto: true`), not a plugin.
 
 #### Subagents
 

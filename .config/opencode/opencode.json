@@ -4,8 +4,7 @@
 	"share": "disabled",
 	"model": "opencode/big-pickle",
 	"compaction": {
-		"auto": false,
-		"buffer": 10000
+		"auto": true
 	},
 	"agents": {
 		"compaction": {
@@ -22,6 +21,8 @@
 	},
 	"plugins": [
 		"superpowers@git+https://github.com/obra/superpowers.git",
-		"opencode-mem@latest"
+		"opencode-mem@latest",
+		"cc-safety-net@latest",
+		"@slkiser/opencode-quota@latest"
 	]
 }

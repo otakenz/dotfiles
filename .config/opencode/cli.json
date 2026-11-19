@@ -10,17 +10,20 @@
     "session.tab.next": [
       "ctrl+tab",
       "alt+down",
+      "<leader>t",
       "<leader>tab"
     ],
     "session.tab.previous": [
       "ctrl+shift+tab",
       "alt+up",
+      "<leader>shift+t",
       "<leader>shift+tab"
     ],
     "session.tab.reopen": [
       "ctrl+shift+t",
-      "<leader>shift+t"
-    ]
+      "<leader>shift+r"
+    ],
+    "terminal.toggle": "none"
   },
   "diffs": {
     "wrap": "word"
@@ -29,7 +32,7 @@
     "sidebar": "auto",
     "scrollbar": false,
     "thinking": "show",
-    "verbosity": "medium"
+    "verbosity": "low"
   },
   "animations": true,
   "highlights": true
