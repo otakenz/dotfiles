@@ -640,7 +640,7 @@ def story():
                     "reviewer",
                     "GPT-6.1 Sol",
                     "limits",
-                    "Read-only review of specs, plans, non-C++ code; follows the skill's review prompt. Completeness check: reads all of ~ except hidden top-level folders and .env files",
+                    "Read-only review of specs, plans, non-C++ code; follows the skill's review prompt. Completeness check: reads ~ except hidden entries and .env (best effort)",
                     "Review this spec / plan; skill-requested branch reviews; completeness check before a PR",
                 ],
                 [

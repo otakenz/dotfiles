@@ -27,6 +27,7 @@ permissions:
   - { action: shell, resource: "fd *-X*", effect: ask }
   - { action: shell, resource: "fd *--exec*", effect: ask }
   - { action: shell, resource: "rg *--pre*", effect: ask }
+  - { action: shell, resource: "rg *.env*", effect: ask }
   - { action: shell, resource: "rg *--hidden*", effect: ask }
   - { action: shell, resource: "rg -u*", effect: ask }
   - { action: shell, resource: "rg * -u*", effect: ask }
@@ -68,7 +69,8 @@ changed but did not update everywhere. This is not a code review.
 1. **Base:** take the base branch from the request. If none is given, ask;
    do not guess.
 2. **What changed:** `git log <base>..HEAD`, `git diff <base>...HEAD`, plus
-   `git status` and `git diff` for uncommitted work. List renamed or
+   `git diff HEAD` for staged and unstaged work and `git status` for
+   untracked files (read the relevant ones). List renamed or
    removed names, flags, options, config keys, interfaces, file paths,
    commands, defaults and behaviour.
 3. **Where it is still old:** for each item, search the repo for the old

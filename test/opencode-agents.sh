@@ -176,7 +176,8 @@ if rv:
         if (got == "allow") != (want == "allow"):
             fail(f"reviewer: {action} '{res}' is {got}, want {want}")
     for cmd in ["rg --hidden token ~", "rg -u foo", "rg -uu foo", "rg -n foo -u",
-                "rg -. foo", "fd -H key", "fd --hidden key", "fd -u key", "fd key ~ -H"]:
+                "rg -. foo", "fd -H key", "fd --hidden key", "fd -u key", "fd key ~ -H",
+                f"rg -n . {H}/some-repo/.env", "rg KEY cfg/.env.local", "rg KEY .env"]:
         expect("reviewer", cmd, "not allow")
     for cmd in ["rg -n foo src/x-util", "fd -e md"]:
         expect("reviewer", cmd, "allow")
