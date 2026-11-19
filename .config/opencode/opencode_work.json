@@ -8,7 +8,10 @@
 	},
 	"agents": {
 		"compaction": {
-			"model": "opencode/big-pickle"
+			"model": "opencode-go/deepseek-v4.1-flash"
+		},
+		"explore": {
+			"model": "opencode-go/deepseek-v4.1-flash"
 		}
 	},
 	"mcp": {

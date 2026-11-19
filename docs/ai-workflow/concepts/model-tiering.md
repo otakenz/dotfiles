@@ -16,6 +16,14 @@ Two tiers, chosen per agent:
 |---|---|---|---|
 | **Inherit** | No `model` field; the subagent uses the parent session's model | Judgement: reviews, analysis, upgrade mapping | `cpp-reviewer`, `investigator`, `release-mapper` |
 | **Cheap** | `model: opencode-go/deepseek-v4.1-flash` in the agent file | Mechanical work: run and summarize, draft text, fetch tickets | `build-runner`, `scribe`, `jira`, `confluence` |
+| **Cheap (built-in)** | `agents.<id>.model` in both `opencode.json` and `opencode_work.json` | Summarizing context, read-only search | `compaction`, `explore` |
+
+Built-in agents are overridden in JSON, not with an `agents/<id>.md` file:
+a file body would replace the built-in system prompt. `general` stays on
+inherit: it does multi-step work where a weak model costs more in retries.
+
+Reviewers stay one per language (`cpp-reviewer` today) rather than one
+generic reviewer (user decision 2026-11-19).
 
 ## Why
 

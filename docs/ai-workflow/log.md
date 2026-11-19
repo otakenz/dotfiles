@@ -25,3 +25,10 @@
 - sw.sys.dmsd `denali4.1_eqs_es10` 67aaa18a: `.agents/skills/config-audit`
 - sw.tool.cabinvue `main` c1aa891: `.agents/skills/interface-contracts`
 - Pages touched: none; matches [[2026-11-19-agents-global-skills-project]]
+
+## [2026-11-19] update | Built-in agents on the cheap tier
+
+- `compaction` and `explore` moved to `opencode-go/deepseek-v4.1-flash` in
+  both configs; `general` stays on the session model
+- Reviewers stay per language (no generic reviewer)
+- Updated: [[model-tiering]]
