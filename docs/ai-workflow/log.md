@@ -32,3 +32,10 @@
   both configs; `general` stays on the session model
 - Reviewers stay per language (no generic reviewer)
 - Updated: [[model-tiering]]
+
+## [2026-11-19] update | libcontidms skills tracked
+
+- sw.sys.libcontidms `eqs_develop` ebe3ffeb1: `.gitignore` now re-includes
+  `.agents/skills/` (after `build-*`, which hid `build-visualizer`);
+  `build-visualizer` committed with its igl7586w destination as a parameter
+- Pages touched: none; see [[2026-11-19-agents-global-skills-project]]
