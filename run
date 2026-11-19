@@ -72,6 +72,11 @@ ci:keys() {
   bash test/keys.sh
 }
 
+ci:wiki() {
+  # Test `./install --wiki` against a local wiki repo
+  bash test/wiki.sh
+}
+
 ci:keys:linux() {
   # Run the keys test in Ubuntu 24.04, Ubuntu 26.04 and Arch Linux containers
   local image status=0

@@ -227,6 +227,10 @@ GOPASS_STORES_PATH="${HOME}/.local/share/gopass/stores"
 GOPASS_PERSONAL_URL="${GOPASS_PERSONAL_URL:-git@github.com:otakenz/gopass-store.git}"
 GOPASS_WORK_URL="${GOPASS_WORK_URL:-}"
 
+AI_WIKI_DIR="${AI_WIKI_DIR:-${HOME}/wiki/ai-workflow}"
+WIKI_PASS=
+WIKI_URL=
+
 KEYS_TMP=
 KEYS_ROLLBACK_FPR=
 KEYS_RESTORED=()
@@ -1844,6 +1848,30 @@ setup_keys() {
   _keys_summary "${dir}"
 }
 
+# Wiki pass: clone a private notes wiki (or update it if already cloned).
+# Separate from the main run because a private repo needs the SSH key that
+# the main run creates to be registered first.
+setup_wiki() {
+  local url="${1}" dir="${AI_WIKI_DIR}"
+
+  if [ -z "${url}" ]; then
+    [[ -t 0 ]] || _error "Give the wiki repo URL: ./install --wiki URL"
+    read -rp "Git URL of your notes wiki: " url
+    [ -n "${url}" ] || _error "Give the wiki repo URL: ./install --wiki URL"
+  fi
+
+  if [ -d "${dir}/.git" ]; then
+    _info "Updating wiki in ${dir}"
+    git -C "${dir}" pull --ff-only || _error "Could not update ${dir}; resolve it by hand"
+  elif [ -e "${dir}" ]; then
+    _error "${dir} exists but is not a git repository; move it away or set AI_WIKI_DIR"
+  else
+    _info "Cloning wiki into ${dir}"
+    mkdir -p "$(dirname "${dir}")"
+    git clone "${url}" "${dir}" || _error "Could not clone ${url}"
+  fi
+}
+
 _usage() {
   cat <<EOF
 Usage examples:
@@ -1869,6 +1897,11 @@ LOCAL=1 ./install
 # personal-secret.asc, personal-public.asc and ownertrust.txt, plus
 # work-secret.asc and work-public.asc with --work-pc.
 ./install --keys DIR [--work-pc]
+
+# Wiki pass: clone your private notes wiki to ~/wiki/ai-workflow (or
+# AI_WIKI_DIR), or update it. Asks for the URL if none is given. OpenCode
+# loads its instructions.md as personal rules when present.
+./install --wiki [URL]
 
 # Show this help menu.
 ./install --help
@@ -1896,6 +1929,17 @@ while [ "${#}" -gt 0 ]; do
   --keys=*)
     KEYS_DIR="${1#*=}"
     ;;
+  --wiki)
+    WIKI_PASS=1
+    if [ -n "${2:-}" ] && [ "${2#-}" = "${2}" ]; then
+      WIKI_URL="${2}"
+      shift
+    fi
+    ;;
+  --wiki=*)
+    WIKI_PASS=1
+    WIKI_URL="${1#*=}"
+    ;;
   --help | -h)
     _usage
     exit
@@ -1909,6 +1953,11 @@ done
 
 if [ -n "${KEYS_DIR}" ]; then
   setup_keys "${KEYS_DIR}"
+  exit
+fi
+
+if [ -n "${WIKI_PASS}" ]; then
+  setup_wiki "${WIKI_URL}"
   exit
 fi
 
