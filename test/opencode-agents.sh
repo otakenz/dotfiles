@@ -21,8 +21,12 @@ agents_json="$(opencode api get /api/agent 2>&1)" || {
   printf "FAIL: opencode api get /api/agent: %s\n" "${agents_json}" >&2
   exit 1
 }
+config_json="$(opencode api get /api/config 2>&1)" || {
+  printf "FAIL: opencode api get /api/config: %s\n" "${config_json}" >&2
+  exit 1
+}
 
-AGENTS_JSON="${agents_json}" python3 - <<'EOF'
+AGENTS_JSON="${agents_json}" CONFIG_JSON="${config_json}" python3 - <<'EOF'
 import json, os, sys
 from fnmatch import fnmatchcase
 
@@ -42,7 +46,8 @@ INHERIT = ["release-mapper"]
 CHEAP_MODEL = {"providerID": "opencode-go", "id": "deepseek-v4.1-flash"}
 # Reviewer on a different model family than the Opus author session.
 SONNET = {"providerID": "github-copilot", "id": "claude-sonnet-5.5"}
-PINNED = {"cpp-reviewer": {"providerID": "github-copilot", "id": "gpt-6.1-sol"},
+SOL = {"providerID": "github-copilot", "id": "gpt-6.1-sol"}
+PINNED = {"cpp-reviewer": SOL, "reviewer": SOL,
           "investigator": SONNET}
 
 def match(value, pattern):
@@ -131,11 +136,11 @@ if scribe:
         fail("scribe: git push does not ask")
 
 # Read-only agents: allowed tools must not be able to run commands or write.
-for aid in ["cpp-reviewer", "investigator", "release-mapper"]:
-    expect(aid, "git status", "allow" if aid == "cpp-reviewer" else "not allow")
+for aid in ["cpp-reviewer", "reviewer", "investigator", "release-mapper"]:
+    expect(aid, "git status", "allow" if aid in ("cpp-reviewer", "reviewer") else "not allow")
     expect(aid, "git diff --output=src/x.cpp", "not allow")
     expect(aid, "git log -p --output=/tmp/x", "not allow")
-for aid in ["investigator", "release-mapper"]:
+for aid in ["reviewer", "investigator", "release-mapper"]:
     expect(aid, "rg -n foo src", "allow")
     expect(aid, "fd -e cpp", "allow")
     expect(aid, "fd . -x rm {}", "not allow")
@@ -174,6 +179,30 @@ for aid, own, other in [("jira", "jira", "confluence"), ("confluence", "confluen
             fail(f"{aid}: {server}_{own}_* not allowed")
         if effect(a, f"{server}_{other}_search", "*") == "allow":
             fail(f"{aid}: {server}_{other}_* allowed")
+
+# Work secrets: the unattended store is off limits to agents, and no key is
+# substituted into the config (the API returns substituted values).
+cfg = next((e["info"] for e in json.loads(os.environ["CONFIG_JSON"])
+            if e.get("type") == "document" and e["path"].endswith("opencode.json")), {})
+
+def policy(resource):
+    result = None
+    for p in cfg.get("policies", []):
+        if p["action"] == "tool.use" and match(resource, p["resource"]):
+            result = p["effect"]
+    return result
+
+for res in ["shell:gopass show -o work-unattended/jira-pat",
+            "shell:gopass show -c work-unattended/llmi-api-token",
+            "read:/home/u/.local/share/gopass/stores/work-unattended/jira-pat.gpg"]:
+    if policy(res) != "deny":
+        fail(f"policy does not deny {res}")
+llmi = cfg.get("providers", {}).get("aumovio-llmi", {})
+if "apiKey" in llmi.get("settings", {}) or "Authorization" in llmi.get("headers", {}):
+    fail("aumovio-llmi still carries a key in config")
+cmd = cfg.get("mcp", {}).get("servers", {}).get("mcp-atlassian", {}).get("command", [])
+if cmd[:2] != ["uvx", "mcp-atlassian==0.24.6"] or "--env-file" not in cmd:
+    fail(f"mcp-atlassian command is {cmd}")
 
 sys.exit(status)
 EOF

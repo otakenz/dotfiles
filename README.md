@@ -132,17 +132,30 @@ drops it.
 | gopass config            | `~/.config/gopass/config`                                     |
 | Personal store (root)    | `~/.local/share/gopass/stores/personal`                       |
 | Work store (mount `work`)| `~/.local/share/gopass/stores/work`                           |
+| Unattended store (mount `work-unattended`) | `~/.local/share/gopass/stores/work-unattended` (this machine only) |
 | Store remotes            | `GOPASS_PERSONAL_URL` (default: this account's `gopass-store`), `GOPASS_WORK_URL` (asked if unset) |
 | Git identity             | `~/.config/git/config.local`; on a work PC personal repos include `config.local.personal` |
 | SSH keys                 | `~/.ssh/id_ed25519` (personal), `~/.ssh/id_ed25519_work` (work) |
 
-Entries read `github/pat` in the personal store and `work/jira/pat` in the work store:
+Entries read `github/pat` in the personal store and `work-unattended/jira-pat` in the
+unattended store:
 
 ```sh
-gopass ls              # both stores as one tree
+gopass ls              # every store as one tree
 gopass show -o PATH    # password only
 gopass sync            # pull and push every store
 ```
+
+**Unattended work store (work PC)**
+
+`--keys --work-pc` also creates a key without a passphrase on this machine and a local store,
+`work-unattended`, encrypted to it. It holds only tokens that background tools must read
+without a prompt: the Jira and Confluence PATs, which mcp-atlassian fetches with
+`gopass show`, and the LLMi key. The key can only encrypt, never signs, and has no git remote
+and no backup. Every machine gets its own key and its own tokens: after the keys pass, create
+fresh tokens and `gopass insert work-unattended/<name>` each one, as the script prints.
+Rotating a token is `gopass edit work-unattended/<name>`; revoke a machine's tokens when you
+retire it. Anything running as you can read this store, so keep everything else in `work`.
 
 > **Ubuntu 26.04:** its libgcrypt 1.12.0 randomly rejects valid imported cv25519 keys with
 > "Bad passphrase" ([LP #2174038](https://bugs.launchpad.net/bugs/2174038)). The keys pass warns
@@ -353,10 +366,10 @@ Context management uses V2's built-in compaction (`compaction.auto: true`), not 
 
 #### Subagents
 
-Global subagents live in `.config/opencode/agents/` (`cpp-reviewer`, `investigator`,
+Global subagents live in `.config/opencode/agents/` (`cpp-reviewer`, `reviewer`, `investigator`,
 `release-mapper`, `build-runner`, `scribe`, `jira`, `confluence`), next to one extra primary
 agent, `coder`: plan with `build` on a strong model, then press Shift+Tab to `coder` (a cheaper
-model) to implement. Authors run on Claude, `cpp-reviewer` on GPT for a second opinion.
+model) to implement. Authors run on Claude; `reviewer` and `cpp-reviewer` run on GPT for a second opinion.
 Project know-how goes into
 each repo's `.agents/skills/` so Copilot and OpenCode teammates share it. The global
 `.config/opencode/AGENTS.md` holds rules for every session, including when a new skill or

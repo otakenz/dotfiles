@@ -254,12 +254,12 @@ D_OVERVIEW = (
   subgraph cluster_son { label="Sonnet 5.5: authors, research"; fontcolor="#2e7d32"; color="#2e7d32"; style=rounded;
     general; investigator; }
   subgraph cluster_sol { label="GPT-6.1 Sol: review"; fontcolor="#c2571a"; color="#c2571a"; style=rounded;
-    "cpp-reviewer"; }
+    "cpp-reviewer"; reviewer; }
   subgraph cluster_ses { label="session model"; fontcolor="#6a4c93"; color="#6a4c93"; style=rounded;
     "release-mapper"; }
   subgraph cluster_fl { label="DeepSeek V4.1 Flash: mechanical"; fontcolor="#546e7a"; color="#546e7a"; style=rounded;
     "build-runner"; scribe; explore; jira; confluence; }
-  { rank=same; general; investigator; "cpp-reviewer"; "release-mapper"; }
+  { rank=same; general; investigator; "cpp-reviewer"; reviewer; "release-mapper"; }
   build -> investigator [ltail=cluster_p, lhead=cluster_son, label=" delegate: fresh context,\\n summary back ", minlen=2];
   build -> "cpp-reviewer" [ltail=cluster_p, lhead=cluster_sol, minlen=2];
   build -> "release-mapper" [ltail=cluster_p, lhead=cluster_ses, minlen=2];
@@ -298,7 +298,7 @@ D_GREENFIELD = (
   s2 [label=<<b>2 Spec + plan</b><br/><font point-size="8">build (Opus)</font>>, color="#6a4c93", penwidth=1.4];
   f  [shape=note, fillcolor="#f3f6fa", label=<<font point-size="8">specs/...-design.md<br/>plans/....md<br/>committed</font>>];
   s3 [label=<<b>3 Implement</b><br/><font point-size="8">coder (Sonnet), new session</font>>, color="#2e7d32", penwidth=1.4];
-  s4 [label=<<b>4 Review</b><br/><font point-size="8">cpp-reviewer (Sol)</font>>, color="#c2571a", penwidth=1.4];
+  s4 [label=<<b>4 Review</b><br/><font point-size="8">cpp-reviewer / reviewer (Sol)</font>>, color="#c2571a", penwidth=1.4];
   s5 [label=<<b>5 Finish</b><br/><font point-size="8">build-runner, scribe (Flash)</font>>, color="#546e7a", penwidth=1.4];
   s6 [label=<<b>6 Afterwards</b><br/><font point-size="8">skill? wiki log</font>>];
   { rank=same; s0; s1; s2; f; }
@@ -323,7 +323,7 @@ D_EXECUTE = (
   subgraph cluster_b { label="B  subagent-driven from build (big or risky plans)"; color="#6a4c93"; fontcolor="#6a4c93"; style=rounded;
     b0 [label=<<b>build</b> (Opus)<br/><font point-size="8">coordinates</font>>];
     b1 [label=<<b>general</b> (Sonnet)<br/><font point-size="8">fresh implementer<br/>per task</font>>];
-    b2 [label=<<b>reviewer</b><br/><font point-size="8">per task</font>>];
+    b2 [label=<<b>reviewer</b> (Sol)<br/><font point-size="8">per task</font>>];
     b3 [label=<<b>final review</b><br/><font point-size="8">whole branch</font>>];
     b0 -> b1; b1 -> b2; b2 -> b0 [constraint=false]; b0 -> b3; { rank=same; b1; b2; b3; }
   }
@@ -529,9 +529,9 @@ def story():
         ],
         [
             "4 Review",
-            chip("cpp-reviewer", SOL),
+            chip("cpp-reviewer", SOL) + " / " + chip("reviewer", SOL),
             "Review the branch against main.",
-            "Fresh context, different model family; findings by severity with file:line. Fixes go back to coder.",
+            "Fresh context, different model family; cpp-reviewer for C++ code, reviewer for the rest. Findings by severity with file:line. Fixes go back to coder.",
             "Findings, fix commits",
         ],
         [
@@ -637,6 +637,13 @@ def story():
                     "Review this branch against main",
                 ],
                 [
+                    "reviewer",
+                    "GPT-6.1 Sol",
+                    "limits",
+                    "Read-only review of specs, plans, non-C++ code; follows the skill's review prompt",
+                    "Review this spec / plan; skill-requested branch reviews",
+                ],
+                [
                     "release-mapper",
                     "session",
                     "limits, noise",
@@ -689,7 +696,9 @@ def story():
     s.append(
         p(
             "<b>Authors on Claude, reviewers on GPT.</b> A reviewer from the same family tends to share the "
-            "author's blind spots. Both Sonnet and Sol cost the same, so the split is free.",
+            "author's blind spots. Both Sonnet and Sol cost the same, so the split is free. Superpowers would "
+            "send reviews to general (Sonnet, the implementer); personal instructions route them to reviewer or "
+            "cpp-reviewer instead.",
             S_LEAD,
         )
     )
@@ -721,7 +730,7 @@ def story():
                     chip("Review", SOL),
                     "GPT-6.1 Sol",
                     "$2 / $10",
-                    "cpp-reviewer",
+                    "cpp-reviewer, reviewer",
                     "agent file",
                 ],
                 [
@@ -832,7 +841,8 @@ def story():
 [build]  Let's build <thing>.                 -> brainstorming, spec, writing-plans
 [build]  Plan approved, I'll execute in coder.
 [coder]  Execute docs/superpowers/plans/<file>.md with executing-plans.
-[any]    Review the branch against main with cpp-reviewer.
+[any]    Review the branch against main with cpp-reviewer.   (C++)
+[any]    Review docs/superpowers/specs/<file>.md with reviewer.
 [any]    Run the full build and tests with build-runner.
 [any]    Draft the commit message with scribe.
 """
