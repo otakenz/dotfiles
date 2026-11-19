@@ -1952,6 +1952,10 @@ while [ "${#}" -gt 0 ]; do
   shift
 done
 
+if [ -n "${KEYS_DIR}" ] && [ -n "${WIKI_PASS}" ]; then
+  _error "Run '--keys' and '--wiki' one at a time"
+fi
+
 if [ -n "${KEYS_DIR}" ]; then
   setup_keys "${KEYS_DIR}"
   exit

@@ -324,8 +324,8 @@ install v1). Terminal settings live in `~/.config/opencode/cli.json`; the legacy
 
 #### Opencode Plugin
 
-One plugin per layer, essentials only (reasoning in the optional notes wiki, see
-[`./install --wiki`](#-docs)).
+One plugin per layer, essentials only (reasoning in the optional notes wiki; see
+`./install --wiki` under Docs below).
 Add plugins by editing `opencode.json` / `opencode_work.json` here, not with
 `opencode plugin add` (it rewrites the symlinked config).
 

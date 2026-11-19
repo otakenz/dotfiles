@@ -32,7 +32,7 @@ check() {
     plugins="$(opencode api get "/api/skill?location[directory]=${HOME}" 2>/dev/null | python3 -c '
 import json, re, sys
 pkgs = {m.group(1) for s in json.load(sys.stdin)["data"]
-        if (m := re.search(r"/node_modules/([^/]+)/skills/", s.get("path", "")))}
+        if (m := re.search(r"/node_modules/((?:@[^/]+/)?[^/]+)/skills/", s.get("path", "")))}
 print(",".join(sorted(pkgs)))' 2>/dev/null)" || {
       printf "FAIL: could not list skills from the OpenCode service; start opencode, or set\n" >&2
       printf "      AI_INVENTORY_PLUGINS to the comma-separated plugin names (e.g. superpowers)\n" >&2
@@ -55,7 +55,8 @@ def fail(msg):
 
 installed = {
     "Agents": {p.stem for p in (cfg / "agents").glob("*.md")},
-    "Skills": {p.name for p in (cfg / "skills").iterdir() if p.is_dir()}
+    "Skills": {p.name for p in (cfg / "skills").iterdir()
+               if p.is_dir() and not p.name.startswith(".")}
               if (cfg / "skills").is_dir() else set(),
     "Plugins": {p for p in os.environ["PLUGINS"].split(",") if p},
 }
@@ -64,8 +65,11 @@ listed, section = {k: set() for k in installed}, None
 for line in text.splitlines():
     if line.startswith("## "):
         section = line[3:].strip()
-    elif section in listed and (m := re.match(r"\|\s*`([^`]+)`", line)):
-        listed[section].add(m.group(1))
+    elif section in listed and line.startswith("|"):
+        # First cell is the id, with or without backticks; skip header and rule.
+        first = line.strip().strip("|").split("|")[0].strip().strip("`")
+        if first and first != "Id" and not set(first) <= set("-: "):
+            listed[section].add(first)
 
 for kind in installed:
     for name in sorted(installed[kind] - listed[kind]):
@@ -194,6 +198,33 @@ EOF
     sed 's/^/      /' "${root}/service_down_hints.log" >&2
     failures=$((failures + 1))
   fi
+
+  # Plugins from the service: scoped packages keep their scope.
+  fixture scoped_plugin_detected "alpha beta" "one"
+  good_inventory | sed 's/`superpowers`/`@acme\/helpers`/' | inventory scoped_plugin_detected
+  cat >"${root}/bin/opencode" <<'EOF'
+#!/bin/sh
+echo '{"data":[{"id":"x","path":"/c/node_modules/@acme/helpers/skills/x/SKILL.md"},{"id":"b","path":"skill://browser/SKILL.md"}]}'
+EOF
+  got=0
+  PATH="${root}/bin:${PATH}" AI_WIKI_DIR="${root}/scoped_plugin_detected/wiki" \
+    OPENCODE_CONFIG_DIR_CHECK="${root}/scoped_plugin_detected/cfg" \
+    bash "${BASH_SOURCE[0]}" >"${root}/scoped_plugin_detected.log" 2>&1 || got=$?
+  if [ "${got}" -eq 0 ]; then
+    echo "ok:   scoped_plugin_detected"
+  else
+    echo "FAIL: scoped_plugin_detected: exit ${got}, want 0" >&2
+    sed 's/^/      /' "${root}/scoped_plugin_detected.log" >&2
+    failures=$((failures + 1))
+  fi
+
+  fixture hidden_skill_dir_ignored "alpha beta" "one .git"
+  good_inventory | inventory hidden_skill_dir_ignored
+  expect hidden_skill_dir_ignored 0 "Skills: 1 installed"
+
+  fixture row_without_backticks_counts "alpha beta" "one"
+  good_inventory | sed 's/| `beta` |/| beta |/' | inventory row_without_backticks_counts
+  expect row_without_backticks_counts 0 "inventory matches"
 
   [ "${failures}" -eq 0 ]
 }

@@ -93,4 +93,14 @@ else
   fail "existing non-repo folder was modified (see d.log)"
 fi
 
+# keys_and_wiki_conflict
+mkdir -p "${ROOT}/keys-dir"
+if run_wiki e -- --keys "${ROOT}/keys-dir" --wiki "file://${REMOTE}"; then
+  fail "--keys with --wiki should fail"
+elif grep -q "one at a time" "${ROOT}/e.log" && [ ! -e "${ROOT}/e/wiki/ai-workflow" ]; then
+  pass "--keys with --wiki fails before doing either"
+else
+  fail "--keys with --wiki: wrong error or partial run (see e.log)"
+fi
+
 [ "${failures}" -eq 0 ]
