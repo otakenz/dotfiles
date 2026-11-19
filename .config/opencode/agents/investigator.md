@@ -1,7 +1,6 @@
 ---
 description: Read-only research - how code or configuration fits together (execution order, data flow, IDs and contracts across files or repos) and what library, tool or vendor docs say. Use for "how does X work", "what runs before what", "do these configs agree", "what does the documentation say about Y". Loads the repo's matching skill first; returns evidence with file:line or URL.
 mode: subagent
-model: github-copilot/claude-sonnet-5.5
 permissions:
   - { action: "*", resource: "*", effect: deny }
   - { action: read, resource: "*", effect: allow }

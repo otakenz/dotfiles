@@ -15,7 +15,19 @@
 			"model": "opencode-go/deepseek-v4.1-flash"
 		},
 		"general": {
-			"model": "github-copilot/claude-sonnet-5.5"
+			"model": "opencode/big-pickle"
+		},
+		"coder": {
+			"model": "opencode/big-pickle"
+		},
+		"investigator": {
+			"model": "opencode/big-pickle"
+		},
+		"reviewer": {
+			"model": "opencode/big-pickle"
+		},
+		"cpp-reviewer": {
+			"model": "opencode/big-pickle"
 		}
 	},
 	"mcp": {

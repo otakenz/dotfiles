@@ -31,6 +31,10 @@ import json, os, sys
 from fnmatch import fnmatchcase
 
 agents = {a["id"]: a for a in json.loads(os.environ["AGENTS_JSON"])["data"]}
+cfg = next((e["info"] for e in json.loads(os.environ["CONFIG_JSON"])
+            if e.get("type") == "document" and e["path"].endswith("opencode.json")), {})
+# Work config (opencode_work.json) carries the LLMi provider; personal does not.
+WORK = "aumovio-llmi" in cfg.get("providers", {})
 status = 0
 
 def fail(msg):
@@ -44,9 +48,11 @@ def ok(msg):
 CHEAP = ["build-runner", "scribe", "jira", "confluence"]
 INHERIT = ["release-mapper"]
 CHEAP_MODEL = {"providerID": "opencode-go", "id": "deepseek-v4.1-flash"}
-# Reviewer on a different model family than the Opus author session.
-SONNET = {"providerID": "github-copilot", "id": "claude-sonnet-5.5"}
-SOL = {"providerID": "github-copilot", "id": "gpt-6.1-sol"}
+# Models are pinned per config: Copilot at work, the free model at home.
+# At work the reviewer runs on a different model family than the Opus author.
+FREE = {"providerID": "opencode", "id": "big-pickle"}
+SONNET = {"providerID": "github-copilot", "id": "claude-sonnet-5.5"} if WORK else FREE
+SOL = {"providerID": "github-copilot", "id": "gpt-6.1-sol"} if WORK else FREE
 PINNED = {"cpp-reviewer": SOL, "reviewer": SOL,
           "investigator": SONNET}
 
@@ -89,7 +95,7 @@ for aid, mode in [("coder", "primary"), ("general", "subagent")]:
     elif aid == "coder" and effect(a, "edit", "src/main.cpp") != "allow":
         fail("coder: edit is not allowed")
     else:
-        ok(f"{aid}: {mode} on claude-sonnet-5.5")
+        ok(f"{aid}: {mode} on {SONNET['id']}")
 
 if "commit" in agents:
     fail("V1 agent 'commit' is still loaded")
@@ -182,9 +188,6 @@ for aid, own, other in [("jira", "jira", "confluence"), ("confluence", "confluen
 
 # Work secrets: the unattended store is off limits to agents, and no key is
 # substituted into the config (the API returns substituted values).
-cfg = next((e["info"] for e in json.loads(os.environ["CONFIG_JSON"])
-            if e.get("type") == "document" and e["path"].endswith("opencode.json")), {})
-
 def policy(resource):
     result = None
     for p in cfg.get("policies", []):
@@ -192,17 +195,18 @@ def policy(resource):
             result = p["effect"]
     return result
 
-for res in ["shell:gopass show -o work-unattended/jira-pat",
-            "shell:gopass show -c work-unattended/llmi-api-token",
-            "read:/home/u/.local/share/gopass/stores/work-unattended/jira-pat.gpg"]:
-    if policy(res) != "deny":
-        fail(f"policy does not deny {res}")
-llmi = cfg.get("providers", {}).get("aumovio-llmi", {})
-if "apiKey" in llmi.get("settings", {}) or "Authorization" in llmi.get("headers", {}):
-    fail("aumovio-llmi still carries a key in config")
-cmd = cfg.get("mcp", {}).get("servers", {}).get("mcp-atlassian", {}).get("command", [])
-if cmd[:2] != ["uvx", "mcp-atlassian==0.24.6"] or "--env-file" not in cmd:
-    fail(f"mcp-atlassian command is {cmd}")
+if WORK:
+    for res in ["shell:gopass show -o work-unattended/jira-pat",
+                "shell:gopass show -c work-unattended/llmi-api-token",
+                "read:/home/u/.local/share/gopass/stores/work-unattended/jira-pat.gpg"]:
+        if policy(res) != "deny":
+            fail(f"policy does not deny {res}")
+    llmi = cfg.get("providers", {}).get("aumovio-llmi", {})
+    if "apiKey" in llmi.get("settings", {}) or "Authorization" in llmi.get("headers", {}):
+        fail("aumovio-llmi still carries a key in config")
+    cmd = cfg.get("mcp", {}).get("servers", {}).get("mcp-atlassian", {}).get("command", [])
+    if cmd[:2] != ["uvx", "mcp-atlassian==0.24.6"] or "--env-file" not in cmd:
+        fail(f"mcp-atlassian command is {cmd}")
 
 sys.exit(status)
 EOF

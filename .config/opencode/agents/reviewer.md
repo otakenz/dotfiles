@@ -1,7 +1,6 @@
 ---
 description: Read-only review on a second model family - specs, plans, design docs, non-C++ code and whole-branch reviews requested by skills. Follows the review prompt it is given (checklist, scope, report format). For C++ code use cpp-reviewer. Never edits.
 mode: subagent
-model: github-copilot/gpt-6.1-sol
 permissions:
   - { action: "*", resource: "*", effect: deny }
   - { action: read, resource: "*", effect: allow }

@@ -1,7 +1,6 @@
 ---
 description: Read-only C++ code review of the current diff or a given commit range. Use after implementing a change, before committing or opening a PR. Reports findings by severity with file:line; never edits.
 mode: subagent
-model: github-copilot/gpt-6.1-sol
 permissions:
   - { action: "*", resource: "*", effect: deny }
   - { action: read, resource: "*", effect: allow }

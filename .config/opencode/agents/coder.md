@@ -1,7 +1,6 @@
 ---
 description: Implements an approved plan or a well-defined change - writes code and tests, runs them, commits as the plan says. Use after planning with build; switch back to build for design questions.
 mode: primary
-model: github-copilot/claude-sonnet-5.5
 permissions:
   - { action: "*", resource: "*", effect: allow }
 ---
