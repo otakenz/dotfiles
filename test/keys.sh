@@ -66,6 +66,22 @@ EOF
   chmod +x "${ROOT}/pinentry"
 }
 
+# Refuses every passphrase prompt, to prove a decrypt needed none.
+write_failing_pinentry() {
+  cat >"${ROOT}/pinentry-fail" <<'EOF'
+#!/bin/sh
+echo "OK Pleased to meet you"
+while read -r cmd _; do
+  case "${cmd}" in
+  GETPIN) echo "ERR 83886179 Operation cancelled" ;;
+  BYE) echo OK; exit 0 ;;
+  *) echo OK ;;
+  esac
+done
+EOF
+  chmod +x "${ROOT}/pinentry-fail"
+}
+
 # -- fixture ------------------------------------------------------------------
 
 make_identity() {
@@ -130,6 +146,13 @@ subkey_fprs() {
 primary_secret() {
   { GNUPGHOME="${1}" gpg -K --with-colons "${2}" 2>/dev/null || true; } |
     awk -F: '$1=="sec"{print ($15=="#")?"#":"+"; exit}'
+}
+
+unattended_fprs() {
+  { GNUPGHOME="${ROOT}/${1}/.config/gnupg" gpg -K --with-colons 2>/dev/null || true; } |
+    awk -F: '$1=="sec"{fpr=""; want=1; next}
+             $1=="fpr" && want {fpr=$10; want=0; next}
+             $1=="uid" && fpr!="" && index($10, " unattended (") {print fpr; fpr=""}'
 }
 
 public_subkey_count() {
@@ -258,6 +281,34 @@ t1_work_pc_fresh() {
     fail "work-public.asc should hold 3 subkeys"
 
   M2_SIGN_personal="$(own_sign m2 personal)"
+
+  local ufpr e store="${ROOT}/m2/.local/share/gopass/stores/work-unattended"
+  [ "$(unattended_fprs m2 | wc -l)" -eq 1 ] || fail "expected exactly 1 unattended key"
+  ufpr="$(unattended_fprs m2)"
+  [ -z "$(subkey_fprs "${ROOT}/m2/.config/gnupg" "${ufpr}" s)" ] || fail "unattended key can sign"
+  [ -n "$(subkey_fprs "${ROOT}/m2/.config/gnupg" "${ufpr}" e)" ] || fail "unattended key cannot encrypt"
+  # gopass records the long key ID; it must name this key and nothing else.
+  [ "$(wc -l <"${store}/.gpg-id")" -eq 1 ] &&
+    [[ "${ufpr}" == *"$(sed 's/^0x//' "${store}/.gpg-id")" ]] ||
+    fail ".gpg-id does not name the unattended key"
+  [ ! -e "${store}/.git" ] || fail "unattended store has git"
+  on m2 gopass mounts | grep -q work-unattended || fail "work-unattended not mounted"
+  for e in jira-pat confluence-pat llmi-api-token; do
+    grep -q -F "gopass insert work-unattended/${e}" "${ROOT}/m2.log" || fail "no insert step for ${e}"
+  done
+  grep -q -F "uvx mcp-atlassian==0.24.6 --version" "${ROOT}/m2.log" || fail "no uvx pre-warm step"
+
+  printf 'tok-123\n' | on m2 gopass insert -f work-unattended/jira-pat >/dev/null 2>&1 ||
+    fail "insert into the unattended store failed"
+  printf "pinentry-program %s\n" "${ROOT}/pinentry-fail" >"${ROOT}/m2/.config/gnupg/gpg-agent.conf"
+  on m2 gpgconf --kill gpg-agent
+  [ "$(on m2 gopass show -o work-unattended/jira-pat 2>/dev/null)" = "tok-123" ] ||
+    fail "unattended entry needs a passphrase"
+  if on m2 gopass show -o work/test/entry >/dev/null 2>&1; then
+    fail "work store decrypted without a passphrase (test is not meaningful)"
+  fi
+  printf "pinentry-program %s\n" "${ROOT}/pinentry" >"${ROOT}/m2/.config/gnupg/gpg-agent.conf"
+  on m2 gpgconf --kill gpg-agent
 }
 
 t2_third_machine() {
@@ -283,6 +334,7 @@ t3_rerun_noop() {
   after="$(cksum <"${DIR}/personal-public.asc")"
 
   [ "${before}" = "${after}" ] || fail "re-run republished the key"
+  [ "$(unattended_fprs m2 | wc -l)" -eq 1 ] || fail "re-run created a second unattended key"
   assert_identity_restored m2 personal
   assert_identity_restored m2 work
 }
@@ -319,6 +371,9 @@ t5_personal_only() {
     fail "config.local signingkey is not the personal fingerprint"
   [ ! -e "${ROOT}/m5/.config/git/config.local.personal" ] || fail "config.local.personal written"
   [ ! -e "${ROOT}/m5/.local/share/gopass/stores/work" ] || fail "work store cloned"
+  [ -z "$(unattended_fprs m5)" ] || fail "unattended key on a personal machine"
+  [ ! -e "${ROOT}/m5/.local/share/gopass/stores/work-unattended" ] ||
+    fail "unattended store on a personal machine"
 }
 
 t6_existing_primary() {
@@ -478,11 +533,60 @@ t9_awkward_paths() {
     "${home}.log" || fail "GitHub add step lacks the store's host or a pasteable path"
 }
 
+t11_unattended_expired() {
+  local dir="${ROOT}/backup-t11" uid fpr encr line
+  cp -R "${PRISTINE}" "${dir}"
+  machine m11 "Test Work" "w@example.com"
+  uid="${USER:-test} unattended (x)"
+  on m11 gpg --batch --quiet --pinentry-mode loopback --passphrase '' \
+    --quick-generate-key "${uid}" ed25519 cert 2y 2>/dev/null
+  fpr="$(unattended_fprs m11)"
+  on m11 gpg --batch --quiet --pinentry-mode loopback --passphrase '' \
+    --quick-add-key "${fpr}" cv25519 encr 2y
+  encr="$(subkey_fprs "${ROOT}/m11/.config/gnupg" "${fpr}" e)"
+  on m11 gpg --batch --quiet --pinentry-mode loopback --passphrase '' \
+    --quick-set-expire "${fpr}" seconds=2
+  on m11 gpg --batch --quiet --pinentry-mode loopback --passphrase '' \
+    --quick-set-expire "${fpr}" seconds=2 "${encr}"
+  sleep 3
+
+  run_keys m11 "${dir}" --work-pc || fail "install --keys exited non-zero (see m11.log)"
+  grep -q -F "quick-set-expire ${fpr}" "${ROOT}/m11.log" || fail "no renewal command printed"
+  [ "$(unattended_fprs m11 | wc -l)" -eq 1 ] || fail "a second unattended key was created"
+  [ ! -e "${ROOT}/m11/.local/share/gopass/stores/work-unattended" ] ||
+    fail "store created for an expired key"
+
+  # The printed repair must actually work.
+  while read -r line; do
+    on m11 bash -c "${line}" 2>/dev/null || fail "printed repair failed: ${line}"
+  done < <(grep -E '^ +gpg --quick-set-expire ' "${ROOT}/m11.log")
+  run_keys m11 "${dir}" --work-pc || fail "re-run after repair exited non-zero (see m11.log)"
+  [ -f "${ROOT}/m11/.local/share/gopass/stores/work-unattended/.gpg-id" ] ||
+    fail "store not created after the printed repair"
+  printf 'tok-11\n' | on m11 gopass insert -f work-unattended/jira-pat >/dev/null 2>&1 ||
+    fail "insert after repair failed"
+  [ "$(on m11 gopass show -o work-unattended/jira-pat 2>/dev/null)" = "tok-11" ] ||
+    fail "entry unreadable after repair"
+}
+
+t12_unattended_key_missing() {
+  local dir="${ROOT}/backup-t12"
+  cp -R "${PRISTINE}" "${dir}"
+  machine m12 "Test Work" "w@example.com"
+  run_keys m12 "${dir}" --work-pc || fail "install --keys exited non-zero (see m12.log)"
+  on m12 gpg --batch --yes --delete-secret-and-public-key "$(unattended_fprs m12)" 2>/dev/null
+
+  run_keys m12 "${dir}" --work-pc || fail "re-run exited non-zero (see m12.log)"
+  grep -q -F "gopass mounts remove work-unattended" "${ROOT}/m12.log" || fail "no fix printed"
+  [ -z "$(unattended_fprs m12)" ] || fail "a new unattended key was created for the old store"
+}
+
 # -- main ---------------------------------------------------------------------
 
 mkdir -p "${FX}" "${PRISTINE}"
 chmod 700 "${FX}"
 write_fake_pinentry
+write_failing_pinentry
 
 if gpg --version | grep -q 'libgcrypt 1\.12\.0$'; then
   echo "NOTE: libgcrypt 1.12.0 randomly rejects imported cv25519 keys (Ubuntu LP #2174038);"
@@ -497,7 +601,7 @@ cp -R "${PRISTINE}" "${DIR}"
 
 ALL_TESTS="t1_work_pc_fresh t2_third_machine t3_rerun_noop t4_rollback t5_personal_only
   t6_existing_primary t7_double_interrupt t8_expired_encryption t9_awkward_paths
-  t10_renewed_in_public"
+  t10_renewed_in_public t11_unattended_expired t12_unattended_key_missing"
 # KEYS_TESTS="t7_double_interrupt" bash test/keys.sh runs a subset.
 # shellcheck disable=SC2086
 for CURRENT in ${KEYS_TESTS:-${ALL_TESTS}}; do

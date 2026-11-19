@@ -16,6 +16,18 @@
 		},
 		"general": {
 			"model": "github-copilot/claude-sonnet-5.5"
+		},
+		"coder": {
+			"model": "github-copilot/claude-sonnet-5.5"
+		},
+		"investigator": {
+			"model": "github-copilot/claude-sonnet-5.5"
+		},
+		"reviewer": {
+			"model": "github-copilot/gpt-6.1-sol"
+		},
+		"cpp-reviewer": {
+			"model": "github-copilot/gpt-6.1-sol"
 		}
 	},
 	"mcp": {
@@ -27,13 +39,10 @@
 			"mcp-atlassian": {
 				"type": "local",
 				"command": [
-					"docker",
-					"run",
-					"-i",
-					"--rm",
+					"uvx",
+					"mcp-atlassian==0.24.6",
 					"--env-file",
-					"{env:HOME}/.config/secret/mcp-atlassian/.env",
-					"ghcr.io/sooperset/mcp-atlassian:0.24.6"
+					"{env:HOME}/.config/secret/mcp-atlassian/.env"
 				]
 			}
 		}
@@ -42,6 +51,18 @@
 		{
 			"action": "mcp-atlassian*",
 			"resource": "*",
+			"effect": "deny"
+		}
+	],
+	"policies": [
+		{
+			"action": "tool.use",
+			"resource": "shell:*work-unattended*",
+			"effect": "deny"
+		},
+		{
+			"action": "tool.use",
+			"resource": "read:*/gopass/stores/work-unattended/*",
 			"effect": "deny"
 		}
 	],
@@ -56,11 +77,7 @@
 			"name": "AUMOVIO LLMi",
 			"package": "aisdk:@ai-sdk/openai",
 			"settings": {
-				"baseURL": "https://llm-gateway.ve42034x.automotive-wan.com:443/v1",
-				"apiKey": "{env:LLMi_API_TOKEN}"
-			},
-			"headers": {
-				"Authorization": "Bearer {env:LLMi_API_TOKEN}"
+				"baseURL": "https://llm-gateway.ve42034x.automotive-wan.com:443/v1"
 			},
 			"models": {
 				"claude-4-8-opus-v1:0": {

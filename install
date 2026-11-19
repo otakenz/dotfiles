@@ -1754,6 +1754,81 @@ _keys_clone_store() {
   fi
 }
 
+# Work PC only: a local store whose key has no passphrase, so services such as
+# mcp-atlassian can read their tokens unattended. The key can only encrypt,
+# never leaves this machine and is not backed up; the tokens in the store are
+# reissued per machine instead.
+_keys_unattended_store() {
+  [ "${IS_WORK_PC}" = "1" ] || return 0
+
+  local mount="work-unattended" path="${GOPASS_STORES_PATH}/work-unattended"
+  local prefix="${USER:-$(id -un)} unattended (" host fpr now usable primary_expiry mounted=
+
+  _info "SETTING UP UNATTENDED WORK STORE"
+
+  fpr="$(gpg -K --with-colons 2>/dev/null | awk -F: -v p="${prefix}" '
+    $1=="sec"{f=""; want=1; next}
+    $1=="fpr" && want {f=$10; want=0; next}
+    $1=="uid" && f!="" && index($10, p)==1 {print f; exit}')"
+
+  if [ -f "${path}/.gpg-id" ] || gopass mounts 2>/dev/null | grep -q -w "${mount}"; then
+    mounted=1
+  fi
+
+  if [ -n "${mounted}" ] && [ -z "${fpr}" ]; then
+    cat <<EOF
+⚠️  The '${mount}' store exists but its key is no longer in this keyring, so its
+entries cannot be read. Start it over, then re-run this command and insert the
+tokens again:
+  gopass mounts remove ${mount}
+  rm -r $(printf "%q" "${path}")
+EOF
+    return 0
+  fi
+
+  if [ -n "${fpr}" ]; then
+    now="$(date +%s)"
+    usable="$(_keys_subkeys "${fpr}" |
+      awk -v now="${now}" '$1 ~ /e/ && $2=="+" && ($3=="never" || $3 > now)' | head -1)"
+    primary_expiry="$(gpg -K --with-colons "${fpr}" 2>/dev/null | awk -F: '$1=="sec"{print $7; exit}')"
+    if [ -n "${primary_expiry}" ] && [ "${primary_expiry}" -le "${now}" ]; then
+      usable=
+    fi
+    if [ -z "${usable}" ]; then
+      # '*' would skip subkeys that have already expired, so name each one.
+      echo "⚠️  The unattended key ${fpr} has expired. Extend it, then re-run this command:"
+      echo "  gpg --quick-set-expire ${fpr} 2y"
+      _keys_subkeys "${fpr}" | awk -v f="${fpr}" '$1 ~ /e/ && $2=="+" {print "  gpg --quick-set-expire " f " 2y " $4}'
+      return 0
+    fi
+  else
+    host="${HOSTNAME:-$(uname -n)}"
+    gpg --batch --quiet --pinentry-mode loopback --passphrase '' \
+      --quick-generate-key "${prefix}${host%%.*})" ed25519 cert 2y
+    fpr="$(gpg -K --with-colons "=${prefix}${host%%.*})" | awk -F: '$1=="fpr"{print $10; exit}')"
+    gpg --batch --quiet --pinentry-mode loopback --passphrase '' \
+      --quick-add-key "${fpr}" cv25519 encr 2y
+    echo "Created unattended key ${fpr} (no passphrase, encryption only)"
+  fi
+
+  if [ -z "${mounted}" ]; then
+    gopass --yes init --crypto gpgcli --storage fs --store "${mount}" --path "${path}" "${fpr}"
+  fi
+
+  cat <<EOF
+
+The '${mount}' store is local only: no git remote and no backup. Create
+fresh tokens for this machine and insert them (revoke them when you retire it):
+  • Jira and Confluence: Profile → Personal Access Tokens
+      gopass insert ${mount}/jira-pat
+      gopass insert ${mount}/confluence-pat
+  • LLMi: the LLMi portal; then /connect in OpenCode and paste it
+      gopass insert ${mount}/llmi-api-token
+Download mcp-atlassian once, so its first start fits the MCP timeout:
+  uvx mcp-atlassian==0.24.6 --version
+EOF
+}
+
 _keys_summary() {
   local dir="${1}" id fpr host file cleanup
   if command -v shred >/dev/null 2>&1; then
@@ -1845,6 +1920,8 @@ setup_keys() {
   for id in $(_keys_ids); do
     _keys_clone_store "${id}" "${dir}"
   done
+
+  _keys_unattended_store
 
   _keys_summary "${dir}"
 }

@@ -191,15 +191,6 @@ autoload -U colors && colors
 # Enable comments when working in an interactive shell
 setopt interactive_comments
 
-# Exporting secret into environment variables
-ENV_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/secret/llmi/.env"
-if [ -f "$ENV_FILE" ]; then
-	set -a
-	# shellcheck source=/dev/null
-	source "$ENV_FILE"
-	set +a
-fi
-
 # Load aliases
 # shellcheck disable=SC1091
 [ -f "${XDG_CONFIG_HOME}/zsh/.aliases" ] && . "${XDG_CONFIG_HOME}/zsh/.aliases"
