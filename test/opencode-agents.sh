@@ -12,7 +12,11 @@ fi
 
 # Reload so a freshly created or re-linked agents/ folder is picked up; the
 # reload finishes asynchronously, so give it a moment before reading.
-opencode api post /api/location/reload >/dev/null 2>&1 && sleep 3
+if opencode api post /api/location/reload >/dev/null 2>&1; then
+  sleep 3
+else
+  printf "WARN: opencode location reload failed; agents may be stale\n" >&2
+fi
 agents_json="$(opencode api get /api/agent 2>&1)" || {
   printf "FAIL: opencode api get /api/agent: %s\n" "${agents_json}" >&2
   exit 1
