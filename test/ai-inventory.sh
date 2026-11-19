@@ -33,8 +33,9 @@ check() {
 import json, re, sys
 pkgs = {m.group(1) for s in json.load(sys.stdin)["data"]
         if (m := re.search(r"/node_modules/([^/]+)/skills/", s.get("path", "")))}
-print(",".join(sorted(pkgs)))')" || {
-      printf "FAIL: could not list skills from the OpenCode service\n" >&2
+print(",".join(sorted(pkgs)))' 2>/dev/null)" || {
+      printf "FAIL: could not list skills from the OpenCode service; start opencode, or set\n" >&2
+      printf "      AI_INVENTORY_PLUGINS to the comma-separated plugin names (e.g. superpowers)\n" >&2
       return 1
     }
   fi
@@ -175,6 +176,24 @@ EOF
   fixture missing_limits_fails "alpha beta" "one"
   good_inventory | sed '/^Limits:/d' | inventory missing_limits_fails
   expect missing_limits_fails 1 "Limits"
+
+  # Service down: no AI_INVENTORY_PLUGINS and an opencode that fails.
+  fixture service_down_hints "alpha beta" "one"
+  good_inventory | inventory service_down_hints
+  mkdir -p "${root}/bin"
+  printf '#!/bin/sh\nexit 1\n' >"${root}/bin/opencode"
+  chmod +x "${root}/bin/opencode"
+  local got=0
+  PATH="${root}/bin:${PATH}" AI_WIKI_DIR="${root}/service_down_hints/wiki" \
+    OPENCODE_CONFIG_DIR_CHECK="${root}/service_down_hints/cfg" \
+    bash "${BASH_SOURCE[0]}" >"${root}/service_down_hints.log" 2>&1 || got=$?
+  if [ "${got}" -eq 1 ] && grep -q "AI_INVENTORY_PLUGINS" "${root}/service_down_hints.log"; then
+    echo "ok:   service_down_hints"
+  else
+    echo "FAIL: service_down_hints: exit ${got}, want 1 and a hint naming AI_INVENTORY_PLUGINS" >&2
+    sed 's/^/      /' "${root}/service_down_hints.log" >&2
+    failures=$((failures + 1))
+  fi
 
   [ "${failures}" -eq 0 ]
 }
