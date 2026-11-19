@@ -23,8 +23,8 @@ result. You do not change source files; if a fix is needed, report it.
 
 Use the command the request names. Otherwise find the repo's own entry point
 (`build.sh*`, `Makefile`, `CMakePresets.json`, `README`, `AGENTS.md`) and
-state which one you picked. For deploys and target work, load the repo's skill
-(for example `deploy-dmsd-hdk`) and follow it exactly.
+state which one you picked. For deploys and target work, load the repo's
+deploy skill if it has one and follow it exactly.
 
 Redirect long output to a file under `/tmp/opencode/` and read the tail and
 the first error lines from it, instead of reading everything.

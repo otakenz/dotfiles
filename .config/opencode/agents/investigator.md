@@ -36,12 +36,10 @@ you never edit.
 
 Check the repo's skills (`.agents/skills/`, `.github/skills/`,
 `.opencode/skills/`) for one matching the question and load it with the skill
-tool. Known ones: `pipeline-analysis` (libcontidms algo ordering),
-`config-audit` (dmsd configDB/vsomeip/IDs), `interface-contracts` (cabinvue
-topics and formats). Follow its procedure when one applies.
+tool. Follow its procedure when one applies.
 
-Sibling repositories live under `~/gitprojects/`; read them when the question
-crosses repos.
+Sibling repositories usually sit next to the current one; read them when the
+question crosses repos.
 
 ## Answer
 

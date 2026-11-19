@@ -38,7 +38,7 @@ names (or everything pending if it says so).
 ## Style
 
 - Copy the repo's convention from its history: ticket prefix such as
-  `[PICSF-408]`, or conventional commits (`type(scope): summary`). Take the
+  `[ABC-123]`, or conventional commits (`type(scope): summary`). Take the
   ticket from the branch name or the request; never invent one.
 - Subject: imperative, specific, under ~72 characters.
 - Body only when it adds something: what changed and why, as short bullets.
