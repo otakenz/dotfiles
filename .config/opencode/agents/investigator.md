@@ -22,6 +22,11 @@ permissions:
   - { action: shell, resource: "nm *", effect: allow }
   - { action: shell, resource: "objdump *", effect: allow }
   - { action: shell, resource: "readelf *", effect: allow }
+  - { action: shell, resource: "git *--output*", effect: ask }
+  - { action: shell, resource: "fd *-x*", effect: ask }
+  - { action: shell, resource: "fd *-X*", effect: ask }
+  - { action: shell, resource: "fd *--exec*", effect: ask }
+  - { action: shell, resource: "rg *--pre*", effect: ask }
 ---
 
 You answer questions about how existing code or configuration works. You read;

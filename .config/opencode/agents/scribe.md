@@ -14,6 +14,12 @@ permissions:
   - { action: shell, resource: "git branch *", effect: allow }
   - { action: shell, resource: "git add *", effect: allow }
   - { action: shell, resource: "git commit *", effect: allow }
+  - { action: shell, resource: "git branch *-d*", effect: ask }
+  - { action: shell, resource: "git branch *-D*", effect: ask }
+  - { action: shell, resource: "git branch *-m*", effect: ask }
+  - { action: shell, resource: "git branch *-M*", effect: ask }
+  - { action: shell, resource: "git branch *-f*", effect: ask }
+  - { action: shell, resource: "git commit *--amend*", effect: ask }
   - { action: shell, resource: "git push *", effect: ask }
   - { action: shell, resource: "gh pr view *", effect: ask }
   - { action: shell, resource: "gh pr create *", effect: ask }

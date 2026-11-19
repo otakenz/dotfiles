@@ -37,13 +37,30 @@ CHEAP = ["build-runner", "scribe", "jira", "confluence"]
 INHERIT = ["cpp-reviewer", "investigator", "release-mapper"]
 CHEAP_MODEL = {"providerID": "opencode-go", "id": "deepseek-v4.1-flash"}
 
+def match(value, pattern):
+    """OpenCode whole-value wildcard match. A shell pattern ending in ' *'
+    also matches the bare command (docs: 'git status *' matches 'git status')."""
+    if fnmatchcase(value, pattern):
+        return True
+    return pattern.endswith(" *") and value == pattern[:-2]
+
 def effect(agent, action, resource):
-    """Last rule matching (action, resource) wins, as OpenCode evaluates."""
+    """Last rule matching (action, resource) wins, as OpenCode evaluates.
+    Approximation of OpenCode's matcher; confirm surprising results with a
+    real run of the agent."""
     result = None
     for r in agent.get("permissions", []):
-        if fnmatchcase(action, r["action"]) and fnmatchcase(resource, r["resource"]):
+        if match(action, r["action"]) and match(resource, r["resource"]):
             result = r["effect"]
     return result
+
+def expect(aid, cmd, want):
+    a = agents.get(aid)
+    if not a:
+        return
+    got = effect(a, "shell", cmd)
+    if (got == "allow") != (want == "allow"):
+        fail(f"{aid}: shell '{cmd}' is {got}, want {want}")
 
 if "commit" in agents:
     fail("V1 agent 'commit' is still loaded")
@@ -84,6 +101,41 @@ if scribe:
             fail(f"scribe: '{cmd}' is not allowed")
     if effect(scribe, "shell", "git push origin main") != "ask":
         fail("scribe: git push does not ask")
+
+# Read-only agents: allowed tools must not be able to run commands or write.
+for aid in ["cpp-reviewer", "investigator", "release-mapper"]:
+    expect(aid, "git status", "allow" if aid == "cpp-reviewer" else "not allow")
+    expect(aid, "git diff --output=src/x.cpp", "not allow")
+    expect(aid, "git log -p --output=/tmp/x", "not allow")
+for aid in ["investigator", "release-mapper"]:
+    expect(aid, "rg -n foo src", "allow")
+    expect(aid, "fd -e cpp", "allow")
+    expect(aid, "fd . -x rm {}", "not allow")
+    expect(aid, "fd -X rm", "not allow")
+    expect(aid, "fd . --exec rm {}", "not allow")
+    expect(aid, "rg --pre ./evil foo", "not allow")
+expect("release-mapper", "tar -tf sdk.tar.gz", "allow")
+expect("release-mapper", "tar -xzf sdk.tar.gz -C /tmp/opencode/sdk-0.3.0", "allow")
+expect("release-mapper", "tar -xf sdk.tar -C src", "not allow")
+expect("release-mapper", "tar -xf sdk.tar", "not allow")
+expect("release-mapper", "unzip -l sdk.zip", "allow")
+expect("release-mapper", "unzip -o sdk.zip -d /tmp/opencode/sdk", "allow")
+expect("release-mapper", "unzip -o sdk.zip", "not allow")
+
+# scribe: no branch deletion or history rewrite without asking.
+expect("scribe", "git status", "allow")
+expect("scribe", "git branch --show-current", "allow")
+expect("scribe", "git branch -D feature", "not allow")
+expect("scribe", "git branch -d feature", "not allow")
+expect("scribe", "git commit --amend --no-edit", "not allow")
+expect("scribe", "git commit -m x --amend", "not allow")
+
+# build-runner: builds run freely, destructive git asks.
+expect("build-runner", "./build.sh.pi", "allow")
+expect("build-runner", "cmake --build build/debug -j8", "allow")
+for cmd in ["git reset --hard", "git clean -fdx", "git checkout -- .",
+            "git restore .", "git stash drop", "git push origin main"]:
+    expect("build-runner", cmd, "not allow")
 
 for aid, own, other in [("jira", "jira", "confluence"), ("confluence", "confluence", "jira")]:
     a = agents.get(aid)

@@ -3,10 +3,17 @@ description: Runs a repo's build, test, pre-commit or deploy command and returns
 mode: subagent
 model: opencode-go/deepseek-v4.1-flash
 permissions:
+  - { action: shell, resource: "*", effect: allow }
   - { action: edit, resource: "*", effect: deny }
   - { action: subagent, resource: "*", effect: deny }
   - { action: shell, resource: "*relay*", effect: ask }
   - { action: shell, resource: "git push *", effect: ask }
+  - { action: shell, resource: "git reset *", effect: ask }
+  - { action: shell, resource: "git clean *", effect: ask }
+  - { action: shell, resource: "git checkout *", effect: ask }
+  - { action: shell, resource: "git restore *", effect: ask }
+  - { action: shell, resource: "git rebase *", effect: ask }
+  - { action: shell, resource: "git stash *", effect: ask }
 ---
 
 You run build, test, lint, pre-commit and deploy commands and report the

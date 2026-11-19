@@ -12,6 +12,7 @@ permissions:
   - { action: shell, resource: "git show *", effect: allow }
   - { action: shell, resource: "git status *", effect: allow }
   - { action: shell, resource: "git blame *", effect: allow }
+  - { action: shell, resource: "git *--output*", effect: ask }
 ---
 
 You review C++ changes in embedded driver-monitoring code (C++17, QNX/QCC and

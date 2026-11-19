@@ -23,8 +23,17 @@ permissions:
   - { action: shell, resource: "readelf *", effect: allow }
   - { action: shell, resource: "diff *", effect: allow }
   - { action: shell, resource: "mkdir -p /tmp/opencode/*", effect: allow }
-  - { action: shell, resource: "tar *", effect: allow }
-  - { action: shell, resource: "unzip *", effect: allow }
+  - { action: shell, resource: "tar *", effect: ask }
+  - { action: shell, resource: "tar -t*", effect: allow }
+  - { action: shell, resource: "tar * -C /tmp/opencode/*", effect: allow }
+  - { action: shell, resource: "unzip *", effect: ask }
+  - { action: shell, resource: "unzip -l *", effect: allow }
+  - { action: shell, resource: "unzip * -d /tmp/opencode/*", effect: allow }
+  - { action: shell, resource: "git *--output*", effect: ask }
+  - { action: shell, resource: "fd *-x*", effect: ask }
+  - { action: shell, resource: "fd *-X*", effect: ask }
+  - { action: shell, resource: "fd *--exec*", effect: ask }
+  - { action: shell, resource: "rg *--pre*", effect: ask }
 ---
 
 You prepare dependency and SDK upgrades. You read and compare; you never edit
