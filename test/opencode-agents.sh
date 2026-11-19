@@ -153,6 +153,33 @@ for aid in ["reviewer", "investigator", "release-mapper"]:
     expect(aid, "fd -X rm", "not allow")
     expect(aid, "fd . --exec rm {}", "not allow")
     expect(aid, "rg --pre ./evil foo", "not allow")
+# reviewer: reads all of ~ for completeness checks, except hidden top-level
+# entries (keys, tokens, history) and .env files; never edits.
+H = os.path.expanduser("~")
+rv = agents.get("reviewer")
+if rv:
+    for action, res, want in [
+        ("external_directory", f"{H}/some-repo/*", "allow"),
+        ("external_directory", f"{H}/some-repo/.agents/*", "allow"),
+        ("external_directory", f"{H}/.ssh/*", "not allow"),
+        ("external_directory", f"{H}/.config/*", "not allow"),
+        ("read", f"{H}/some-repo/.agents/skills/x/SKILL.md", "allow"),
+        ("read", f"{H}/.ssh/id_ed25519", "not allow"),
+        ("read", f"{H}/.config/gnupg/pubring.kbx", "not allow"),
+        ("read", f"{H}/.local/share/opencode/auth.json", "not allow"),
+        ("read", "src/.env", "not allow"),
+        ("read", "cfg/.env.local", "not allow"),
+        ("read", "cfg/.env.example", "allow"),
+        ("edit", f"{H}/some-repo/README.md", "not allow"),
+    ]:
+        got = effect(rv, action, res)
+        if (got == "allow") != (want == "allow"):
+            fail(f"reviewer: {action} '{res}' is {got}, want {want}")
+    for cmd in ["rg --hidden token ~", "rg -u foo", "rg -uu foo", "rg -n foo -u",
+                "rg -. foo", "fd -H key", "fd --hidden key", "fd -u key", "fd key ~ -H"]:
+        expect("reviewer", cmd, "not allow")
+    for cmd in ["rg -n foo src/x-util", "fd -e md"]:
+        expect("reviewer", cmd, "allow")
 expect("release-mapper", "tar -tf sdk.tar.gz", "allow")
 expect("release-mapper", "tar -xzf sdk.tar.gz -C /tmp/opencode/sdk-0.3.0", "allow")
 expect("release-mapper", "tar -xf sdk.tar -C src", "not allow")

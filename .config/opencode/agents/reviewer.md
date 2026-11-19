@@ -8,6 +8,12 @@ permissions:
   - { action: grep, resource: "*", effect: allow }
   - { action: skill, resource: "*", effect: allow }
   - { action: webfetch, resource: "*", effect: allow }
+  - { action: external_directory, resource: "~/*", effect: allow }
+  - { action: external_directory, resource: "~/.*", effect: deny }
+  - { action: read, resource: "~/.*", effect: deny }
+  - { action: read, resource: "*.env", effect: deny }
+  - { action: read, resource: "*.env.*", effect: deny }
+  - { action: read, resource: "*.env.example", effect: allow }
   - { action: shell, resource: "git diff *", effect: allow }
   - { action: shell, resource: "git log *", effect: allow }
   - { action: shell, resource: "git show *", effect: allow }
@@ -21,6 +27,16 @@ permissions:
   - { action: shell, resource: "fd *-X*", effect: ask }
   - { action: shell, resource: "fd *--exec*", effect: ask }
   - { action: shell, resource: "rg *--pre*", effect: ask }
+  - { action: shell, resource: "rg *--hidden*", effect: ask }
+  - { action: shell, resource: "rg -u*", effect: ask }
+  - { action: shell, resource: "rg * -u*", effect: ask }
+  - { action: shell, resource: "rg -.*", effect: ask }
+  - { action: shell, resource: "rg * -.*", effect: ask }
+  - { action: shell, resource: "fd *--hidden*", effect: ask }
+  - { action: shell, resource: "fd -H*", effect: ask }
+  - { action: shell, resource: "fd * -H*", effect: ask }
+  - { action: shell, resource: "fd -u*", effect: ask }
+  - { action: shell, resource: "fd * -u*", effect: ask }
 ---
 
 You review work someone else wrote, as a second pair of eyes. You read; you
