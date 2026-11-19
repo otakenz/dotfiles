@@ -38,8 +38,10 @@ def ok(msg):
     print(f"ok:   {msg}")
 
 CHEAP = ["build-runner", "scribe", "jira", "confluence"]
-INHERIT = ["cpp-reviewer", "investigator", "release-mapper"]
+INHERIT = ["investigator", "release-mapper"]
 CHEAP_MODEL = {"providerID": "opencode-go", "id": "deepseek-v4.1-flash"}
+# Reviewer on a different model family than the Opus author session.
+PINNED = {"cpp-reviewer": {"providerID": "github-copilot", "id": "gpt-6.1-sol"}}
 
 def match(value, pattern):
     """OpenCode whole-value wildcard match. A shell pattern ending in ' *'
@@ -71,7 +73,7 @@ if "commit" in agents:
 else:
     ok("no V1 'commit' agent")
 
-for aid in INHERIT + CHEAP:
+for aid in INHERIT + CHEAP + list(PINNED):
     a = agents.get(aid)
     if a is None:
         fail(f"{aid}: missing")
@@ -79,7 +81,11 @@ for aid in INHERIT + CHEAP:
     if a.get("mode") != "subagent":
         fail(f"{aid}: mode is {a.get('mode')!r}, want 'subagent'")
     model = a.get("model")
-    if aid in CHEAP:
+    if aid in PINNED:
+        want = PINNED[aid]
+        if not model or {k: model.get(k) for k in want} != want:
+            fail(f"{aid}: model {model!r}, want {want}")
+    elif aid in CHEAP:
         if not model or {k: model.get(k) for k in CHEAP_MODEL} != CHEAP_MODEL:
             fail(f"{aid}: model {model!r}, want {CHEAP_MODEL}")
     elif model:
