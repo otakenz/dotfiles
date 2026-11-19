@@ -23,22 +23,42 @@ jobs:
         run: |
           ./run ci:test
 
-  # integration_test:
-  #   name: "Test on Ubuntu"
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os: [ubuntu-24.04]
-  #       # os: [ubuntu-24.04, ubuntu-20.04]
-  #
-  #   steps:
-  #     - name: "Checkout repository"
-  #       uses: actions/checkout@v4
-  #
-  #     - name: "Update APT and Install Dependencies"
-  #       run: |
-  #         sudo apt-get update && sudo apt-get install -y curl
-  #
-  #     - name: "Run install script non-interactively"
-  #       run: |
-  #         yes | bash install && zsh -c ". ~/.config/zsh/.zprofile && . ~/.config/zsh/.zshrc; zsh -i"
+  keys:
+    name: "Keys phase (${{ matrix.name }})"
+    runs-on: "${{ matrix.runner }}"
+    container: "${{ matrix.image }}"
+    timeout-minutes: 10
+    # Ubuntu 26.04 ships libgcrypt 1.12.0, which randomly rejects imported
+    # cv25519 keys (https://bugs.launchpad.net/bugs/2174038). Drop this once
+    # libgcrypt20 >= 1.12.1 reaches the 26.04 archive.
+    continue-on-error: "${{ matrix.known_issue == true }}"
+    env:
+      GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "ubuntu-24.04"
+            runner: "ubuntu-24.04"
+            image: "ubuntu:24.04"
+          - name: "ubuntu-26.04"
+            runner: "ubuntu-24.04"
+            image: "ubuntu:26.04"
+            known_issue: true
+          - name: "archlinux"
+            runner: "ubuntu-24.04"
+            image: "archlinux:latest"
+          - name: "macos"
+            runner: "macos-latest"
+            image: ""
+
+    steps:
+      - uses: "actions/checkout@v4"
+
+      - name: "Install test dependencies"
+        run: |
+          bash test/deps.sh
+
+      - name: "Test ./install --keys"
+        run: |
+          bash test/keys.sh

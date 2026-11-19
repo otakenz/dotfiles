@@ -1,5 +1,11 @@
 # dotfiles
 
+[![CI](https://github.com/otakenz/dotfiles/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/otakenz/dotfiles/actions/workflows/ci.yml)
+[![Install](https://github.com/otakenz/dotfiles/actions/workflows/install.yml/badge.svg?branch=main)](https://github.com/otakenz/dotfiles/actions/workflows/install.yml)
+
+- **CI:** lint, plus the keys-pass test on Ubuntu 24.04, Ubuntu 26.04, Arch and macOS, on every push
+- **Install:** the full first-pass install on the same four platforms, weekly and when `install` changes
+
 Welcome to my dotfiles! This is a collection of my personal tools and
 configurations for a productive development environment. My whole setup can be
 configured in mere minutes through a single **install** script. This setup is
@@ -52,6 +58,82 @@ LOCAL=1 bash install
 rm /tmp/install 2>/dev/null || true && curl -sS https://raw.githubusercontent.com/otakenz/dotfiles/master/install -o /tmp/install \
 && chmod +x /tmp/install && bash /tmp/install
 ```
+
+Add `--work-pc` on a work machine (both passes). It also creates a separate work SSH key.
+
+## 🔑 Keys and gopass (second pass)
+
+The first pass does **not** create a GPG key. Your GPG identities live in an offline backup, and
+the second pass restores them, so that you keep one identity across all your machines. Run it once
+the first pass has finished:
+
+1. **Register the SSH keys** the first pass printed. The personal key goes to github.com (and
+   gitlab.com), the work key to the work Git host. Never put the same key on both: GitHub publishes
+   every account's keys at `github.com/<user>.keys`, which would link the accounts.
+2. **Bring the key backup folder** onto the machine (copy it, or mount the drive), e.g.
+   `~/key-backup`.
+3. **Run the keys pass** in a new terminal:
+
+   ```sh
+   ~/dotfiles/install --keys ~/key-backup            # personal machine
+   ~/dotfiles/install --keys ~/key-backup --work-pc  # work machine
+   ```
+
+4. **Publish the updated public key.** On each host's _Settings → SSH and GPG keys_, delete the
+   existing GPG key entry and add the new block, which the script prints. Until then, commits from
+   this machine show as _Unverified_.
+5. **Copy `*-public.asc` back** to the offline backup, and delete the folder if it was a copy.
+
+What `--keys` does, per identity (personal always, work with `--work-pc`):
+
+- imports `<id>-secret.asc` and `<id>-public.asc`, plus that key's line of `ownertrust.txt`
+- adds **this machine's signing subkey** (expires with the encryption subkey)
+- keeps only the shared encryption subkey and the new signing subkey, then removes the primary key
+  again: `gpg -K` shows `sec#`
+- tests an encrypt/decrypt roundtrip, then writes the updated `<id>-public.asc` back into the folder
+- turns on commit and tag signing, and clones the gopass stores
+
+If any step fails, it removes that identity from the keyring entirely, so the primary key never
+stays behind; a second Ctrl-C cannot interrupt that clean-up. Fix the cause and run the same
+command again. Running it again on a machine that is already set up changes nothing. It refuses to
+run against a keyring that already holds the primary (e.g. your offline machine).
+
+**Backup folder**
+
+| File                       | Read by `--keys` | Contains                                      |
+| -------------------------- | ---------------- | --------------------------------------------- |
+| `<id>-secret.asc`          | yes              | primary + shared encryption + first signing   |
+| `<id>-public.asc`          | yes              | latest published block, every signing subkey  |
+| `ownertrust.txt`           | yes              | ultimate trust for your own keys              |
+| `<id>-primary.asc`         | no               | primary only: renewals, new UIDs, revocation  |
+| `<id>-revocation.rev`      | no               | kill switch; keep it offline, never in cloud  |
+
+**Paths**
+
+| What                     | Where                                                         |
+| ------------------------ | ------------------------------------------------------------- |
+| GPG keyring              | `~/.config/gnupg` (`GNUPGHOME`, exported by `.zprofile`)      |
+| gopass config            | `~/.config/gopass/config`                                     |
+| Personal store (root)    | `~/.local/share/gopass/stores/personal`                       |
+| Work store (mount `work`)| `~/.local/share/gopass/stores/work`                           |
+| Store remotes            | `GOPASS_PERSONAL_URL` (default: this account's `gopass-store`), `GOPASS_WORK_URL` (asked if unset) |
+| Git identity             | `~/.config/git/config.local`; on a work PC personal repos include `config.local.personal` |
+| SSH keys                 | `~/.ssh/id_ed25519` (personal), `~/.ssh/id_ed25519_work` (work) |
+
+Entries read `github/pat` in the personal store and `work/jira/pat` in the work store:
+
+```sh
+gopass ls              # both stores as one tree
+gopass show -o PATH    # password only
+gopass sync            # pull and push every store
+```
+
+> **Ubuntu 26.04:** its libgcrypt 1.12.0 randomly rejects valid imported cv25519 keys with
+> "Bad passphrase" ([LP #2174038](https://bugs.launchpad.net/bugs/2174038)). The keys pass warns
+> about it. Update `libgcrypt20` to 1.12.1 or newer before importing.
+
+The model behind it (why the encryption subkey is shared and signing subkeys are per machine,
+rotation, restore) is in [`docs/key-management.pdf`](docs/key-management.pdf).
 
 ## Experience it
 
@@ -292,47 +374,64 @@ Here are some additional tools that I use in my development environment:
 
 ## 📄 Docs
 
-- [`docs/key-management.pdf`](docs/key-management.pdf) — key and password-store layout, command
-  reference, key rotation, and how GPG keys compare with SSH keys.
+- [`docs/key-management.pdf`](docs/key-management.pdf) — key model, new-machine flow, which action
+  to take, rotation, restore from backup, command reference, and GPG versus SSH.
+
+## 🧪 Tests
+
+```sh
+./run ci:keys                          # keys pass, hermetic: temp HOME, generated keys, local stores
+./run ci:keys:linux                    # same in Ubuntu 24.04, Ubuntu 26.04 and Arch containers
+./run ci:install:linux ubuntu:26.04    # full first pass in one container, then checks the result
+```
+
+CI runs the keys test on Ubuntu 24.04/26.04, Arch and macOS for every push (`ci.yml`), and the full
+install weekly, on demand, and when `install` changes (`install.yml`).
 
 ## 📗 Troubleshooting:
 
 ### 1. Managing multiple github accounts using SSH
 
-- Create multiple git config files (i.e config.local, config.local.personal..)
-- Example of config.local:
+- `./install --keys DIR --work-pc` sets this up for you; this is what it writes.
+- `~/.config/git/config.local` is the global identity (work on a work PC):
   ```
   [user]
     name = <your_name>
     email = <your_email>
-    signingkey = <your_gpg_key>"
+    signingkey = <primary_key_fingerprint>
   [core]
-    sshCommand = "ssh -i ~/.ssh/<your_ssh_key> -o IdentitiesOnly=yes"
+    sshCommand = "ssh -i ~/.ssh/id_ed25519_work -o IdentitiesOnly=yes"
   [commit]
     gpgsign = true
   [tag]
-    gpgsign = true
+    gpgSign = true
   [gpg]
     program = gpg
   ```
-- Place it anywhere you want, i.e ~/.config/git/config.local
-- config.local is going to be my global git config for work
-- This script already included ~/.config/git/config in global git config like so
+- The global git config already includes it:
   ```
   [include]
     path = ~/.config/git/config.local
   ```
-- For personal git config, specify the following in your ${repo}/.git/config or run "git config --local --edit"
+- `~/.config/git/config.local.personal` has the same shape with the personal identity and
+  `~/.ssh/id_ed25519`. Personal repos opt in through `${repo}/.git/config` (or
+  `git config --local --edit`):
   ```
   [include]
     path = ~/.config/git/config.local.personal
   ```
-- You can view the config loaded at work repo vs personal repo by running
+- View what a repo actually uses with `git config --list --show-origin`
+- Other hosts (test benches, servers) get their own key, pinned per host in `~/.ssh/config`:
   ```
-  git config --list
+  Host bench
+    HostName 192.0.2.10
+    User me
+    IdentityFile ~/.ssh/id_ed25519_bench
+    IdentitiesOnly yes
   ```
-- The key model behind this setup — one GPG primary per trust domain with per-machine subkeys, and
-  one SSH key per machine — is described in [`docs/key-management.pdf`](docs/key-management.pdf).
+- The key model behind this setup — one GPG primary per trust domain, a shared encryption subkey
+  and a signing subkey per machine, one SSH key per machine per trust domain — is described in
+  [`docs/key-management.pdf`](docs/key-management.pdf).
 
 ### 2. Git Commit Freeze Due to GPG Lock issue
 
@@ -616,57 +715,38 @@ unset NODE_EXTRA_CA_CERTS
 
 ### 17. How to renew a GPG key (before it expires)
 
-GPG keys do **not** auto-renew. Check your key's expiry and renew it before it lapses — once expired,
-git commits will fail to sign until renewed. The key ID stays the same after renewal, so no git config
-changes are needed. One primary key per trust domain, with per-machine subkeys, is the recommended model
-(see [`docs/key-management.pdf`](docs/key-management.pdf), rotation section).
+GPG keys do **not** auto-renew. Once a subkey expires, commits stop signing and new store entries
+stop encrypting. Renewing is a new self-signature: the fingerprint, git config and store recipients
+all stay the same. The primary key is offline (`gpg -K` shows `sec#`), so bring it back for the
+renewal on **one** machine, then let the other machines pick up the public block.
 
 ```sh
-# Step 1: Find the key ID and check expiry
+# 1. Expiry dates and the fingerprint
 gpg --list-secret-keys --keyid-format=long
-# Look for: sec  rsa4096/<KEY_ID>  ... [expires: YYYY-MM-DD]
+FPR=<40-hex primary fingerprint>
+
+# 2. Bring the primary back. Import the latest public block too, so the
+#    other machines' signing subkeys get renewed as well.
+gpg --import ~/key-backup/personal-primary.asc ~/key-backup/personal-public.asc
+
+# 3. Extend the primary, then every subkey
+gpg --quick-set-expire "$FPR" 3y
+gpg --quick-set-expire "$FPR" 2y '*'
+
+# 4. Remove the primary's secret again ("!" = the primary alone); expect sec#
+gpg --batch --yes --delete-secret-keys "$FPR!"
+gpg -K "$FPR"
+
+# 5. Publish: the expiry lives in the public block
+gpg --armor --export "$FPR" > ~/key-backup/personal-public.asc
+#    host: Settings → SSH and GPG keys → delete the old entry, add this block
+
+# 6. On every other machine
+gpg --import ~/key-backup/personal-public.asc
 ```
 
-```sh
-# Step 2: Open the GPG edit shell
-gpg --edit-key <KEY_ID>
-```
-
-```sh
-# Step 3: Extend the PRIMARY key
-# At the gpg> prompt:
-expire
-# Enter duration, e.g. 1y for one year
-1y
-# Confirm
-y
-```
-
-```sh
-# Step 4: Select and extend the SUBKEY
-# At the gpg> prompt (the * marks the selected subkey):
-key 1
-expire
-1y
-y
-```
-
-```sh
-# Step 5: Save and exit
-save
-```
-
-```sh
-# Step 6: Re-export the public key and re-upload to GitHub
-# (The expiry date is embedded in the public key, so GitHub needs the updated version)
-gpg --armor --export <KEY_ID>
-# Paste the output at: https://github.com/settings/keys → "New GPG key"
-# The old expired key entry on GitHub can be deleted afterwards
-```
-
-> **Note:** If you use this key for git commit signing (`commit.gpgsign = true`), any in-flight
-> commits on local branches should be re-amended after renewal so they carry a valid signature
-> before pushing. Use `git commit --amend --no-edit` in each affected repo.
+Same steps with `work-*` files for the work identity. Copy the updated `*-public.asc` back to the
+offline backup. Full procedure and rotation: [`docs/key-management.pdf`](docs/key-management.pdf).
 
 ### 18. apt fails with `401 Server authentication required` behind corporate proxy (curl works)
 

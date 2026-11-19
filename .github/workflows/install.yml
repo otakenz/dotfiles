@@ -1,0 +1,71 @@
+name: "Install"
+
+# The full install takes long and downloads a lot, so it runs weekly, on
+# demand, and when the install script itself changes; never on every push.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1"
+  push:
+    branches:
+      - "main"
+      - "master"
+    paths:
+      - "install"
+      - "test/install-*.sh"
+      - ".github/workflows/install.yml"
+  pull_request:
+    paths:
+      - "install"
+      - "test/install-*.sh"
+      - ".github/workflows/install.yml"
+
+jobs:
+  install:
+    name: "Full install (${{ matrix.name }})"
+    runs-on: "${{ matrix.runner }}"
+    container: "${{ matrix.image }}"
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      DEBIAN_FRONTEND: "noninteractive"
+      GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      IN_CONTAINER: "${{ matrix.image != '' && '1' || '' }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "ubuntu-24.04"
+            runner: "ubuntu-24.04"
+            image: "ubuntu:24.04"
+          - name: "ubuntu-26.04"
+            runner: "ubuntu-24.04"
+            image: "ubuntu:26.04"
+          - name: "archlinux"
+            runner: "ubuntu-24.04"
+            image: "archlinux:latest"
+          - name: "macos"
+            runner: "macos-latest"
+            image: ""
+
+    steps:
+      - uses: "actions/checkout@v4"
+
+      - name: "Prepare the machine"
+        run: |
+          bash test/install-prep.sh
+
+      - name: "Run ./install non-interactively"
+        shell: "bash"
+        run: |
+          for prefix in /opt/homebrew /usr/local; do
+            [ -x "${prefix}/bin/brew" ] && eval "$("${prefix}/bin/brew" shellenv)"
+          done
+          # `yes` dies of SIGPIPE when the install exits; with pipefail that
+          # would fail the step, so only the install's own status counts.
+          { yes || true; } | LOCAL=1 bash install
+
+      - name: "Check the result"
+        shell: "bash"
+        run: |
+          bash test/install-check.sh

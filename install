@@ -8,8 +8,15 @@
 
 set -o errexit
 
-SKIP_SYSTEM_PACKAGES="${1:-}"
+if [ "${BASH_VERSINFO[0]:-0}" -lt 4 ]; then
+  echo "This script needs bash 4 or newer, found ${BASH_VERSION}." >&2
+  echo "On macOS: brew install bash, then run it with that bash (see README)." >&2
+  exit 1
+fi
+
 IS_WORK_PC=0
+SKIP_SYSTEM_PACKAGES=
+KEYS_DIR=
 
 ONLY_UPDATE=
 
@@ -216,8 +223,13 @@ GPG_HOME="${GNUPGHOME:-"${HOME}/.config/gnupg"}"
 SSH_INSTRUCTIONS=
 SSH_PUBKEY=
 
-GPG_INSTRUCTIONS=
-GPG_PUBKEY=
+GOPASS_STORES_PATH="${HOME}/.local/share/gopass/stores"
+GOPASS_PERSONAL_URL="${GOPASS_PERSONAL_URL:-git@github.com:otakenz/gopass-store.git}"
+GOPASS_WORK_URL="${GOPASS_WORK_URL:-}"
+
+KEYS_TMP=
+KEYS_ROLLBACK_FPR=
+KEYS_RESTORED=()
 
 BACKUP_DIR="${HOME}/.dotfiles_backup/backup_$(date +%Y-%m-%d_%H-%M-%S)"
 
@@ -245,7 +257,7 @@ _local_only() {
 
     # Ensure the containerized environment starts fresh.
     if [ -n "${IN_CONTAINER}" ]; then
-      rm \
+      rm -f \
         "${DOTFILES_PATH}/.config/zsh/.zsh_history" \
         "${DOTFILES_PATH}/.config/zsh/.aliases.local" \
         "${DOTFILES_PATH}/.config/zsh/.zprofile.local" \
@@ -318,9 +330,12 @@ _install_packages_macos() {
   # shellcheck disable=SC2086
   brew install ${BREW_PACKAGES}
 
-  colima start
+  # Hosted CI runners have no nested virtualisation, so the VM cannot boot.
+  if [ -z "${CI:-}" ]; then
+    colima start
 
-  brew services start colima
+    brew services start colima
+  fi
 
   # Install packages manually since they don't exist elsewhere.
   [ -d "$HOME/.fzf-git.sh" ] || git clone https://github.com/junegunn/fzf-git.sh.git ~/.fzf-git.sh
@@ -448,8 +463,8 @@ detect_env() {
       [ -z "${SKIP_SYSTEM_PACKAGES}" ] && _no_system_packages
     fi
 
-    # Are we in WSL2 ?
-    if [[ "$(uname -a)" == *"WSL2"* ]]; then
+    # Are we in WSL2 ? A container on a WSL2 host shares its kernel, but not Windows.
+    if [[ -z "${IN_CONTAINER}" && "$(uname -a)" == *"WSL2"* ]]; then
       OS_IN_WSL=1
       WIN_USER_PATH=$(_get_win_users_path)
     fi
@@ -861,7 +876,7 @@ EOF
     echo "${shell_path}" | sudo tee -a /etc/shells 1>/dev/null
   fi
 
-  if grep -q "^${USER}:" /etc/passwd; then
+  if grep -q "^${USER:-$(id -un)}:" /etc/passwd; then
     [ "${SHELL: -3}" != "zsh" ] && chsh -s "${shell_path}"
   else
     echo "Centrally managed user, skipping chsh"
@@ -870,8 +885,12 @@ EOF
   fi
   echo "Changed your default shell to zsh"
 
+  # .zprofile is written for an interactive login shell, not for errexit: e.g.
+  # `tty` fails without a terminal, which would abort `yes | ./install`.
+  set +o errexit
   # shellcheck disable=SC1091
   . "${HOME}/.config/zsh/.zprofile"
+  set -o errexit
 
   # Given the above line sets this env var if it's defined, this ensures we
   # always use the value that was set when running this script. This is mainly
@@ -1012,7 +1031,7 @@ ask_for_name() {
   local name=
 
   set +o errexit
-  name="$(git config user.name)"
+  name="$(env -u GIT_CONFIG_GLOBAL git config user.name)"
   set -o errexit
 
   if [[ -n "${name}" ]]; then
@@ -1045,7 +1064,7 @@ ask_for_email() {
   local email=
 
   set +o errexit
-  email="$(git config user.email)"
+  email="$(env -u GIT_CONFIG_GLOBAL git config user.email)"
   set -o errexit
 
   if [[ -n "${email}" ]]; then
@@ -1072,122 +1091,65 @@ ask_for_email() {
   EMAIL="${email}"
 }
 
-create_ssh_key() {
-  _info "CREATING SSH KEY"
-
-  local -r key_path="${HOME}/.ssh/id_ed25519"
+_create_ssh_key() {
+  local key_path="${1}" comment="${2}"
 
   if [[ -f "${key_path}" ]]; then
     echo "Skipping, since a key already exists at '${key_path}'"
   else
-    ssh-keygen -t ed25519 -C "${EMAIL}" -N "" -f "${key_path}"
+    ssh-keygen -t ed25519 -C "${comment}" -N "" -f "${key_path}"
   fi
 
-  eval "$(ssh-agent -s)"
   ssh-add "${key_path}"
+}
 
-  SSH_PUBKEY=$(<"${key_path}.pub")
+create_ssh_keys() {
+  _info "CREATING SSH KEYS"
+
+  # One key per machine per trust domain; private keys never leave this machine.
+  local -r personal_key="${HOME}/.ssh/id_ed25519"
+  local -r work_key="${HOME}/.ssh/id_ed25519_work"
+
+  eval "$(ssh-agent -s)"
+  mkdir -p "${HOME}/.ssh"
+  chmod 700 "${HOME}/.ssh"
+
+  _create_ssh_key "${personal_key}" "personal@$(uname -n)"
+  SSH_PUBKEY="personal (github.com, gitlab.com):
+$(<"${personal_key}.pub")"
+
+  if [ "${IS_WORK_PC}" = "1" ]; then
+    _create_ssh_key "${work_key}" "work@$(uname -n)"
+    SSH_PUBKEY+="
+
+work (your employer's Git host):
+$(<"${work_key}.pub")"
+  fi
 
   SSH_INSTRUCTIONS=$(
     cat <<EOF
 # ==============================================================================
-# 🔐 SSH Key Generated!
+# 🔐 SSH Keys Ready
 # ------------------------------------------------------------------------------
-# To enable SSH access to GitHub, GitLab, or other Git servers:
+# Register each public key above on its own host only, never one key on both:
 #
-# ➤ 1. Copy your public SSH key from above:
+#    • personal → https://github.com/settings/ssh/new
+#                 https://gitlab.com/-/profile/keys
+#    • work     → your work Git host: Settings → SSH and GPG keys → New SSH key
 #
-# ➤ 2. Go to your Git hosting account and add it:
+# Use a descriptive title, e.g. the machine name.
 #
-#    • GitHub:
-#        https://github.com/settings/ssh/new
-#
-#    • GitLab:
-#        https://gitlab.com/-/profile/keys
-#
-# ➤ 3. Paste the key and give it a descriptive title (e.g. "dev laptop")
-#
-# ✅ You can now clone and push via SSH! Example:
-#     git clone git@github.com:user/repo.git
-# ==============================================================================
-EOF
-  )
-}
-
-create_gpg_key() {
-  _info "CREATING GPG KEY"
-
-  local gpg_key=
-
-  set +o errexit
-  gpg_key="$(gpg --export --armor "${EMAIL}" 2>/dev/null)"
-  set -o errexit
-
-  if [[ "${gpg_key}" =~ "PGP PUBLIC KEY" ]]; then
-    echo "Skipping, since a key already exists for '${EMAIL}'"
-  else
-    while true; do
-      printf "Please set a passphrase (password) for your key: "
-      read -sr passphrase
-
-      if [[ ! ${passphrase} =~ [^[:space:]]+ ]]; then
-        printf "\nPlease enter at least 1 non-space character\n\n"
-        continue
-      fi
-
-      printf "\n\nPlease confirm your passphrase: "
-      read -sr passphrase_confirm
-
-      [ "${passphrase}" = "${passphrase_confirm}" ] && break
-
-      printf "\nYour passphrase did not match, please try again\n\n"
-    done
-
-    printf "\n\nGenerating GPG key...\n\n"
-
-    gpg --batch --pinentry-mode loopback --gen-key <<EOF
-     Key-Type: RSA
-     Key-Length: 4096
-     Subkey-Type: RSA
-     Subkey-Length: 4096
-     Name-Real: ${NAME}
-     Name-Email: ${EMAIL}
-     Passphrase: ${passphrase}
-     Expire-Date: 1y
-EOF
-
-    gpg_key="$(gpg --export --armor "${EMAIL}" 2>/dev/null)"
-  fi
-
-  GPG_PUBKEY="${gpg_key}"
-
-  GPG_INSTRUCTIONS=$(
-    cat <<EOF
-# ==============================================================================
-# 🛡️  Git Commit Signing with GPG: One More Step!
-# ------------------------------------------------------------------------------
-# To make your signed commits show up as "Verified" on GitHub or GitLab,
-# you need to upload your GPG public key as shown above to your account.
-#
-# ➤ 1. Copy the full key block, including:
-#     -----BEGIN PGP PUBLIC KEY BLOCK-----
-#     ...
-#     -----END PGP PUBLIC KEY BLOCK-----
-#
-# ➤ 2. Add the key on GitHub:
-#     https://github.com/settings/keys → New GPG key
-#
-# ✅ After that, your signed commits will be marked as Verified!
+# ✅ Then test it:  ssh -T git@github.com
 # ==============================================================================
 EOF
   )
 }
 
 configure_git() {
-  _info "CONFIGURING GIT TO SIGN COMMITS"
+  _info "CONFIGURING GIT IDENTITY"
 
-  local gpg_fingerprint
-  gpg_fingerprint=$(gpg --list-keys --with-colons "${EMAIL}" | awk -F: '/^fpr:/ { print $10; exit }')
+  local ssh_key="id_ed25519"
+  [ "${IS_WORK_PC}" = "1" ] && ssh_key="id_ed25519_work"
 
   local git_config_local_path="${DOTFILES_PATH}/.config/git/config.local"
 
@@ -1196,31 +1158,19 @@ configure_git() {
 [user]
   name = ${NAME}
   email = ${EMAIL}
-  signingkey = ${gpg_fingerprint}
 [core]
-  sshCommand = "ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
+  sshCommand = "ssh -i ~/.ssh/${ssh_key} -o IdentitiesOnly=yes"
 
-# Learn more about signing git commits here:
-#   https://nickjanetakis.com/blog/signing-and-verifying-git-commits-on-the-command-line-and-github
-
-# Uncomment the options below to auto-sign your git commits / tags using GPG.
-[commit]
-  gpgsign = true
-
-# This option requires git 2.23+ to work and you must annotate your tags,
-# although -m "" works if you want an empty message.
-[tag]
-  gpgSign = true
-
-[gpg]
-  program = gpg
+# Commit and tag signing is added by: ./install --keys DIR
 EOF
   fi
   echo "It has been configured in '$(dirname "${git_config_local_path}")'"
-  echo "✅ Git is now set to sign commits using your GPG key. Uncomment them to use it"
-  echo "🔑 GPG Fingerprint: ${gpg_fingerprint}"
+  echo "Commit signing is turned on later by './install --keys DIR'"
 
-  git -C "${DOTFILES_PATH}" remote set-url origin git@github.com:otakenz/dotfiles.git
+  # A downloaded copy (not a clone) has no remote to switch to SSH.
+  if git -C "${DOTFILES_PATH}" rev-parse --git-dir >/dev/null 2>&1; then
+    git -C "${DOTFILES_PATH}" remote set-url origin git@github.com:otakenz/dotfiles.git
+  fi
 }
 
 install_tmux_plugins() {
@@ -1238,7 +1188,9 @@ install_tmux_plugins() {
 install_nvim_plugins() {
   _info "INSTALL NEOVIM PLUGINS"
 
-  nvim +q
+  # Headless so it also exits without a terminal (CI, `yes | ./install`).
+  # Mason's language servers finish installing on the first real launch.
+  nvim --headless "+Lazy! sync" +qa
 
   echo "They've been installed"
 }
@@ -1300,9 +1252,14 @@ install_wezterm() {
       echo "Skipping, since wezterm is already installed"
       return 0
     fi
+    if [ "${OS_DISTRO}" = "arch" ]; then
+      sudo pacman -S --noconfirm --needed wezterm
+      return 0
+    fi
+    sudo mkdir -p /etc/apt/keyrings
     curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /etc/apt/keyrings/wezterm-fury.gpg
     echo 'deb [signed-by=/etc/apt/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
-    sudo apt update && sudo apt install wezterm
+    sudo apt update && sudo apt install -y wezterm
   else
     if command -v wezterm.exe &>/dev/null; then
       echo "Skipping, since wezterm is already installed"
@@ -1328,7 +1285,7 @@ ${DOTFILES_PATH}
 
 :: Git user:
 
-$(git config --get-regex "user.(name|email)")
+$(env -u GIT_CONFIG_GLOBAL git config --get-regex "user.(name|email)")
 
 :: tmux:
 
@@ -1346,15 +1303,10 @@ EOF
 }
 
 completed_message() {
-  _info "SHOWING SSH PUBKEY"
+  _info "SHOWING SSH PUBKEYS"
   echo "$SSH_PUBKEY"
   echo
   echo "$SSH_INSTRUCTIONS"
-
-  _info "SHOWING GPG PUBKEY"
-  echo "$GPG_PUBKEY"
-  echo
-  echo "$GPG_INSTRUCTIONS"
 
   _info "EVERYTHING WORKED"
 
@@ -1364,6 +1316,35 @@ Make sure to create the required .env files in each secret/*/ directory (e.g., s
 
 Please refer to .env.example file for available variables.
 These files are gitignored and required for secret-dependent features to work.
+EOF
+
+  local work_flag=
+  [ "${IS_WORK_PC}" = "1" ] && work_flag=" --work-pc"
+
+  _info "NEXT: RESTORE GPG KEYS AND PASSWORD STORES"
+
+  cat <<EOF
+This run did not create a GPG key: your identity comes from your key backup.
+Commit signing and gopass start working after the keys phase. When ready:
+
+  1. Register the SSH key(s) shown above on their hosts. The password stores
+     are cloned over SSH, so this has to happen first.
+
+  2. Copy your key backup folder onto this machine (or mount the drive), e.g.
+     ~/key-backup. The keys phase reads:
+       personal-secret.asc  personal-public.asc  ownertrust.txt
+EOF
+  if [ "${IS_WORK_PC}" = "1" ]; then
+    cat <<EOF
+       work-secret.asc      work-public.asc
+     and asks for the work store URL unless GOPASS_WORK_URL is set.
+EOF
+  fi
+  cat <<EOF
+
+  3. Open a new terminal and run:
+       ${DOTFILES_PATH}/install --keys ~/key-backup${work_flag}
+
 EOF
 
   cat <<EOF
@@ -1386,17 +1367,445 @@ EOF
   fi
 }
 
-for arg in "$@"; do
-  case "$arg" in
-  --work-pc)
-    IS_WORK_PC=1
-    ;;
-  --update | -u)
-    ONLY_UPDATE=1
-    ;;
-  --skip-system-packages | -S) ;;
-  --help | -h)
+# -----------------------------------------------------------------------------
+# Keys phase: ./install --keys DIR [--work-pc]
+# -----------------------------------------------------------------------------
+
+_shred() {
+  if command -v shred >/dev/null 2>&1; then
+    shred -u "${@}"
+  else
+    rm -f "${@}"
+  fi
+}
+
+_keys_ids() {
+  echo personal
+  if [ "${IS_WORK_PC}" = "1" ]; then echo work; fi
+}
+
+_keys_ssh_key() {
+  if [ "${1}" = "work" ]; then
+    echo "${HOME}/.ssh/id_ed25519_work"
+  else
+    echo "${HOME}/.ssh/id_ed25519"
+  fi
+}
+
+# The key path is quoted for the shell that git runs GIT_SSH_COMMAND /
+# core.sshCommand with, so a HOME containing spaces still works.
+_keys_ssh_cmd() {
+  printf "ssh -i %q -o IdentitiesOnly=yes" "${1}"
+}
+
+_keys_url() {
+  if [ "${1}" = "work" ]; then
+    echo "${GOPASS_WORK_URL}"
+  else
+    echo "${GOPASS_PERSONAL_URL}"
+  fi
+}
+
+_keys_fpr_of_file() {
+  gpg --show-keys --with-colons "${1}" 2>/dev/null | awk -F: '$1=="fpr"{print $10; exit}'
+}
+
+# Prints "<capabilities> <secret> <expiry> <fingerprint>" per subkey of $1,
+# where secret is "+" when usable on this machine and "#" for a stub.
+_keys_subkeys() {
+  gpg -K --with-colons --with-subkey-fingerprint "${1}" 2>/dev/null |
+    awk -F: '$1=="ssb"{cap=$12; sec=($15=="#")?"#":"+"; ex=$7; want=1; next}
+             $1=="fpr" && want {print cap, sec, (ex==""?"never":ex), $10; want=0}'
+}
+
+# True when the key file has an encryption subkey that is neither expired
+# nor revoked; it is the only key that can open the password store.
+_keys_usable_encryption() {
+  gpg --show-keys --with-colons "${1}" 2>/dev/null |
+    awk -F: -v now="$(date +%s)" '
+      ($1=="ssb" || $1=="sub") && $12 ~ /e/ && $2 != "r" && ($7=="" || $7 > now) {ok=1}
+      END {exit !ok}'
+}
+
+_keys_primary_secret() {
+  gpg -K --with-colons "${1}" 2>/dev/null | awk -F: '$1=="sec"{print ($15=="#")?"#":"+"; exit}'
+}
+
+_keys_public_fprs() {
+  gpg --show-keys --with-colons --with-subkey-fingerprint "${1}" 2>/dev/null |
+    awk -F: '$1=="fpr"{print $10}'
+}
+
+_keys_libgcrypt_bug() {
+  gpg --version 2>/dev/null | grep -q 'libgcrypt 1\.12\.0$'
+}
+
+_keys_libgcrypt_note() {
+  cat <<EOF >&2
+
+⚠️  This gpg uses libgcrypt 1.12.0, which randomly rejects valid imported
+   cv25519 (encryption) keys with "Bad passphrase" / "Bad secret key" even
+   when the passphrase is right (Ubuntu LP #2174038, fixed in 1.12.1).
+   Upgrade libgcrypt20 to 1.12.1 or newer before trusting such an error.
+EOF
+}
+
+_keys_on_exit() {
+  local status=$?
+
+  # A second Ctrl-C must not cut the rollback short; ignored signals are
+  # inherited, so the gpg call below cannot be interrupted either.
+  trap '' INT TERM HUP
+
+  if [ -n "${KEYS_ROLLBACK_FPR}" ]; then
+    printf "\n\e[31;1mKeys phase interrupted:\e[0m removing %s from this keyring...\n" "${KEYS_ROLLBACK_FPR}" >&2
+    gpg --batch --yes --delete-secret-and-public-key "${KEYS_ROLLBACK_FPR}" >/dev/null 2>&1 || true
+    if [ "$(_keys_primary_secret "${KEYS_ROLLBACK_FPR}")" = "+" ]; then
+      cat <<EOF >&2
+
+‼️  Could not remove the key: its PRIMARY SECRET IS STILL ON THIS MACHINE.
+   Remove it by hand now:
+     gpg --delete-secret-and-public-key ${KEYS_ROLLBACK_FPR}
+EOF
+      exit "${status}"
+    fi
+    cat <<EOF >&2
+The identity is gone from this machine again, so the primary key is not left
+behind. Fix the error above and re-run the same './install --keys' command.
+EOF
+    if _keys_libgcrypt_bug; then _keys_libgcrypt_note; fi
+  fi
+
+  if [ -n "${KEYS_TMP}" ] && [ -d "${KEYS_TMP}" ]; then
+    find "${KEYS_TMP}" -type f -exec sh -c 'command -v shred >/dev/null && shred -u "$@" || rm -f "$@"' _ {} +
+    rm -rf "${KEYS_TMP}"
+  fi
+
+  exit "${status}"
+}
+
+_keys_preflight() {
+  local dir="${1}" cmd id file key url fpr
+
+  for cmd in gpg gopass git; do
+    command -v "${cmd}" >/dev/null 2>&1 ||
+      _error "'${cmd}' not found. Run './install' first, then open a new terminal."
+  done
+
+  [ -f "${dir}/ownertrust.txt" ] || _error "'${dir}/ownertrust.txt' is missing"
+
+  for id in $(_keys_ids); do
+    for file in "${id}-secret.asc" "${id}-public.asc"; do
+      [ -f "${dir}/${file}" ] || _error "'${dir}/${file}' is missing"
+    done
+    fpr="$(_keys_fpr_of_file "${dir}/${id}-secret.asc")"
+    [ -n "${fpr}" ] || _error "Cannot read a key from '${dir}/${id}-secret.asc'"
+    grep -q "^${fpr}:" "${dir}/ownertrust.txt" ||
+      _error "'${dir}/ownertrust.txt' has no entry for the ${id} key ${fpr}"
+    _keys_usable_encryption "${dir}/${id}-secret.asc" ||
+      _error "The ${id} encryption subkey expired (or was revoked). Renew it on a machine
+holding the primary first, see 'How to renew a GPG key' in the README."
+  done
+
+  if [ "${IS_WORK_PC}" = "1" ] && [ -z "${GOPASS_WORK_URL}" ]; then
+    [ "${NON_INTERACTIVE}" = "true" ] && _error "Set GOPASS_WORK_URL to the work store's git URL"
+    read -rp "Git URL of your work gopass store: " GOPASS_WORK_URL
+    [ -n "${GOPASS_WORK_URL}" ] || _error "The work store URL is required on a work PC"
+  fi
+
+  for id in $(_keys_ids); do
+    [ -d "${GOPASS_STORES_PATH}/${id}/.git" ] && continue
+
+    key="$(_keys_ssh_key "${id}")"
+    url="$(_keys_url "${id}")"
+    GIT_SSH_COMMAND="$(_keys_ssh_cmd "${key}")" git ls-remote "${url}" >/dev/null 2>&1 ||
+      _error "Cannot reach the ${id} store at '${url}' with ${key}. Register that SSH key on the host first."
+  done
+
+  echo "Backup folder, tools and store remotes look good"
+  if _keys_libgcrypt_bug; then _keys_libgcrypt_note; fi
+}
+
+_keys_restore_identity() {
+  local id="${1}" dir="${2}"
+  local fpr now expire_arg new_sign line
+  local before=() keep=() encrypt=()
+
+  _info "RESTORING ${id^^} GPG IDENTITY"
+
+  fpr="$(_keys_fpr_of_file "${dir}/${id}-secret.asc")"
+  [ -n "${fpr}" ] || _error "Cannot read a key from '${dir}/${id}-secret.asc'"
+
+  if [ "$(_keys_primary_secret "${fpr}")" = "#" ] &&
+    _keys_subkeys "${fpr}" | awk '$1 ~ /s/ && $2=="+"' | grep -q .; then
+    echo "Skipping, since this machine already has its own signing subkey for ${fpr}"
+    return 0
+  fi
+
+  # A rollback deletes the identity, so it must only ever cover keys this run
+  # imported, never a primary that was already here (e.g. the offline machine).
+  if [ "$(_keys_primary_secret "${fpr}")" = "+" ]; then
+    _error "This keyring already holds the primary secret of ${fpr}.
+--keys is for machines that keep only subkeys; it will not touch this key.
+On a machine that should hold subkeys only, drop the primary first:
+    gpg --delete-secret-keys '${fpr}!'"
+  fi
+
+  KEYS_ROLLBACK_FPR="${fpr}"
+
+  # 1. Primary, shared encryption subkey and every published signing subkey.
+  #    Ownertrust is per identity so a personal machine never trusts work keys.
+  gpg --import "${dir}/${id}-secret.asc" "${dir}/${id}-public.asc"
+  grep "^${fpr}:" "${dir}/ownertrust.txt" | gpg --import-ownertrust
+  mapfile -t before < <(_keys_subkeys "${fpr}" | awk '{print $4}')
+
+  # 2. This machine's signing subkey; it expires with the encryption subkey
+  #    so the identity keeps a single renewal date.
+  now="$(date +%s)"
+  # Latest expiry among the usable encryption subkeys; "never" beats any date.
+  line="$(_keys_subkeys "${fpr}" | awk -v now="${now}" '
+    $1 ~ /e/ && $2=="+" {
+      if ($3 == "never") { best = "never" }
+      else if (best != "never" && $3 > now && $3 > best + 0) { best = $3 }
+    }
+    END { print best }')"
+  [ -n "${line}" ] || _error "No usable encryption subkey in '${dir}/${id}-secret.asc'"
+  expire_arg="never"
+  if [ "${line}" != "never" ]; then
+    expire_arg="seconds=$((line - now))"
+  fi
+  gpg --batch --quick-add-key "${fpr}" ed25519 sign "${expire_arg}"
+
+  new_sign="$(_keys_subkeys "${fpr}" | awk '$1 ~ /s/ && $2=="+" {print $4}' |
+    grep -v -F -x -f <(printf "%s\n" "${before[@]}") || true)"
+  [ "$(echo "${new_sign}" | grep -c .)" = "1" ] || _error "Could not identify the new signing subkey"
+
+  # 3. Keep only the encryption subkey(s) and the new signing subkey, then
+  #    drop every other secret, the primary included.
+  mapfile -t encrypt < <(_keys_subkeys "${fpr}" | awk '$1 ~ /e/ && $2=="+" {print $4}')
+  keep=("${encrypt[@]/%/!}" "${new_sign}!")
+
+  KEYS_TMP="$(mktemp -d)"
+  chmod 700 "${KEYS_TMP}"
+  gpg --armor --export-secret-subkeys "${keep[@]}" >"${KEYS_TMP}/subkeys.asc"
+  [ "$(gpg --show-keys --with-colons "${KEYS_TMP}/subkeys.asc" | grep -c '^ssb:')" = "${#keep[@]}" ] ||
+    _error "Subkey export is incomplete, nothing was deleted"
+
+  # Must stay the full fingerprint: a short ID or email could match other keys.
+  gpg --batch --yes --delete-secret-keys "${fpr}"
+  gpg --import "${KEYS_TMP}/subkeys.asc"
+  _shred "${KEYS_TMP}/subkeys.asc"
+
+  # 4. Verify the shape: primary offline, only our subkeys usable.
+  [ "$(_keys_primary_secret "${fpr}")" = "#" ] || _error "The primary secret is still on this machine"
+  _keys_subkeys "${fpr}" | awk -v s="${new_sign}" '$2=="+" && $1 ~ /[sa]/ && $4!=s {bad=1} END{exit bad}' ||
+    _error "Another machine's signing subkey is still usable here"
+  [ "$(printf 'keys-check' | gpg --batch --encrypt --recipient "${fpr}" | gpg --batch --decrypt 2>/dev/null)" = "keys-check" ] ||
+    _error "Encrypt/decrypt roundtrip failed for ${fpr}"
+
+  # 5. Publishable block: must still carry every subkey we started with.
+  gpg --armor --export "${fpr}" >"${KEYS_TMP}/public.asc"
+  local published=()
+  mapfile -t published < <(_keys_public_fprs "${KEYS_TMP}/public.asc")
+  for line in "${before[@]}" "${new_sign}"; do
+    printf "%s\n" "${published[@]}" | grep -q -x "${line}" || _error "Export lost subkey ${line}"
+  done
+
+  if ! cp "${KEYS_TMP}/public.asc" "${dir}/${id}-public.asc" 2>/dev/null; then
+    cp "${KEYS_TMP}/public.asc" "${HOME}/${id}-public.asc"
+    echo "Backup folder is read-only, wrote the public block to ${HOME}/${id}-public.asc"
+  fi
+  rm -rf "${KEYS_TMP}"
+  KEYS_TMP=
+
+  KEYS_ROLLBACK_FPR=
+  KEYS_RESTORED+=("${id}")
+
+  gpg -K "${fpr}"
+}
+
+_keys_enable_signing() {
+  local file="${1}" fpr="${2}"
+
+  git config --file "${file}" user.signingkey "${fpr}"
+  git config --file "${file}" commit.gpgsign true
+  git config --file "${file}" tag.gpgSign true
+  git config --file "${file}" gpg.program gpg
+}
+
+_keys_configure_git() {
+  local dir="${1}"
+  local git_dir="${HOME}/.config/git"
+  local personal_fpr uid
+  personal_fpr="$(_keys_fpr_of_file "${dir}/personal-secret.asc")"
+
+  _info "ENABLING COMMIT SIGNING"
+
+  if [ "${IS_WORK_PC}" != "1" ]; then
+    _keys_enable_signing "${git_dir}/config.local" "${personal_fpr}"
+    echo "Signing with ${personal_fpr} via ${git_dir}/config.local"
+    return 0
+  fi
+
+  _keys_enable_signing "${git_dir}/config.local" "$(_keys_fpr_of_file "${dir}/work-secret.asc")"
+
+  # Personal repositories on a work PC opt in to the personal identity.
+  local personal="${git_dir}/config.local.personal"
+  if [ ! -f "${personal}" ]; then
+    uid="$(gpg --list-keys --with-colons "${personal_fpr}" | awk -F: '$1=="uid"{print $10; exit}')"
+    cat <<EOF >"${personal}"
+[user]
+  name = ${uid% <*}
+  email = $(echo "${uid}" | sed -E 's/.*<(.*)>.*/\1/')
+[core]
+  sshCommand = "ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
+EOF
+  fi
+  _keys_enable_signing "${personal}" "${personal_fpr}"
+
+  if git -C "${DOTFILES_PATH}" rev-parse --git-dir >/dev/null 2>&1; then
+    git -C "${DOTFILES_PATH}" config --local include.path "${personal}"
+  fi
+
+  echo "Work repositories sign via ${git_dir}/config.local"
+  echo "Personal repositories include ${personal}"
+}
+
+_keys_clone_store() {
+  local id="${1}" dir="${2}"
+  local path="${GOPASS_STORES_PATH}/${id}" fpr key url
+
+  _info "CLONING ${id^^} PASSWORD STORE"
+
+  if [ -d "${path}/.git" ]; then
+    echo "Skipping, since '${path}' already exists"
+    return 0
+  fi
+
+  key="$(_keys_ssh_key "${id}")"
+  url="$(_keys_url "${id}")"
+
+  # gopass 1.17 'clone --path' for the root store keeps looking at the default
+  # path afterwards, so clone with git and register the store explicitly.
+  GIT_SSH_COMMAND="$(_keys_ssh_cmd "${key}")" git clone "${url}" "${path}"
+  git -C "${path}" config diff.gpg.textconv "gpg --no-tty --decrypt"
+  git -C "${path}" config diff.gpg.binary true
+  git -C "${path}" config pull.rebase false
+  git -C "${path}" config push.default matching
+  git -C "${path}" config core.sshCommand "$(_keys_ssh_cmd "${key}")"
+
+  if [ "${id}" = "work" ]; then
+    gopass mounts add work "${path}"
+  else
+    gopass config mounts.path "${path}"
+    rmdir "${GOPASS_STORES_PATH}/root" 2>/dev/null || true
+  fi
+
+  if [ "${id}" = "personal" ] && [ "${IS_WORK_PC}" = "1" ]; then
+    git -C "${path}" config --local include.path "${HOME}/.config/git/config.local.personal"
+  fi
+
+  fpr="$(_keys_fpr_of_file "${dir}/${id}-secret.asc")"
+  local recipient listed=
+  while read -r recipient; do
+    [ -n "${recipient}" ] || continue
+    if gpg --list-keys --with-colons -- "${recipient}" 2>/dev/null |
+      awk -F: '$1=="fpr"{print $10}' | grep -q -x "${fpr}"; then
+      listed=1
+    fi
+  done <"${path}/.gpg-id"
+  if [ -z "${listed}" ]; then
+    echo "⚠️  '${path}/.gpg-id' does not list ${fpr}; entries may not decrypt here"
+  fi
+}
+
+_keys_summary() {
+  local dir="${1}" id fpr cleanup
+  if command -v shred >/dev/null 2>&1; then
+    cleanup="$(printf "find %q -type f -exec shred -u {} + && rm -r %q" "${dir}" "${dir}")"
+  else
+    cleanup="$(printf "rm -r %q" "${dir}")"
+  fi
+
+  _info "KEYS PHASE COMPLETE"
+
+  gopass mounts || true
+
+  if [ "${#KEYS_RESTORED[@]}" -gt 0 ]; then
     cat <<EOF
+
+This machine added a signing subkey, so each host needs the updated public key.
+For every identity below, on the host's Settings → SSH and GPG keys page:
+delete the existing GPG key entry, then add the new block (same key ID).
+
+EOF
+    for id in "${KEYS_RESTORED[@]}"; do
+      fpr="$(_keys_fpr_of_file "${dir}/${id}-secret.asc")"
+      printf "  • %-8s %s\n             cat %s\n" "${id}" "${fpr}" "${dir}/${id}-public.asc"
+    done
+    cat <<EOF
+
+  github.com: https://github.com/settings/keys
+  Until then, commits signed on this machine show as "Unverified".
+EOF
+  fi
+
+  cat <<EOF
+
+Finally:
+  • copy the updated *-public.asc files back to your offline backup, so the
+    next machine keeps this machine's signing subkey;
+  • if '${dir}' is a copy rather than the mounted backup drive, remove it:
+      ${cleanup}
+EOF
+}
+
+setup_keys() {
+  local dir="${1}" id
+
+  # shellcheck disable=SC2088 # matching a literal tilde on purpose
+  case "${dir}" in
+  "~") dir="${HOME}" ;;
+  "~/"*) dir="${HOME}/${dir#"~/"}" ;;
+  "~"*) _error "Give the backup folder as a full path: '${dir%%/*}' is not expanded here" ;;
+  esac
+
+  [ -d "${dir}" ] || _error "Backup folder '${dir}' does not exist"
+  dir="$(cd "${dir}" && pwd)"
+
+  if [[ -t 0 ]]; then
+    NON_INTERACTIVE=false
+    GPG_TTY="$(tty)"
+    export GPG_TTY
+  else
+    NON_INTERACTIVE=true
+  fi
+
+  export GNUPGHOME="${GPG_HOME}"
+  mkdir -p "${GNUPGHOME}"
+  chmod 700 "${GNUPGHOME}"
+
+  _info "CHECKING KEYS PHASE PREREQUISITES"
+  _keys_preflight "${dir}"
+
+  trap _keys_on_exit EXIT
+  trap 'exit 130' INT TERM HUP
+
+  for id in $(_keys_ids); do
+    _keys_restore_identity "${id}" "${dir}"
+  done
+
+  _keys_configure_git "${dir}"
+
+  for id in $(_keys_ids); do
+    _keys_clone_store "${id}" "${dir}"
+  done
+
+  _keys_summary "${dir}"
+}
+
+_usage() {
+  cat <<EOF
 Usage examples:
 
 # Pull in remote updates and run the script to update your dotfiles.
@@ -1411,31 +1820,67 @@ Usage examples:
 # Update your dotfiles with whatever version of this script that exists locally.
 LOCAL=1 ./install
 
-# Enable work PC mode (sets WORK_PC=1 in .zprofile.local)
+# Enable work PC mode (sets WORK_PC=1 in .zprofile.local, adds a work SSH key)
 ./install --work-pc
+
+# Keys phase: restore GPG identities and clone the gopass stores.
+# Run it after './install' finished, once the SSH key(s) are registered on
+# their hosts and your key backup folder is on this machine. DIR must hold
+# personal-secret.asc, personal-public.asc and ownertrust.txt, plus
+# work-secret.asc and work-public.asc with --work-pc.
+./install --keys DIR [--work-pc]
 
 # Show this help menu.
 ./install --help
 EOF
+}
+
+ARGS=("${@}")
+
+while [ "${#}" -gt 0 ]; do
+  case "${1}" in
+  --work-pc)
+    IS_WORK_PC=1
+    ;;
+  --update | -u)
+    ONLY_UPDATE=1
+    ;;
+  --skip-system-packages | -S)
+    SKIP_SYSTEM_PACKAGES=1
+    ;;
+  --keys)
+    [ -n "${2:-}" ] || _error "'--keys' needs the backup folder, e.g. --keys ~/key-backup"
+    KEYS_DIR="${2}"
+    shift
+    ;;
+  --keys=*)
+    KEYS_DIR="${1#*=}"
+    ;;
+  --help | -h)
+    _usage
     exit
     ;;
   *)
-    [ -n "${1:-}" ] && _error "'${1}' is not a supported flag"
+    _error "'${1}' is not a supported flag"
     ;;
   esac
+  shift
 done
+
+if [ -n "${KEYS_DIR}" ]; then
+  setup_keys "${KEYS_DIR}"
+  exit
+fi
 
 detect_env
 warn_root
-update_dotfiles "${@}" && [ -n "${ONLY_UPDATE}" ] && exit
+update_dotfiles "${ARGS[@]}" && [ -n "${ONLY_UPDATE}" ] && exit
+# Clones below are anonymous HTTPS. The dotfiles' git config rewrites GitHub
+# URLs to SSH, and the SSH key this run creates is not registered yet.
+export GIT_CONFIG_GLOBAL=/dev/null
 check_prereqs
 create_initial_dirs
-# Only install system packages if not skipped
-if [ -z "$SKIP_SYSTEM_PACKAGES" ]; then
-  install_packages
-else
-  echo "Skipping system package installation (--skip-system-packages or -S used)"
-fi
+install_packages
 clone_dotfiles
 install_zsh_plugins
 create_symlinks
@@ -1444,11 +1889,11 @@ install_wezterm
 configure_shell
 ask_for_name
 ask_for_email
-create_ssh_key
-create_gpg_key
+create_ssh_keys
 configure_git
-install_mise_packages
+# Languages first: npm-backed mise packages (e.g. opencode) need node.
 install_programming_languages
+install_mise_packages
 install_tools_with_python
 install_tmux_plugins
 install_nvim_plugins

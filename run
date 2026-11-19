@@ -67,6 +67,48 @@ ci:test() {
   format --check --diff
 }
 
+ci:keys() {
+  # Test `./install --keys` against generated identities and local stores
+  bash test/keys.sh
+}
+
+ci:keys:linux() {
+  # Run the keys test in Ubuntu 24.04, Ubuntu 26.04 and Arch Linux containers
+  local image status=0
+  local ca=() ca_dir="/usr/local/share/ca-certificates"
+
+  # Behind a TLS-intercepting proxy the containers need the host's extra CAs.
+  if compgen -G "${ca_dir}/*.crt" >/dev/null; then
+    ca=(-v "${ca_dir}:/extra-ca:ro" -e EXTRA_CA_DIR=/extra-ca)
+  fi
+
+  for image in ubuntu:24.04 ubuntu:26.04 archlinux:latest; do
+    printf "\n:: %s\n" "${image}"
+    docker container run --rm "${ca[@]}" -v "${PWD}:/repo:ro" -w /repo "${image}" \
+      bash -c "bash test/deps.sh >/dev/null && bash test/keys.sh" || status=1
+  done
+
+  return "${status}"
+}
+
+ci:install:linux() {
+  # Run the full install smoke test in one container: ./run ci:install:linux ubuntu:24.04
+  local image="${1:-ubuntu:24.04}"
+  local ca=() ca_dir="/usr/local/share/ca-certificates"
+
+  if compgen -G "${ca_dir}/*.crt" >/dev/null; then
+    local bundle=/etc/ssl/certs/ca-certificates.crt
+    ca=(-v "${ca_dir}:/extra-ca:ro" -e EXTRA_CA_DIR=/extra-ca
+      -e NODE_EXTRA_CA_CERTS="${bundle}" -e PIP_CERT="${bundle}"
+      -e REQUESTS_CA_BUNDLE="${bundle}" -e SSL_CERT_FILE="${bundle}")
+  fi
+
+  # A normal run takes ~10 minutes; a hang must fail fast, not run all night.
+  timeout -k 1m 20m docker container run --rm --init "${ca[@]}" -e CI=true -e IN_CONTAINER=1 \
+    -e DEBIAN_FRONTEND=noninteractive -v "${PWD}:/src:ro" "${image}" bash -c \
+    "set -eo pipefail; cp -R /src /app; rm -rf /app/.git; cd /app; bash test/install-prep.sh; { yes || true; } | LOCAL=1 bash install; bash test/install-check.sh"
+}
+
 help() {
   printf "%s <task> [args]\n\nTasks:\n" "${0}"
 
