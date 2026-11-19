@@ -173,6 +173,7 @@ EOF
   expect stale_row_fails 1 "beta"
 
   fixture agents_over_limit_fails "alpha beta gamma" "one"
+  # shellcheck disable=SC2016 # literal backticks
   good_inventory | sed '/`beta`/a | `gamma` | g | 2026-11-19 | 2026-11-19 |' |
     inventory agents_over_limit_fails
   expect agents_over_limit_fails 1 "limit"
@@ -201,6 +202,7 @@ EOF
 
   # Plugins from the service: scoped packages keep their scope.
   fixture scoped_plugin_detected "alpha beta" "one"
+  # shellcheck disable=SC2016 # literal backticks
   good_inventory | sed 's/`superpowers`/`@acme\/helpers`/' | inventory scoped_plugin_detected
   cat >"${root}/bin/opencode" <<'EOF'
 #!/bin/sh
@@ -223,6 +225,7 @@ EOF
   expect hidden_skill_dir_ignored 0 "Skills: 1 installed"
 
   fixture row_without_backticks_counts "alpha beta" "one"
+  # shellcheck disable=SC2016 # literal backticks
   good_inventory | sed 's/| `beta` |/| beta |/' | inventory row_without_backticks_counts
   expect row_without_backticks_counts 0 "inventory matches"
 

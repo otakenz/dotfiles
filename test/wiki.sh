@@ -25,7 +25,7 @@ git -C "${SEED}" push -q "${REMOTE}" main
 
 # run_wiki NAME [ENV=VAL...] -- ARGS...: install --wiki in a fresh-ish HOME.
 run_wiki() {
-  local name="${1}" home="${ROOT}/${1}"
+  local home="${ROOT}/${1}"
   shift
   local envs=()
   while [ "${1}" != "--" ]; do

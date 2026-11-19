@@ -288,8 +288,7 @@ t1_work_pc_fresh() {
   [ -z "$(subkey_fprs "${ROOT}/m2/.config/gnupg" "${ufpr}" s)" ] || fail "unattended key can sign"
   [ -n "$(subkey_fprs "${ROOT}/m2/.config/gnupg" "${ufpr}" e)" ] || fail "unattended key cannot encrypt"
   # gopass records the long key ID; it must name this key and nothing else.
-  [ "$(wc -l <"${store}/.gpg-id")" -eq 1 ] &&
-    [[ "${ufpr}" == *"$(sed 's/^0x//' "${store}/.gpg-id")" ]] ||
+  [[ "$(wc -l <"${store}/.gpg-id")" -eq 1 && "${ufpr}" == *"$(sed 's/^0x//' "${store}/.gpg-id")" ]] ||
     fail ".gpg-id does not name the unattended key"
   [ ! -e "${store}/.git" ] || fail "unattended store has git"
   on m2 gopass mounts | grep -q work-unattended || fail "work-unattended not mounted"
@@ -474,9 +473,9 @@ t10_renewed_in_public() {
 
   expiry="$(GNUPGHOME="${ROOT}/m10/.config/gnupg" gpg -K --with-colons "${fpr}" |
     awk -F: '$1=="ssb" && $12 ~ /s/ && $15 != "#" {print $7; exit}')"
-  [ -n "${expiry}" ] && [ "${expiry}" -gt "$(($(date +%s) + 365 * 86400))" ] ||
+  [[ -n "${expiry}" && "${expiry}" -gt "$(($(date +%s) + 365 * 86400))" ]] ||
     fail "new signing subkey did not take the renewed expiry (${expiry:-none})"
-  [ "$(subkeys "${ROOT}/m10/.config/gnupg" "${fpr}" | awk '$1 ~ /s/ && $2=="+"' | wc -l)" = 1 ] ||
+  [ "$(subkeys "${ROOT}/m10/.config/gnupg" "${fpr}" | awk '$1 ~ /s/ && $2=="+"' | wc -l)" -eq 1 ] ||
     fail "machine 1's signing secret from an older backup was kept"
 }
 
