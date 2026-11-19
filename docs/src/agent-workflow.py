@@ -537,8 +537,8 @@ def story():
         [
             "5 Finish",
             chip("build-runner", FLASH) + ", " + chip("scribe", FLASH),
-            "Run the full build and tests. Draft the PR text.",
-            "Verdict and first errors only; message in the repo's style. finishing-a-development-branch asks: merge, PR or keep.",
+            "Run the full build and tests. Optional: completeness check with reviewer. Draft the PR text.",
+            "Verdict and first errors only; the completeness check lists what the branch changed but did not update elsewhere (docs, tests, configs, other repos); message in the repo's style. finishing-a-development-branch asks: merge, PR or keep.",
             "Merge or PR",
         ],
         [
@@ -640,8 +640,8 @@ def story():
                     "reviewer",
                     "GPT-6.1 Sol",
                     "limits",
-                    "Read-only review of specs, plans, non-C++ code; follows the skill's review prompt",
-                    "Review this spec / plan; skill-requested branch reviews",
+                    "Read-only review of specs, plans, non-C++ code; follows the skill's review prompt. Completeness check: reads all of ~ except hidden top-level folders and .env files",
+                    "Review this spec / plan; skill-requested branch reviews; completeness check before a PR",
                 ],
                 [
                     "release-mapper",
@@ -843,6 +843,7 @@ def story():
 [coder]  Execute docs/superpowers/plans/<file>.md with executing-plans.
 [any]    Review the branch against main with cpp-reviewer.   (C++)
 [any]    Review docs/superpowers/specs/<file>.md with reviewer.
+[any]    Completeness check of this branch against <base> with reviewer.
 [any]    Run the full build and tests with build-runner.
 [any]    Draft the commit message with scribe.
 """

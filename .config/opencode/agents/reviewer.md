@@ -1,5 +1,5 @@
 ---
-description: Read-only review on a second model family - specs, plans, design docs, non-C++ code and whole-branch reviews requested by skills. Follows the review prompt it is given (checklist, scope, report format). For C++ code use cpp-reviewer. Never edits.
+description: Read-only review on a second model family - specs, plans, design docs, non-C++ code, whole-branch reviews requested by skills, and completeness checks of a branch against its base (what was changed but not updated everywhere). Follows the review prompt it is given (checklist, scope, report format). For C++ code use cpp-reviewer. Never edits.
 mode: subagent
 permissions:
   - { action: "*", resource: "*", effect: deny }
@@ -59,6 +59,32 @@ judge each point; do not review untouched parts.
 - **Code:** correctness, error paths, edge inputs, tests that would fail
   without the change, security and data loss, consistency with the repo's
   conventions.
+
+## Completeness check
+
+When asked for a completeness check of a branch, find what the branch
+changed but did not update everywhere. This is not a code review.
+
+1. **Base:** take the base branch from the request. If none is given, ask;
+   do not guess.
+2. **What changed:** `git log <base>..HEAD`, `git diff <base>...HEAD`, plus
+   `git status` and `git diff` for uncommitted work. List renamed or
+   removed names, flags, options, config keys, interfaces, file paths,
+   commands, defaults and behaviour.
+3. **Where it is still old:** for each item, search the repo for the old
+   name or claim (README, docs and their generator sources, comments,
+   tests, example configs, CI, changelog, `.agents/skills/`). Load the
+   repo's project skills first; they name its sync points. Then search
+   other folders under `~` that consume or describe it (sibling repos,
+   notes). Hidden folders in `~` are off limits; do not try to get around
+   that.
+4. **What is missing:** new code without tests, new options or commands
+   without docs, TODOs or FIXMEs added on the branch.
+
+Report each gap with `path:line`, the stale text and what it should say,
+by severity (**Important**: wrong for someone following it; **Minor**:
+cosmetic). End with **Not checked**: generated files you could not
+rebuild, test results you did not see, places you could not read.
 
 ## Output
 
