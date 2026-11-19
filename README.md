@@ -324,9 +324,8 @@ install v1). Terminal settings live in `~/.config/opencode/cli.json`; the legacy
 
 #### Opencode Plugin
 
-One plugin per layer, essentials only; see
-[`docs/ai-workflow/concepts/plugin-layers.md`](docs/ai-workflow/concepts/plugin-layers.md)
-and [the decision](docs/ai-workflow/decisions/2026-11-19-essential-plugins.md).
+One plugin per layer, essentials only (reasoning in the optional notes wiki, see
+[`./install --wiki`](#-docs)).
 Add plugins by editing `opencode.json` / `opencode_work.json` here, not with
 `opencode plugin add` (it rewrites the symlinked config).
 
@@ -356,8 +355,9 @@ Context management uses V2's built-in compaction (`compaction.auto: true`), not 
 
 Global subagents live in `.config/opencode/agents/` (`cpp-reviewer`, `investigator`,
 `release-mapper`, `build-runner`, `scribe`, `jira`, `confluence`). Project know-how goes into
-each repo's `.agents/skills/` so Copilot and OpenCode teammates share it. Why and how:
-[`docs/ai-workflow/`](docs/ai-workflow/index.md).
+each repo's `.agents/skills/` so Copilot and OpenCode teammates share it. The global
+`.config/opencode/AGENTS.md` holds rules for every session, including when a new skill or
+subagent is worth adding.
 
 ### 9. Neovim Plugins (special mentioned)
 
@@ -417,9 +417,10 @@ Here are some additional tools that I use in my development environment:
 
 - [`docs/key-management.pdf`](docs/key-management.pdf) — key model, new-machine flow, which action
   to take, rotation, restore from backup, command reference, and GPG versus SSH.
-- [`docs/ai-workflow/`](docs/ai-workflow/index.md) — AI agent workflow notes: when to use
-  subagents, skills vs agents, model choice, and where each tool reads its files. A wiki kept
-  with the `llm-wiki` skill; point it at `~/dotfiles/docs/ai-workflow`.
+- AI-workflow notes live in a separate, private wiki repo of your own (optional). Clone it with
+  `./install --wiki <git-url>` to `~/wiki/ai-workflow` (or `AI_WIKI_DIR`). If it has an
+  `instructions.md`, OpenCode loads it as personal rules; `test/ai-inventory.sh` checks its
+  `inventory.md` against the installed agents and skills.
 
 ## 🧪 Tests
 
