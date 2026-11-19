@@ -79,9 +79,18 @@ the first pass has finished:
    ~/dotfiles/install --keys ~/key-backup --work-pc  # work machine
    ```
 
-4. **Publish the updated public key.** On each host's _Settings → SSH and GPG keys_, delete the
-   existing GPG key entry and add the new block, which the script prints. Until then, commits from
-   this machine show as _Unverified_.
+4. **Publish the updated public key** on each GitHub account. Until then, commits from this machine
+   show as _Unverified_. GitHub cannot update a key in place, so delete the old entry and add the
+   new block. The script prints these commands with the right host, key ID and file filled in:
+
+   ```sh
+   gh auth refresh -h github.com -s admin:gpg_key   # once per host: lets gh change GPG keys
+   gh gpg-key delete <last 16 hex of the fingerprint> --yes
+   gh gpg-key add ~/key-backup/personal-public.asc --title personal
+   ```
+
+   For the work host, prefix the last two with `GH_HOST=<work host>`. Or use the host's
+   _Settings → SSH and GPG keys_ page.
 5. **Copy `*-public.asc` back** to the offline backup, and delete the folder if it was a copy.
 
 What `--keys` does, per identity (personal always, work with `--work-pc`):
@@ -102,11 +111,18 @@ run against a keyring that already holds the primary (e.g. your offline machine)
 
 | File                       | Read by `--keys` | Contains                                      |
 | -------------------------- | ---------------- | --------------------------------------------- |
-| `<id>-secret.asc`          | yes              | primary + shared encryption + first signing   |
+| `<id>-secret.asc`          | yes              | primary + shared encryption, no signing ¹     |
 | `<id>-public.asc`          | yes              | latest published block, every signing subkey  |
 | `ownertrust.txt`           | yes              | ultimate trust for your own keys              |
 | `<id>-primary.asc`         | no               | primary only: renewals, new UIDs, revocation  |
 | `<id>-revocation.rev`      | no               | kill switch; keep it offline, never in cloud  |
+
+¹ Only what no machine can recreate. Every signing secret, the first machine's included, stays on
+its machine, which is why `<id>-secret.asc` does not change when machines are added or keys
+renewed: their public halves and the expiry dates live in `<id>-public.asc`, and `--keys` uses the
+newest date from either file. Export it as `gpg --armor --export-secret-keys "$FPR!" "$E_FPR!"`
+(`!` = exactly that key). An older backup that still holds a signing secret also works: `--keys`
+drops it.
 
 **Paths**
 
@@ -768,7 +784,8 @@ gpg -K "$FPR"
 
 # 5. Publish: the expiry lives in the public block
 gpg --armor --export "$FPR" > ~/key-backup/personal-public.asc
-#    host: Settings → SSH and GPG keys → delete the old entry, add this block
+#    then on GitHub: gh gpg-key delete <last 16 hex of $FPR> --yes
+#                    gh gpg-key add ~/key-backup/personal-public.asc --title personal
 
 # 6. On every other machine
 gpg --import ~/key-backup/personal-public.asc

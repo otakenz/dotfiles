@@ -230,6 +230,7 @@ GOPASS_WORK_URL="${GOPASS_WORK_URL:-}"
 KEYS_TMP=
 KEYS_ROLLBACK_FPR=
 KEYS_RESTORED=()
+declare -A KEYS_PUBLIC=()
 
 BACKUP_DIR="${HOME}/.dotfiles_backup/backup_$(date +%Y-%m-%d_%H-%M-%S)"
 
@@ -1391,6 +1392,20 @@ _keys_ssh_key() {
   fi
 }
 
+# Host of an identity's store URL: github.com from git@github.com:me/store.git
+# or ssh://git@github.com/me/store.git; empty for a local path or file:// URL.
+_keys_host() {
+  local url
+  url="$(_keys_url "${1}")"
+  case "${url}" in
+  *://*) url="${url#*://}" ;;
+  *:*) ;;
+  *) url= ;;
+  esac
+  url="${url#*@}"
+  echo "${url%%[:/]*}"
+}
+
 # The key path is quoted for the shell that git runs GIT_SSH_COMMAND /
 # core.sshCommand with, so a HOME containing spaces still works.
 _keys_ssh_cmd() {
@@ -1417,13 +1432,27 @@ _keys_subkeys() {
              $1=="fpr" && want {print cap, sec, (ex==""?"never":ex), $10; want=0}'
 }
 
-# True when the key file has an encryption subkey that is neither expired
-# nor revoked; it is the only key that can open the password store.
+# True when an encryption subkey is neither expired nor revoked; it is the only
+# key that can open the password store. A renewal updates only *-public.asc,
+# so each subkey counts with its latest expiry across all files given, as gpg
+# does when it imports them together.
 _keys_usable_encryption() {
-  gpg --show-keys --with-colons "${1}" 2>/dev/null |
-    awk -F: -v now="$(date +%s)" '
-      ($1=="ssb" || $1=="sub") && $12 ~ /e/ && $2 != "r" && ($7=="" || $7 > now) {ok=1}
-      END {exit !ok}'
+  local file
+  for file in "${@}"; do
+    gpg --show-keys --with-colons --with-subkey-fingerprint "${file}" 2>/dev/null
+  done | awk -F: -v now="$(date +%s)" '
+    $1=="ssb" || $1=="sub" {enc = ($12 ~ /e/); rev = ($2=="r"); exp_ = ($7=="" ? "never" : $7); want=1; next}
+    $1=="fpr" && want {
+      want=0
+      if (!enc) next
+      if (rev) revoked[$10]=1
+      if (exp_=="never" || best[$10]=="never") best[$10]="never"
+      else if (exp_+0 > best[$10]+0) best[$10]=exp_
+    }
+    END {
+      for (k in best) if (!(k in revoked) && (best[k]=="never" || best[k] > now)) ok=1
+      exit !ok
+    }'
 }
 
 _keys_primary_secret() {
@@ -1501,7 +1530,7 @@ _keys_preflight() {
     [ -n "${fpr}" ] || _error "Cannot read a key from '${dir}/${id}-secret.asc'"
     grep -q "^${fpr}:" "${dir}/ownertrust.txt" ||
       _error "'${dir}/ownertrust.txt' has no entry for the ${id} key ${fpr}"
-    _keys_usable_encryption "${dir}/${id}-secret.asc" ||
+    _keys_usable_encryption "${dir}/${id}-secret.asc" "${dir}/${id}-public.asc" ||
       _error "The ${id} encryption subkey expired (or was revoked). Renew it on a machine
 holding the primary first, see 'How to renew a GPG key' in the README."
   done
@@ -1610,9 +1639,11 @@ On a machine that should hold subkeys only, drop the primary first:
     printf "%s\n" "${published[@]}" | grep -q -x "${line}" || _error "Export lost subkey ${line}"
   done
 
-  if ! cp "${KEYS_TMP}/public.asc" "${dir}/${id}-public.asc" 2>/dev/null; then
-    cp "${KEYS_TMP}/public.asc" "${HOME}/${id}-public.asc"
-    echo "Backup folder is read-only, wrote the public block to ${HOME}/${id}-public.asc"
+  KEYS_PUBLIC[${id}]="${dir}/${id}-public.asc"
+  if ! cp "${KEYS_TMP}/public.asc" "${KEYS_PUBLIC[${id}]}" 2>/dev/null; then
+    KEYS_PUBLIC[${id}]="${HOME}/${id}-public.asc"
+    cp "${KEYS_TMP}/public.asc" "${KEYS_PUBLIC[${id}]}"
+    echo "Backup folder is read-only, wrote the public block to ${KEYS_PUBLIC[${id}]}"
   fi
   rm -rf "${KEYS_TMP}"
   KEYS_TMP=
@@ -1719,7 +1750,7 @@ _keys_clone_store() {
 }
 
 _keys_summary() {
-  local dir="${1}" id fpr cleanup
+  local dir="${1}" id fpr host file cleanup
   if command -v shred >/dev/null 2>&1; then
     cleanup="$(printf "find %q -type f -exec shred -u {} + && rm -r %q" "${dir}" "${dir}")"
   else
@@ -1733,27 +1764,37 @@ _keys_summary() {
   if [ "${#KEYS_RESTORED[@]}" -gt 0 ]; then
     cat <<EOF
 
-This machine added a signing subkey, so each host needs the updated public key.
-For every identity below, on the host's Settings → SSH and GPG keys page:
-delete the existing GPG key entry, then add the new block (same key ID).
+This machine added a signing subkey, so each GitHub account needs the updated
+public key; until then, commits signed here show as "Unverified". GitHub cannot
+update a key in place: delete the old entry, then add the new block (same key ID).
+Run these yourself; the first line (once per host) lets gh change GPG keys:
 
 EOF
     for id in "${KEYS_RESTORED[@]}"; do
       fpr="$(_keys_fpr_of_file "${dir}/${id}-secret.asc")"
-      printf "  • %-8s %s\n             cat %s\n" "${id}" "${fpr}" "${dir}/${id}-public.asc"
-    done
-    cat <<EOF
+      host="$(_keys_host "${id}")"
+      host="${host:-<git-host>}"
+      file="$(printf "%q" "${KEYS_PUBLIC[${id}]}")"
+      cat <<EOF
+  • ${id} key ${fpr}
+      gh auth refresh -h ${host} -s admin:gpg_key
+      GH_HOST=${host} gh gpg-key delete ${fpr: -16} --yes
+      GH_HOST=${host} gh gpg-key add ${file} --title ${id}
+    or by hand: https://${host}/settings/keys
 
-  github.com: https://github.com/settings/keys
-  Until then, commits signed on this machine show as "Unverified".
 EOF
+    done
   fi
 
   cat <<EOF
-
 Finally:
-  • copy the updated *-public.asc files back to your offline backup, so the
-    next machine keeps this machine's signing subkey;
+  • copy the updated public blocks back to your offline backup, so the next
+    machine keeps this machine's signing subkey:
+EOF
+  for id in "${KEYS_RESTORED[@]}"; do
+    printf "      %q\n" "${KEYS_PUBLIC[${id}]}"
+  done
+  cat <<EOF
   • if '${dir}' is a copy rather than the mounted backup drive, remove it:
       ${cleanup}
 EOF

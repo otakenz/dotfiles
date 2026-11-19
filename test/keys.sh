@@ -69,14 +69,19 @@ EOF
 # -- fixture ------------------------------------------------------------------
 
 make_identity() {
-  local id="${1}" uid="${2}" fpr
+  local id="${1}" uid="${2}" fpr encr
 
   fx_gpg --quick-generate-key "${uid}" ed25519 cert 3y 2>/dev/null
   fpr="$(GNUPGHOME="${FX}" gpg --list-keys --with-colons "${uid}" | awk -F: '$1=="fpr"{print $10; exit}')"
   fx_gpg --quick-add-key "${fpr}" ed25519 sign 2y
   fx_gpg --quick-add-key "${fpr}" cv25519 encr 2y
 
-  fx_gpg --armor --export-secret-keys "${fpr}" >"${PRISTINE}/${id}-secret.asc"
+  # The backup holds only what no machine can recreate: the primary and the
+  # shared encryption subkey. Machine 1's signing secret stays on machine 1.
+  encr="$(subkey_fprs "${FX}" "${fpr}" e | head -1)"
+  fx_gpg --armor --export-secret-keys "${fpr}!" "${encr}!" >"${PRISTINE}/${id}-secret.asc"
+  [ "$(GNUPGHOME="${FX}" gpg --show-keys --with-colons "${PRISTINE}/${id}-secret.asc" |
+    awk -F: '$1=="ssb"{print $12}')" = "e" ] || fail "fixture ${id}-secret.asc is not primary + encryption"
   fx_gpg --armor --export-secret-keys "${fpr}!" >"${PRISTINE}/${id}-primary.asc"
   fx_gpg --armor --export "${fpr}" >"${PRISTINE}/${id}-public.asc"
   cp "${FX}/openpgp-revocs.d/${fpr}.rev" "${PRISTINE}/${id}-revocation.rev"
@@ -234,6 +239,14 @@ t1_work_pc_fresh() {
     fail "false .gpg-id warning for a recipient named by email"
   fi
 
+  local id
+  for id in personal work; do
+    grep -q -F "gh gpg-key delete ${FPR[${id}]: -16} --yes" "${ROOT}/m2.log" ||
+      fail "no GitHub delete step for the ${id} key"
+    grep -q -F "gh gpg-key add ${DIR}/${id}-public.asc --title" "${ROOT}/m2.log" ||
+      fail "no GitHub add step for the ${id} key"
+  done
+
   [ "$(on m2 gopass show -o test/entry 2>/dev/null)" = "secret-personal" ] ||
     fail "personal store entry unreadable"
   [ "$(on m2 gopass show -o work/test/entry 2>/dev/null)" = "secret-work" ] ||
@@ -379,6 +392,39 @@ t8_expired_encryption() {
   fi
 }
 
+# After a renewal only *-public.asc carries the new expiry; *-secret.asc keeps
+# the old one, which may already have passed.
+t10_renewed_in_public() {
+  local fx="${ROOT}/fx10" dir="${ROOT}/backup-t10" fpr encr expiry
+  mkdir -p "${fx}" "${dir}"
+  chmod 700 "${fx}"
+  HOMES+=("${fx}")
+  g10() { GNUPGHOME="${fx}" gpg --batch --quiet --pinentry-mode loopback --passphrase "${PASSPHRASE}" "${@}"; }
+
+  g10 --quick-generate-key "Test Renewed <r@example.com>" ed25519 cert 3y 2>/dev/null
+  fpr="$(GNUPGHOME="${fx}" gpg --list-keys --with-colons | awk -F: '$1=="fpr"{print $10; exit}')"
+  g10 --quick-add-key "${fpr}" ed25519 sign 2y
+  g10 --quick-add-key "${fpr}" cv25519 encr seconds=4
+  encr="$(subkey_fprs "${fx}" "${fpr}" e | head -1)"
+  # An older backup layout that still carries machine 1's signing secret.
+  g10 --armor --export-secret-keys "${fpr}" >"${dir}/personal-secret.asc"
+  sleep 2
+  g10 --quick-set-expire "${fpr}" 2y "${encr}"
+  g10 --armor --export "${fpr}" >"${dir}/personal-public.asc"
+  GNUPGHOME="${fx}" gpg --export-ownertrust >"${dir}/ownertrust.txt"
+  sleep 3
+
+  machine m10 "Test Renewed" "r@example.com"
+  run_keys m10 "${dir}" || fail "renewed encryption subkey refused (see m10.log)"
+
+  expiry="$(GNUPGHOME="${ROOT}/m10/.config/gnupg" gpg -K --with-colons "${fpr}" |
+    awk -F: '$1=="ssb" && $12 ~ /s/ && $15 != "#" {print $7; exit}')"
+  [ -n "${expiry}" ] && [ "${expiry}" -gt "$(($(date +%s) + 365 * 86400))" ] ||
+    fail "new signing subkey did not take the renewed expiry (${expiry:-none})"
+  [ "$(subkeys "${ROOT}/m10/.config/gnupg" "${fpr}" | awk '$1 ~ /s/ && $2=="+"' | wc -l)" = 1 ] ||
+    fail "machine 1's signing secret from an older backup was kept"
+}
+
 # Stands in for ssh: requires -i to name an existing file (so a path split on
 # a space fails), logs it, and runs the remote git command locally.
 write_fake_ssh() {
@@ -426,6 +472,10 @@ t9_awkward_paths() {
   [ -n "${cmd}" ] || fail "no clean-up command printed"
   bash -c "${cmd}" || fail "printed clean-up command failed: ${cmd}"
   [ ! -e "${home}/key backup" ] || fail "printed clean-up command left the folder"
+
+  # GitHub steps: host taken from the store URL, path quoted for copy-paste.
+  grep -q -F "GH_HOST=fakehost gh gpg-key add $(printf %q "${home}/key backup/personal-public.asc")" \
+    "${home}.log" || fail "GitHub add step lacks the store's host or a pasteable path"
 }
 
 # -- main ---------------------------------------------------------------------
@@ -446,7 +496,8 @@ DIR="${ROOT}/backup"
 cp -R "${PRISTINE}" "${DIR}"
 
 ALL_TESTS="t1_work_pc_fresh t2_third_machine t3_rerun_noop t4_rollback t5_personal_only
-  t6_existing_primary t7_double_interrupt t8_expired_encryption t9_awkward_paths"
+  t6_existing_primary t7_double_interrupt t8_expired_encryption t9_awkward_paths
+  t10_renewed_in_public"
 # KEYS_TESTS="t7_double_interrupt" bash test/keys.sh runs a subset.
 # shellcheck disable=SC2086
 for CURRENT in ${KEYS_TESTS:-${ALL_TESTS}}; do
