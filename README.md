@@ -318,6 +318,13 @@ install v1). Terminal settings live in `~/.config/opencode/cli.json`; the legacy
 - Persistent memory using local vector search
 - OpenCode v2 support requires 2.42.0 or later (`plugins` config key)
 
+#### Subagents
+
+Global subagents live in `.config/opencode/agents/` (`cpp-reviewer`, `investigator`,
+`release-mapper`, `build-runner`, `scribe`, `jira`, `confluence`). Project know-how goes into
+each repo's `.agents/skills/` so Copilot and OpenCode teammates share it. Why and how:
+[`docs/ai-workflow/`](docs/ai-workflow/index.md).
+
 ### 9. Neovim Plugins (special mentioned)
 
 There are many plugins that I use, but here are some of the most essential ones:
@@ -376,6 +383,9 @@ Here are some additional tools that I use in my development environment:
 
 - [`docs/key-management.pdf`](docs/key-management.pdf) — key model, new-machine flow, which action
   to take, rotation, restore from backup, command reference, and GPG versus SSH.
+- [`docs/ai-workflow/`](docs/ai-workflow/index.md) — AI agent workflow notes: when to use
+  subagents, skills vs agents, model choice, and where each tool reads its files. A wiki kept
+  with the `llm-wiki` skill; point it at `~/dotfiles/docs/ai-workflow`.
 
 ## 🧪 Tests
 
@@ -383,6 +393,7 @@ Here are some additional tools that I use in my development environment:
 ./run ci:keys                          # keys pass, hermetic: temp HOME, generated keys, local stores
 ./run ci:keys:linux                    # same in Ubuntu 24.04, Ubuntu 26.04 and Arch containers
 ./run ci:install:linux ubuntu:26.04    # full first pass in one container, then checks the result
+test/opencode-agents.sh                # local only: global OpenCode subagents load with the intended models and permissions
 ```
 
 CI runs the keys test on Ubuntu 24.04/26.04, Arch and macOS for every push (`ci.yml`), and the full
