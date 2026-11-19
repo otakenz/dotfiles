@@ -38,10 +38,12 @@ def ok(msg):
     print(f"ok:   {msg}")
 
 CHEAP = ["build-runner", "scribe", "jira", "confluence"]
-INHERIT = ["investigator", "release-mapper"]
+INHERIT = ["release-mapper"]
 CHEAP_MODEL = {"providerID": "opencode-go", "id": "deepseek-v4.1-flash"}
 # Reviewer on a different model family than the Opus author session.
-PINNED = {"cpp-reviewer": {"providerID": "github-copilot", "id": "gpt-6.1-sol"}}
+SONNET = {"providerID": "github-copilot", "id": "claude-sonnet-5.5"}
+PINNED = {"cpp-reviewer": {"providerID": "github-copilot", "id": "gpt-6.1-sol"},
+          "investigator": SONNET}
 
 def match(value, pattern):
     """OpenCode whole-value wildcard match. A shell pattern ending in ' *'
@@ -67,6 +69,22 @@ def expect(aid, cmd, want):
     got = effect(a, "shell", cmd)
     if (got == "allow") != (want == "allow"):
         fail(f"{aid}: shell '{cmd}' is {got}, want {want}")
+
+# Authors (coder primary, built-in general) run on Sonnet; Opus stays on build.
+for aid, mode in [("coder", "primary"), ("general", "subagent")]:
+    a = agents.get(aid)
+    if a is None:
+        fail(f"{aid}: missing")
+        continue
+    model = a.get("model") or {}
+    if a.get("mode") != mode:
+        fail(f"{aid}: mode is {a.get('mode')!r}, want {mode!r}")
+    elif {k: model.get(k) for k in SONNET} != SONNET:
+        fail(f"{aid}: model {a.get('model')!r}, want {SONNET}")
+    elif aid == "coder" and effect(a, "edit", "src/main.cpp") != "allow":
+        fail("coder: edit is not allowed")
+    else:
+        ok(f"{aid}: {mode} on claude-sonnet-5.5")
 
 if "commit" in agents:
     fail("V1 agent 'commit' is still loaded")

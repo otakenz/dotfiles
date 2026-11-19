@@ -13,6 +13,9 @@
 		},
 		"explore": {
 			"model": "opencode-go/deepseek-v4.1-flash"
+		},
+		"general": {
+			"model": "github-copilot/claude-sonnet-5.5"
 		}
 	},
 	"mcp": {
