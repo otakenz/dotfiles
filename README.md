@@ -430,6 +430,7 @@ Here are some additional tools that I use in my development environment:
 ./run ci:keys:linux                    # same in Ubuntu 24.04, Ubuntu 26.04 and Arch containers
 ./run ci:install:linux ubuntu:26.04    # full first pass in one container, then checks the result
 test/opencode-agents.sh                # local only: global OpenCode subagents load with the intended models and permissions
+test/ai-inventory.sh                   # local only: agents and skills match the private wiki inventory (warns without it)
 ```
 
 CI runs the keys test on Ubuntu 24.04/26.04, Arch and macOS for every push (`ci.yml`), and the full
