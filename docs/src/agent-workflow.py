@@ -240,7 +240,7 @@ D_OVERVIEW = (
     "digraph G { rankdir=TB; compound=true; newrank=true;"
     + GV_HEAD
     + """
-  subgraph cluster_p { label="Primary agents: you talk to one, switch with Tab"; fontcolor="#1f3a5f";
+  subgraph cluster_p { label="Primary agents: you talk to one, switch with Shift+Tab"; fontcolor="#1f3a5f";
     style="rounded"; color="#1f3a5f"; margin=10;
     plan  [label=<<b>plan</b><br/><font point-size="8">Opus 5.5<br/>think, no repo edits</font>>,
            color="#6a4c93", penwidth=1.4];
@@ -389,7 +389,7 @@ def story():
     s += h1(1, "overview")
     s.append(
         p(
-            "You always talk to one <b>primary</b> agent and switch between them with Tab. A primary "
+            "You always talk to one <b>primary</b> agent and switch between them with Shift+Tab. A primary "
             "hands self-contained jobs to <b>subagents</b>: each starts with an empty context, has its own "
             "permissions and model, and returns only a summary. The rule of thumb: think with the strongest "
             "model, implement with a cheaper one, review with a different model family.",
@@ -553,9 +553,9 @@ def story():
     s.append(Spacer(1, 4))
     s.append(
         p(
-            "<b>Sessions:</b> steps 1 and 2 share one session: press Tab from plan to build and the "
+            "<b>Sessions:</b> steps 1 and 2 share one session: press Shift+Tab from plan to build and the "
             "exploration stays in context for brainstorming, on the same model. Step 3 starts a <b>new</b> "
-            "session: Tab would keep the whole Opus conversation, and Sonnet would re-read it on every turn "
+            "session: switching agents would keep the whole Opus conversation, and Sonnet would re-read it on every turn "
             "for nothing, because the plan file is the handoff. Steps 4 and 5 run inside the coder session. "
             "Exception: after a long, noisy exploration, start step 2 fresh in build and paste a short summary.",
             S_NOTE,
@@ -843,13 +843,20 @@ def story():
         table(
             [
                 ["Action", "How"],
-                ["Switch primary", "Tab (cycles through the primary agents)"],
+                [
+                    "Switch primary",
+                    "Shift+Tab cycles; Ctrl+X A or /agents picks one",
+                ],
                 [
                     "New session for coder",
-                    "New session in the TUI, then Tab to coder",
+                    "Ctrl+X N, then Shift+Tab to coder; check the footer shows Sonnet (Ctrl+X M if not)",
                 ],
                 ["Check agents", "test/opencode-agents.sh"],
                 ["Check inventory", "test/ai-inventory.sh"],
+                [
+                    "Quick question, kept out of the context",
+                    "/btw &lt;question&gt; (answer in a dialog, not added to the conversation)",
+                ],
                 [
                     "Get the private wiki",
                     "./install --wiki &lt;git-url&gt; (to ~/wiki/ai-workflow or AI_WIKI_DIR)",

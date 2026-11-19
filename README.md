@@ -355,7 +355,7 @@ Context management uses V2's built-in compaction (`compaction.auto: true`), not 
 
 Global subagents live in `.config/opencode/agents/` (`cpp-reviewer`, `investigator`,
 `release-mapper`, `build-runner`, `scribe`, `jira`, `confluence`), next to one extra primary
-agent, `coder`: plan with `build` on a strong model, then press Tab to `coder` (a cheaper
+agent, `coder`: plan with `build` on a strong model, then press Shift+Tab to `coder` (a cheaper
 model) to implement. Authors run on Claude, `cpp-reviewer` on GPT for a second opinion.
 Project know-how goes into
 each repo's `.agents/skills/` so Copilot and OpenCode teammates share it. The global
