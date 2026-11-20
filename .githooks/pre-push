@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# Runs test/public-leak.sh on the commits being pushed. Bypass with
+# `git push --no-verify`. Enabled by ./install (core.hooksPath .githooks).
+
+set -o nounset
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+zero=0000000000000000000000000000000000000000
+status=0
+
+while read -r _ local_sha _ remote_sha; do
+  [ -n "${local_sha:-}" ] || continue
+  [ "${local_sha}" = "${zero}" ] && continue
+
+  if [ "${remote_sha}" = "${zero}" ]; then
+    revs=("${local_sha}" --not --remotes)
+  else
+    if ! git cat-file -e "${remote_sha}^{commit}" 2>/dev/null; then
+      printf "remote has commits you don't have; git fetch first\n" >&2
+      status=1
+      continue
+    fi
+    revs=("${remote_sha}..${local_sha}")
+  fi
+
+  bash "${root}/test/public-leak.sh" "${revs[@]}" || status=1
+done
+
+exit "${status}"

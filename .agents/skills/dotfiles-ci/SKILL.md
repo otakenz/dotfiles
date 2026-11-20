@@ -16,6 +16,8 @@ description: Use when CI fails in the dotfiles repo, or before pushing changes t
 
 `test/wiki.sh` and `test/ai-inventory.sh` are not in CI; run them by hand.
 
+The repo is public: `.githooks/pre-push` (enabled by `./install`) runs `test/public-leak.sh` on the pushed range and blocks company identifiers in added lines and commit messages. Patterns live in the private wiki (`~/wiki/ai-workflow/public-leak-patterns.txt`, or `$PUBLIC_LEAK_PATTERNS`); bypass deliberately with `git push --no-verify`. Test: `bash test/public-leak-test.sh` (in CI).
+
 ## Read a failure
 
 ```bash

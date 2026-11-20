@@ -66,3 +66,7 @@ jobs:
       - name: "Test ./install --only"
         run: |
           bash test/install-only.sh
+
+      - name: "Test public-leak check"
+        run: |
+          bash test/public-leak-test.sh

@@ -664,6 +664,17 @@ clone_dotfiles() {
   git clone "${DOTFILES_URL}" "${DOTFILES_PATH}"
 }
 
+enable_git_hooks() {
+  _info "ENABLE GIT HOOKS"
+
+  if [ ! -d "${DOTFILES_PATH}/.githooks" ] || [ ! -e "${DOTFILES_PATH}/.git" ]; then
+    echo "Skipping, since there is no git checkout with .githooks at '${DOTFILES_PATH}'"
+    return 0
+  fi
+
+  git -C "${DOTFILES_PATH}" config core.hooksPath .githooks
+}
+
 install_zsh_plugins() {
   _info "INSTALL ZSH PLUGINS"
 
@@ -2198,6 +2209,7 @@ check_prereqs
 create_initial_dirs
 install_packages
 clone_dotfiles
+enable_git_hooks
 install_zsh_plugins
 create_symlinks
 configure_system_configs
