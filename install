@@ -19,6 +19,8 @@ SKIP_SYSTEM_PACKAGES=
 KEYS_DIR=
 
 ONLY_UPDATE=
+ONLY_PIECES=
+PIECES=(zsh wezterm tmux health)
 
 PACMAN_PACKAGES="
   7zip
@@ -213,7 +215,7 @@ CPU_ARCH="$(uname -m)"
 OS_TYPE="$(uname | tr "[:upper:]" "[:lower:]")"
 OS_DISTRO=
 OS_IN_WSL=
-WIN_USER_PATH=
+WIN_USER_PATH="${WIN_USER_PATH:-}"
 
 DOTFILES_URL="${DOTFILES_URL:-https://github.com/otakenz/dotfiles}"
 DOTFILES_PATH="${DOTFILES_PATH:-${HOME}/dotfiles}"
@@ -453,9 +455,9 @@ detect_env() {
 
   case "${OS_TYPE}" in
   linux)
-    if [ -r /etc/os-release ]; then
-      # shellcheck disable=SC1091
-      OS_DISTRO="$(. /etc/os-release && echo "${ID_LIKE:-${ID}}")"
+    if [ -r "${OS_RELEASE_FILE:-/etc/os-release}" ]; then
+      # shellcheck disable=SC1090,SC1091
+      OS_DISTRO="$(. "${OS_RELEASE_FILE:-/etc/os-release}" && echo "${ID_LIKE:-${ID}}")"
 
       # Technically ID_LIKE can have a space separated list of distros but
       # we really only care that we have a Debian based system where apt is
@@ -471,7 +473,7 @@ detect_env() {
     # Are we in WSL2 ? A container on a WSL2 host shares its kernel, but not Windows.
     if [[ -z "${IN_CONTAINER}" && "$(uname -a)" == *"WSL2"* ]]; then
       OS_IN_WSL=1
-      WIN_USER_PATH=$(_get_win_users_path)
+      WIN_USER_PATH="${WIN_USER_PATH:-$(_get_win_users_path)}"
     fi
 
     ;;
@@ -1950,6 +1952,40 @@ setup_wiki() {
   fi
 }
 
+_check_pieces() {
+  [ -n "${ONLY_PIECES}" ] || return 0
+
+  local name known
+  local IFS=,
+  for name in ${ONLY_PIECES}; do
+    known=
+    for p in "${PIECES[@]}"; do [ "${p}" = "${name}" ] && known=1; done
+    if [ -z "${known}" ]; then
+      IFS=' '
+      _error "Unknown piece '${name}'. Pieces: zsh, wezterm, tmux, health"
+    fi
+  done
+}
+
+_run_pieces() {
+  local piece
+  for piece in "${PIECES[@]}"; do
+    case ",${ONLY_PIECES}," in
+    *",${piece},"*) ;;
+    *) continue ;;
+    esac
+    case "${piece}" in
+    zsh)
+      install_zsh_plugins
+      install_powerlevel10k
+      ;;
+    wezterm) install_wezterm ;;
+    tmux) install_tmux_plugins ;;
+    health) healthcheck ;;
+    esac
+  done
+}
+
 _usage() {
   cat <<EOF
 Usage examples:
@@ -1980,6 +2016,13 @@ LOCAL=1 ./install
 # AI_WIKI_DIR), or update it. Asks for the URL if none is given. OpenCode
 # loads its instructions.md as personal rules when present.
 ./install --wiki [URL]
+
+# Re-run single pieces (comma separated, always in this order):
+#   zsh      zsh plugins and powerlevel10k
+#   wezterm  install or update WezTerm nightly
+#   tmux     tmux plugins
+#   health   print versions
+./install --only wezterm,tmux
 
 # Show this help menu.
 ./install --help
@@ -2018,6 +2061,15 @@ while [ "${#}" -gt 0 ]; do
     WIKI_PASS=1
     WIKI_URL="${1#*=}"
     ;;
+  --only)
+    [ -n "${2:-}" ] || _error "'--only' needs piece names, e.g. --only wezterm,tmux"
+    ONLY_PIECES="${2}"
+    shift
+    ;;
+  --only=*)
+    ONLY_PIECES="${1#*=}"
+    [ -n "${ONLY_PIECES}" ] || _error "'--only' needs piece names, e.g. --only wezterm,tmux"
+    ;;
   --help | -h)
     _usage
     exit
@@ -2032,6 +2084,12 @@ done
 if [ -n "${KEYS_DIR}" ] && [ -n "${WIKI_PASS}" ]; then
   _error "Run '--keys' and '--wiki' one at a time"
 fi
+
+if [ -n "${ONLY_PIECES}" ] && { [ -n "${KEYS_DIR}" ] || [ -n "${WIKI_PASS}" ]; }; then
+  _error "Run '--only', '--keys' and '--wiki' one at a time"
+fi
+
+_check_pieces
 
 if [ -n "${KEYS_DIR}" ]; then
   setup_keys "${KEYS_DIR}"
@@ -2049,6 +2107,10 @@ update_dotfiles "${ARGS[@]}" && [ -n "${ONLY_UPDATE}" ] && exit
 # Clones below are anonymous HTTPS. The dotfiles' git config rewrites GitHub
 # URLs to SSH, and the SSH key this run creates is not registered yet.
 export GIT_CONFIG_GLOBAL=/dev/null
+if [ -n "${ONLY_PIECES}" ]; then
+  _run_pieces
+  exit
+fi
 check_prereqs
 create_initial_dirs
 install_packages

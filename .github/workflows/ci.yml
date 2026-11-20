@@ -62,3 +62,7 @@ jobs:
       - name: "Test ./install --keys"
         run: |
           bash test/keys.sh
+
+      - name: "Test ./install --only"
+        run: |
+          bash test/install-only.sh
