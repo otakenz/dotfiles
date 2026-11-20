@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Keeps ~/.config/opencode/cli.json a symlink into the dotfiles. OpenCode's
+# settings screen saves by renaming a temp file over it, which replaces the
+# link with a plain file; this copies such a file back into the repo (shown
+# by `git diff`) and restores the link. Run by the `opencode` shell function.
+#
+#   opencode-cli-sync DOTFILES_DIR
+
+set -o nounset
+
+repo="${1:?usage: opencode-cli-sync DOTFILES_DIR}"
+repo_file="${repo}/.config/opencode/cli.json"
+live="${XDG_CONFIG_HOME:-${HOME}/.config}/opencode/cli.json"
+
+[ -f "${repo_file}" ] || exit 0
+[ -L "${live}" ] && exit 0
+
+if [ ! -e "${live}" ]; then
+  mkdir -p "$(dirname "${live}")"
+  ln -s "${repo_file}" "${live}"
+  exit 0
+fi
+
+if ! cmp -s "${live}" "${repo_file}"; then
+  if ! git -C "${repo}" diff --quiet HEAD -- .config/opencode/cli.json; then
+    printf "opencode-cli-sync: %s and the dotfiles copy both have uncommitted changes; merge them by hand, then delete %s\n" \
+      "${live}" "${live}" >&2
+    exit 0
+  fi
+  # The live file is the only copy of the new settings: never drop it unless
+  # the repo copy was fully written.
+  tmp="${repo_file}.sync.$$"
+  if ! cp "${live}" "${tmp}" 2>/dev/null || ! mv -f "${tmp}" "${repo_file}"; then
+    rm -f "${tmp}"
+    printf "opencode-cli-sync: cannot write %s; %s left as is\n" "${repo_file}" "${live}" >&2
+    exit 1
+  fi
+  printf "opencode-cli-sync: OpenCode settings copied into the dotfiles; review with: git -C %s diff .config/opencode/cli.json\n" "${repo}" >&2
+fi
+
+ln -sf "${repo_file}" "${live}"

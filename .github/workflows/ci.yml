@@ -70,3 +70,7 @@ jobs:
       - name: "Test public-leak check"
         run: |
           bash test/public-leak-test.sh
+
+      - name: "Test opencode-cli-sync"
+        run: |
+          bash test/opencode-cli-sync.sh

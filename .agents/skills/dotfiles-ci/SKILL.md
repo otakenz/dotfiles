@@ -10,7 +10,7 @@ description: Use when CI fails in the dotfiles repo, or before pushing changes t
 | Workflow | Job | Runs | Notes |
 |---|---|---|---|
 | `ci.yml` | Test Linting and Testing | `./run ci:test`: shellcheck, shfmt, ruff | Runner's shellcheck is **0.9.0**; info-level findings fail the job |
-| `ci.yml` | Keys phase (ubuntu-24.04, archlinux, macos) | `bash test/deps.sh`, `bash test/keys.sh`, `bash test/install-only.sh` | macOS uses BSD tools and brew bash; Linux jobs run as root in containers |
+| `ci.yml` | Keys phase (ubuntu-24.04, archlinux, macos) | `bash test/deps.sh`, `bash test/keys.sh`, `bash test/install-only.sh`, `test/public-leak-test.sh`, `test/opencode-cli-sync.sh` | macOS uses BSD tools and brew bash; Linux jobs run as root in containers |
 | `ci.yml` | Keys phase (ubuntu-26.04) | same | `known_issue: true`, so it may fail without failing the run (libgcrypt 1.12.0, LP #2174038, "Bad secret key") |
 | `install.yml` | Full install (4 platforms) | `test/install-prep.sh`, `./install`, `test/install-check.sh` | ~10 min |
 

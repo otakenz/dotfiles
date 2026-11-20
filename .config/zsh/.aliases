@@ -59,7 +59,12 @@ opencode() {
     bash "${inv}" --status
     (bash "${inv}" --daily </dev/null >/dev/null 2>&1 &)
   fi
+  local sync="${repo}/.local/bin/opencode-cli-sync" rc
+  [ -n "${link}" ] && [ -x "${sync}" ] && "${sync}" "${repo}"
   command opencode "$@"
+  rc=$?
+  [ -n "${link}" ] && [ -x "${sync}" ] && "${sync}" "${repo}"
+  return "${rc}"
 }
 
 # Git Branch Checkout (with preview)
