@@ -3,7 +3,8 @@
 # the private notes wiki (see `./install --wiki`): every installed item needs
 # a row, every row an installed item, and counts stay under the limits the
 # inventory states. Also checks that reviewers run on another model family
-# than the authors (opencode.json, agent files). Without the wiki it warns
+# than the authors (opencode.json, agent files), and the starting context
+# budget (instructions, skills, agents, session total; chars // 4). Without the wiki it warns
 # and passes.
 #
 #   test/ai-inventory.sh              check this machine
@@ -129,6 +130,136 @@ else:
             revs = sorted({known[r] for r in REVIEWERS if r in known})
             print(f"ok:   model families: authors {', '.join(sorted(authors))}, reviewers {', '.join(revs)}")
 
+# Starting context: what a new session carries before the first prompt.
+# Tokens are estimated as chars // 4.
+import statistics, subprocess
+
+def api(path):
+    for _ in range(2):
+        try:
+            r = subprocess.run(["opencode", "api", "get", path],
+                               capture_output=True, text=True, timeout=60)
+            if r.returncode == 0:
+                j = json.loads(r.stdout)
+                return j["data"] if isinstance(j, dict) and "data" in j else j
+        except Exception:
+            pass
+    return None
+
+def tok(s):
+    return len(s) // 4
+
+def hidden_skill(path):
+    if not path or path.startswith("skill://") or not os.path.isfile(path):
+        return False
+    fm = re.match(r"---\n(.*?)\n---", Path(path).read_text(errors="replace"), re.S)
+    return bool(fm and re.search(
+        r"^\s*(opencode/autoinvoke:\s*false|disable-model-invocation:\s*true)\s*$",
+        fm.group(1), re.M))
+
+def measure():
+    home = os.path.expanduser("~")
+    out = dict(instructions=0, skills=None, agents=None, bootstrap=0, own=None,
+               total=None, sessions=0, rest=None, missing=[])
+    files = []
+    conf = cfg / "opencode.json"
+    if conf.is_file():
+        try:
+            files += [Path(os.path.expanduser(p)) for p in json.loads(conf.read_text()).get("instructions", [])]
+        except ValueError:
+            pass
+    files.append(cfg / "AGENTS.md")
+    for f in files:
+        if f.is_file():
+            out["instructions"] += tok(f.read_text(errors="replace"))
+        else:
+            out["missing"].append(str(f))
+    skills = api("/api/skill?location[directory]=" + home)
+    agents = api("/api/agent?location[directory]=" + home)
+    def dicts(x):
+        return [i for i in x if isinstance(i, dict)] if isinstance(x, list) else None
+    def sval(d, k):
+        v = d.get(k)
+        return v if isinstance(v, str) else ""
+    skills, agents = dicts(skills), dicts(agents)
+    if skills is not None and agents is not None:
+        out["skills"] = sum(
+            len(sval(s, "id")) + len(sval(s, "description")) + 40
+            for s in skills if not hidden_skill(sval(s, "path"))) // 4
+        out["agents"] = sum(
+            len(sval(a, "name") or sval(a, "id")) + len(sval(a, "description")) + 10
+            for a in agents if a.get("mode") in ("subagent", "all") and not a.get("hidden")) // 4
+        boot = next((sval(s, "path") for s in skills if s.get("id") == "using-superpowers"), "")
+        if boot and os.path.isfile(boot):
+            out["bootstrap"] = tok(Path(boot).read_text(errors="replace"))
+        out["own"] = out["instructions"] + out["skills"] + out["agents"] + out["bootstrap"]
+    sess = api("/api/session?limit=40")
+    sess = dicts(sess)
+    out["sessions_ok"] = sess is not None
+    def num(d, k):
+        v = d.get(k) if isinstance(d, dict) else None
+        return v if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
+    vals = []
+    roots = [s for s in sess or [] if isinstance(s.get("id"), str) and not s.get("parentID")]
+    for s in sorted(roots, key=lambda s: num(s.get("time"), "created"), reverse=True):
+        if len(vals) >= 5:
+            break
+        msgs = dicts(api(f"/api/session/{s['id']}/context"))
+        if msgs is None:
+            continue
+        user = next((m for m in msgs if m.get("type") == "user"), {})
+        asst = next((m for m in msgs if m.get("type") == "assistant"
+                     and isinstance(m.get("tokens"), dict)), None)
+        if len(sval(user, "text")) > 500 or not asst:
+            continue
+        mid = (asst.get("model") or {}).get("id") if isinstance(asst.get("model"), dict) else None
+        if not isinstance(mid, str) or "claude" not in mid:
+            continue
+        t = asst["tokens"]
+        cache = t.get("cache") if isinstance(t.get("cache"), dict) else {}
+        parts = [d.get(k, 0) for d, k in ((t, "input"), (cache, "read"), (cache, "write"))]
+        if not all(type(x) is int and x >= 0 for x in parts):
+            continue
+        v = sum(parts)
+        if v:
+            vals.append(v)
+    out["sessions"] = len(vals)
+    if vals:
+        out["total"] = int(statistics.median(vals))
+        if out["own"] is not None:
+            out["rest"] = out["total"] - out["own"]
+    return out
+
+bm = re.search(r"^Context:\s*total\s*<\s*(\d+)\s*\(target\s*(\d+)\),\s*own\s*<\s*(\d+),"
+               r"\s*instructions\s*<\s*(\d+),\s*skills\s*<\s*(\d+),\s*agents\s*<\s*(\d+)", text, re.M)
+if not bm:
+    fail("inventory has no 'Context: total < N (target T), own < N, instructions < N, skills < N, agents < N' line")
+else:
+    budgets = dict(zip(("total", "target", "own", "instructions", "skills", "agents"),
+                       map(int, bm.groups())))
+    ms = measure()
+    for f in ms["missing"]:
+        print(f"WARN: context: instruction file {f} not found", file=sys.stderr)
+    parts = [("instructions", ms["instructions"])]
+    if ms["skills"] is None:
+        print("WARN: context: OpenCode service unavailable; skills, agents and own not measured", file=sys.stderr)
+    else:
+        parts += [("skills", ms["skills"]), ("agents", ms["agents"]), ("own", ms["own"])]
+    for name, n in parts:
+        if n >= budgets[name]:
+            fail(f"context: {name} {n} >= {budgets[name]}")
+        else:
+            print(f"ok:   context: {name} {n} < {budgets[name]}")
+    if ms["total"] is None:
+        why = "no Claude sessions" if ms["sessions_ok"] else "OpenCode service unavailable"
+        print(f"WARN: context: {why}; total not measured", file=sys.stderr)
+    elif ms["total"] >= budgets["total"]:
+        print(f"WARN: context: total {ms['total']} >= {budgets['total']} "
+              f"(median of {ms['sessions']} sessions, target {budgets['target']})", file=sys.stderr)
+    else:
+        print(f"ok:   context: total {ms['total']} (median of {ms['sessions']} sessions, "
+              f"target {budgets['target']})")
+
 if status == 0:
     print(f"ok:   inventory matches ({len(installed['Plugins'])} plugin(s) listed, not limited)")
 sys.exit(status)
@@ -152,7 +283,10 @@ self_test() {
     cat >"${root}/${1}/wiki/inventory.md"
   }
   run() {
-    AI_WIKI_DIR="${root}/${1}/wiki" OPENCODE_CONFIG_DIR_CHECK="${root}/${1}/cfg" \
+    local fake="${OC_FAKE_DIR:-${root}/bin-down}"
+    [ -d "${root}/${1}/fake" ] && fake="${root}/${1}/fake"
+    PATH="${fake}/bin:${PATH}" \
+      AI_WIKI_DIR="${root}/${1}/wiki" OPENCODE_CONFIG_DIR_CHECK="${root}/${1}/cfg" \
       AI_INVENTORY_PLUGINS="superpowers" bash "${BASH_SOURCE[0]}" >"${root}/${1}.log" 2>&1
   }
   expect() { # NAME WANT_EXIT GREP
@@ -166,9 +300,69 @@ self_test() {
       failures=$((failures + 1))
     fi
   }
+  mkdir -p "${root}/bin-down/bin"
+  printf '#!/bin/sh\nexit 1\n' >"${root}/bin-down/bin/opencode"
+  chmod +x "${root}/bin-down/bin/opencode"
+  # fake_service NAME SKILLS_JSON AGENTS_JSON SESSIONS_JSON: an opencode that
+  # answers the API paths from files; add sessions with ctx_file.
+  fake_service() {
+    local d="${root}/${1}/fake"
+    mkdir -p "${d}/bin"
+    printf '{"data":%s}' "${2}" >"${d}/skills.json"
+    printf '{"data":%s}' "${3}" >"${d}/agents.json"
+    printf '{"data":%s}' "${4}" >"${d}/sessions.json"
+    cat >"${d}/bin/opencode" <<'EOS'
+#!/bin/sh
+d="$(dirname "$0")/.."
+case "$3" in
+*/api/skill*) cat "$d/skills.json" ;;
+*/api/agent*) cat "$d/agents.json" ;;
+*/api/session/*/context)
+  id="${3#*/api/session/}"
+  cat "$d/ctx-${id%/context}.json"
+  ;;
+*/api/session?*) cat "$d/sessions.json" ;;
+*) exit 1 ;;
+esac
+EOS
+    chmod +x "${d}/bin/opencode"
+  }
+  # ctx_file NAME ID TOTAL USER_CHARS MODEL
+  ctx_file() {
+    local text
+    text="$(printf '%*s' "${4}" '' | tr ' ' x)"
+    printf '{"data":[{"type":"user","text":"%s"},{"type":"assistant","model":{"id":"%s","providerID":"p"},"tokens":{"input":%s,"output":0,"reasoning":0,"cache":{"read":0,"write":0}}}]}' \
+      "${text}" "${5}" "${3}" >"${root}/${1}/fake/ctx-${2}.json"
+  }
+  # sessions_json N: root sessions s1..sN, newest last id first.
+  sessions_json() {
+    local i out=""
+    for i in $(seq 1 "${1}"); do out="${out:+${out},}{\"id\":\"s${i}\",\"time\":{\"created\":${i}}}"; done
+    echo "[${out}]"
+  }
+  # ctx_case NAME INSTR_CHARS SKILLS_JSON MODEL TOTAL...: fixture, inventory,
+  # instructions file, fake service with one session per TOTAL.
+  ctx_case() {
+    local n="${1}" chars="${2}" skills="${3}" model="${4}" i=0 t
+    shift 4
+    fixture "${n}" "alpha beta" "one"
+    good_inventory | inventory "${n}"
+    printf '%*s' "${chars}" '' | tr ' ' x >"${root}/${n}/instr.md"
+    printf '{"instructions": ["%s"]}' "${root}/${n}/instr.md" >"${root}/${n}/cfg/opencode.json"
+    fake_service "${n}" "${skills}" '[{"id":"alpha","name":"alpha","description":"a","mode":"subagent"}]' "$(sessions_json "$#")"
+    for t in "$@"; do
+      i=$((i + 1))
+      ctx_file "${n}" "s${i}" "${t}" 10 "${model}"
+    done
+  }
+  small_skills='[{"id":"one","description":"d"},{"id":"two","description":"d"}]'
+  big_skills() { # PATH
+    printf '[{"id":"big","description":"%s","path":"%s"}]' "$(printf '%*s' 12000 '' | tr ' ' x)" "${1}"
+  }
   good_inventory() {
     cat <<'EOF'
 Limits: agents < 3, skills < 3
+Context: total < 25000 (target 20000), own < 10000, instructions < 2000, skills < 3000, agents < 1000
 
 ## Agents
 
@@ -303,6 +497,61 @@ EOF
     >"${root}/agent_file_model_counts/cfg/opencode.json"
   printf -- '---\nmodel: github-copilot/claude-opus-9\n---\n' >"${root}/agent_file_model_counts/cfg/agents/reviewer.md"
   expect agent_file_model_counts 1 "same model family"
+
+  ctx_case context_ok 400 "${small_skills}" claude-x 18000 19000 20000 21000 22000
+  expect context_ok 0 "ok:   context: total 20000"
+
+  ctx_case context_instructions_over_fails 8400 "${small_skills}" claude-x 20000
+  expect context_instructions_over_fails 1 "instructions .* >= 2000"
+
+  ctx_case context_skills_over_fails 400 "$(big_skills /nope)" claude-x 20000
+  expect context_skills_over_fails 1 "skills .* >= 3000"
+
+  ctx_case context_agents_over_fails 400 "${small_skills}" claude-x 20000
+  printf '[{"id":"alpha","name":"alpha","description":"%s","mode":"subagent"}]' "$(printf '%*s' 4000 '' | tr ' ' x)" |
+    sed 's/^/{"data":/; s/$/}/' >"${root}/context_agents_over_fails/fake/agents.json"
+  expect context_agents_over_fails 1 "agents .* >= 1000"
+
+  ctx_case context_own_over_fails 400 '[{"id":"using-superpowers","description":"d","path":"'"${root}"'/context_own_over_fails/boot.md"}]' claude-x 20000
+  printf '%*s' 40000 '' | tr ' ' x >"${root}/context_own_over_fails/boot.md"
+  expect context_own_over_fails 1 "own .* >= 10000"
+
+  ctx_case context_hidden_skill_not_counted 400 "$(big_skills "${root}/context_hidden_skill_not_counted/SKILL.md")" claude-x 20000
+  printf -- '---\nname: big\nmetadata:\n  opencode/autoinvoke: false\n---\n' >"${root}/context_hidden_skill_not_counted/SKILL.md"
+  expect context_hidden_skill_not_counted 0 "ok:   context: skills"
+
+  ctx_case context_total_over_warns 400 "${small_skills}" claude-x 26000 26000 26000 26000 26000
+  expect context_total_over_warns 0 "WARN: context: total 26000 >= 25000"
+
+  ctx_case context_long_prompt_skipped 400 "${small_skills}" claude-x 20000 20000 20000 20000 20000 90000
+  ctx_file context_long_prompt_skipped s6 90000 600 claude-x
+  expect context_long_prompt_skipped 0 "total 20000"
+
+  ctx_case context_no_claude_warns 400 "${small_skills}" big-pickle 20000 20000
+  expect context_no_claude_warns 0 "WARN: context: no Claude sessions"
+
+  fixture context_service_down_warns "alpha beta" "one"
+  good_inventory | inventory context_service_down_warns
+  expect context_service_down_warns 0 "WARN: context: OpenCode service unavailable"
+
+  fixture context_missing_line_fails "alpha beta" "one"
+  good_inventory | sed '/^Context:/d' | inventory context_missing_line_fails
+  expect context_missing_line_fails 1 "Context"
+
+  fixture context_missing_instructions_file_warns "alpha beta" "one"
+  good_inventory | inventory context_missing_instructions_file_warns
+  echo '{"instructions": ["~/nope.md"]}' >"${root}/context_missing_instructions_file_warns/cfg/opencode.json"
+  expect context_missing_instructions_file_warns 0 "WARN: .*nope.md"
+  expect context_missing_instructions_file_warns 0 "WARN: .*cfg/AGENTS.md"
+
+  ctx_case context_nonfinite_tokens_skipped 400 "${small_skills}" claude-x 1e999
+  expect context_nonfinite_tokens_skipped 0 "ok:   context: instructions"
+  expect context_nonfinite_tokens_skipped 0 "WARN: context: no Claude sessions"
+
+  ctx_case context_bad_session_shape_warns 400 "${small_skills}" claude-x 20000
+  printf '{"data":{"error":"x"}}' >"${root}/context_bad_session_shape_warns/fake/sessions.json"
+  expect context_bad_session_shape_warns 0 "ok:   context: instructions"
+  expect context_bad_session_shape_warns 0 "WARN: context: OpenCode service unavailable; total"
 
   [ "${failures}" -eq 0 ]
 }
