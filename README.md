@@ -369,7 +369,9 @@ Context management uses V2's built-in compaction (`compaction.auto: true`), not 
 - Loads the AUMOVIO LLMi chat models, limits and USD prices from the gateway
   (`/v1/models`, `/v1/model/info`) every 15 minutes, so new models need no config edit
 - Claude models use the Messages API (prompt caching), GPT models the Responses API,
-  others Chat Completions
+  others Chat Completions with `prompt_cache_key` so LiteLLM routes a session to a warm cache.
+  Measured on turn 2: Claude and GPT read the whole prefix from cache, DeepSeek usually does
+  (about 10x cheaper per turn). The old Chat Completions setup sent no cache markers for Claude.
 - Optional quota row: a loopback bridge (`127.0.0.1:43117/quota`) turns
   `/v1/budget/status` and `/v1/cost/summary` into one response for opencode-quota.
   It needs its own token, never the LLMi key. Before switching `llmi-budget` on in

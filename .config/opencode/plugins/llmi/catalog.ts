@@ -8,6 +8,8 @@ export interface DiscoveredModel {
   modelID: string
   name: string
   package?: string
+  /** Chat Completions only: lets LiteLLM route a session to the same warm cache. */
+  compatibility?: { supportsPromptCacheKey: true }
   capabilities: { tools: boolean; input: string[]; output: string[] }
   variants: never[]
   time: { released: number }
@@ -58,11 +60,13 @@ export function toInventory(models: JsonObject, info: JsonObject): DiscoveredMod
     const output = finite(detail.max_output_tokens) ?? finite(model.max_output_tokens) ?? 32_000
     const hasPrice = finite(detail.input_cost_per_token) !== undefined || finite(detail.output_cost_per_token) !== undefined
 
+    const runtime = runtimePackage(model.id)
     inventory.push({
       id: model.id,
       modelID: model.id,
       name: model.id,
-      package: runtimePackage(model.id),
+      package: runtime,
+      ...(runtime ? {} : { compatibility: { supportsPromptCacheKey: true as const } }),
       capabilities: {
         tools: detail.supports_function_calling !== false,
         input: detail.supports_vision === true ? ["text", "image"] : ["text"],

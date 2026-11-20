@@ -78,6 +78,13 @@ describe("toInventory", () => {
     expect(deepseek.package).toBeUndefined()
   })
 
+  test("asks Chat Completions models to send prompt_cache_key so the gateway routes turns to a warm cache", () => {
+    const [claude, gpt, deepseek] = toInventory(models, info)
+    expect(deepseek.compatibility).toEqual({ supportsPromptCacheKey: true })
+    expect(claude.compatibility).toBeUndefined()
+    expect(gpt.compatibility).toBeUndefined()
+  })
+
   test("converts per-token LiteLLM prices to per-million OpenCode costs", () => {
     const [claude] = toInventory(models, info)
     expect(claude.cost).toEqual([
