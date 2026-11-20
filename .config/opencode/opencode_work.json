@@ -70,73 +70,14 @@
 		"superpowers@git+https://github.com/obra/superpowers.git",
 		"opencode-mem@latest",
 		"cc-safety-net@latest",
-		"@slkiser/opencode-quota@latest"
-	],
-	"providers": {
-		"aumovio-llmi": {
-			"name": "AUMOVIO LLMi",
-			"package": "aisdk:@ai-sdk/openai",
-			"settings": {
-				"baseURL": "https://llm-gateway.ve42034x.automotive-wan.com:443/v1"
-			},
-			"models": {
-				"claude-4-8-opus-v1:0": {
-					"name": "Claude Opus 4.8",
-					"limit": {
-						"context": 1000000,
-						"output": 128000
-					}
-				},
-				"claude-5-0-sonnet-v1:0": {
-					"name": "Claude Sonnet 5.0",
-					"limit": {
-						"context": 1000000,
-						"output": 128000
-					}
-				},
-				"vertex_ai/claude-opus-5": {
-					"name": "Claude Opus 5.0",
-					"limit": {
-						"context": 1000000,
-						"output": 128000
-					}
-				},
-				"gpt-5.6-luna": {
-					"name": "GPT 5.6 Luna",
-					"limit": {
-						"context": 922000,
-						"output": 128000
-					}
-				},
-				"gpt-5.6-terra": {
-					"name": "GPT 5.6 Terra",
-					"limit": {
-						"context": 922000,
-						"output": 128000
-					}
-				},
-				"gpt-5.6-sol": {
-					"name": "GPT 5.6 Sol",
-					"limit": {
-						"context": 922000,
-						"output": 128000
-					}
-				},
-				"DeepSeek-V4-Flash-0731": {
-					"name": "DeepSeek V4 Flash",
-					"limit": {
-						"context": 1000000,
-						"output": 384000
-					}
-				},
-				"DeepSeek-V4-Pro": {
-					"name": "DeepSeek V4 Pro",
-					"limit": {
-						"context": 1000000,
-						"output": 384000
-					}
-				}
+		"@slkiser/opencode-quota@latest",
+		{
+			"package": "./plugins/llmi",
+			"options": {
+				"enabled": true,
+				"bridge": true,
+				"refreshSeconds": 900
 			}
 		}
-	}
+	]
 }

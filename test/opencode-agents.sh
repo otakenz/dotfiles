@@ -33,8 +33,14 @@ from fnmatch import fnmatchcase
 agents = {a["id"]: a for a in json.loads(os.environ["AGENTS_JSON"])["data"]}
 cfg = next((e["info"] for e in json.loads(os.environ["CONFIG_JSON"])
             if e.get("type") == "document" and e["path"].endswith("opencode.json")), {})
-# Work config (opencode_work.json) carries the LLMi provider; personal does not.
-WORK = "aumovio-llmi" in cfg.get("providers", {})
+# Work config (opencode_work.json) enables the LLMi plugin; personal does not.
+def llmi_entry(c):
+    for p in c.get("plugins", []):
+        if isinstance(p, dict) and str(p.get("package", "")).rstrip("/").endswith("plugins/llmi"):
+            return p
+    return None
+
+WORK = bool((llmi_entry(cfg) or {}).get("options", {}).get("enabled"))
 status = 0
 
 def fail(msg):
@@ -233,9 +239,13 @@ if WORK:
                 "read:/home/u/.local/share/gopass/stores/work-unattended/jira-pat.gpg"]:
         if policy(res) != "deny":
             fail(f"policy does not deny {res}")
-    llmi = cfg.get("providers", {}).get("aumovio-llmi", {})
-    if "apiKey" in llmi.get("settings", {}) or "Authorization" in llmi.get("headers", {}):
-        fail("aumovio-llmi still carries a key in config")
+    # The llmi plugin is the only LLMi source: models and prices come from the
+    # gateway, the key from the stored /connect login, never from config.
+    if "aumovio-llmi" in cfg.get("providers", {}):
+        fail("aumovio-llmi is defined in config; the llmi plugin owns it")
+    opts = llmi_entry(cfg).get("options", {})
+    if any(s in k.lower() for k in opts for s in ("key", "auth", "token", "secret")):
+        fail("llmi plugin options carry a credential")
     cmd = cfg.get("mcp", {}).get("servers", {}).get("mcp-atlassian", {}).get("command", [])
     if cmd[:2] != ["uvx", "mcp-atlassian==0.24.6"] or "--env-file" not in cmd:
         fail(f"mcp-atlassian command is {cmd}")

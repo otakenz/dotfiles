@@ -364,6 +364,19 @@ Add plugins by editing `opencode.json` / `opencode_work.json` here, not with
 
 Context management uses V2's built-in compaction (`compaction.auto: true`), not a plugin.
 
+5. `llmi` (local, `.config/opencode/plugins/llmi/`, work config only)
+
+- Loads the AUMOVIO LLMi chat models, limits and USD prices from the gateway
+  (`/v1/models`, `/v1/model/info`) every 15 minutes, so new models need no config edit
+- Claude models use the Messages API (prompt caching), GPT models the Responses API,
+  others Chat Completions
+- Optional quota row: a loopback bridge (`127.0.0.1:43117/quota`) turns
+  `/v1/budget/status` and `/v1/cost/summary` into one response for opencode-quota.
+  It needs its own token, never the LLMi key. Before switching `llmi-budget` on in
+  `/quota_settings`: `opencode service set env LLMI_QUOTA_TOKEN "$(openssl rand -hex 32)"`,
+  then `opencode service restart`. Without the token the bridge rejects every request.
+- Key: `/connect` → Other, ID `aumovio-llmi`. Tests: `bun test ./.config/opencode/plugins/llmi/`
+
 #### Subagents
 
 Global subagents live in `.config/opencode/agents/` (`cpp-reviewer`, `reviewer`, `investigator`,

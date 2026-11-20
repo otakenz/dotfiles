@@ -695,6 +695,7 @@ create_symlinks() {
     "ln -fs ${DOTFILES_PATH}/.config/opencode/commands ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/agents ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/skills ${HOME}/.config/opencode"
+    "ln -fs ${DOTFILES_PATH}/.config/opencode/plugins ${HOME}/.config/opencode"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/AGENTS.md ${HOME}/.config/opencode/AGENTS.md"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/opencode-mem.jsonc ${HOME}/.config/opencode/opencode-mem.jsonc"
     "ln -fs ${DOTFILES_PATH}/.config/opencode/cli.json ${HOME}/.config/opencode/cli.json"
@@ -1905,7 +1906,8 @@ fresh tokens for this machine and insert them (revoke them when you retire it):
   • Jira and Confluence: Profile → Personal Access Tokens
       gopass insert ${mount}/jira-pat
       gopass insert ${mount}/confluence-pat
-  • LLMi: the LLMi portal; then /connect in OpenCode and paste it
+  • LLMi: the LLMi portal; then in OpenCode /connect → Other, ID
+    aumovio-llmi, and paste it (the llmi plugin then loads models and prices)
       gopass insert ${mount}/llmi-api-token
 Download mcp-atlassian once, so its first start fits the MCP timeout:
   uvx mcp-atlassian==0.24.6 --version
