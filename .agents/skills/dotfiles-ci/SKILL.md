@@ -43,7 +43,7 @@ directly; use the CI shellcheck version, a newer local one misses findings
 
 ```bash
 docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:v0.9.0 \
-  $(git ls-files -z -- ':!mnt/c' | xargs -0 grep -l -E '^(#!.*sh|# shellcheck shell=)')
+  $(git ls-files -z | xargs -0 grep -l -E '^(#!.*sh|# shellcheck shell=)')
 shfmt --diff . .config/zsh/.{aliases,zprofile,zshrc}
 ruff check && ruff format --check --diff
 KEYS_TESTS="t1_work_pc_fresh t10_renewed_in_public" bash test/keys.sh   # subset; omit for all
