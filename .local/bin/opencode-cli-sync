@@ -21,7 +21,7 @@ if [ ! -e "${live}" ]; then
   exit 0
 fi
 
-if ! cmp -s "${live}" "${repo_file}"; then
+if ! git diff --no-index --quiet -- "${live}" "${repo_file}" 2>/dev/null; then
   if ! git -C "${repo}" diff --quiet HEAD -- .config/opencode/cli.json; then
     printf "opencode-cli-sync: %s and the dotfiles copy both have uncommitted changes; merge them by hand, then delete %s\n" \
       "${live}" "${live}" >&2
