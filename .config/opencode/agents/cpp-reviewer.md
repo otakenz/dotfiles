@@ -37,6 +37,10 @@ tests needed to judge each change; do not review untouched code.
 5. Build hygiene: heavy or vendor headers pulled into widely included headers,
    needless coupling between modules.
 6. Tests: important behavior or error paths changed without a test.
+7. Memory safety: buffer bounds, sizes or lengths taken from input (frames,
+   messages, files) without checks, integer overflow in size math, unsafe C
+   APIs (`strcpy`, `sprintf`, `memcpy` without a bound), format strings.
+   Broader security reviews (secrets, supply chain) go to `reviewer`.
 
 ## Output
 

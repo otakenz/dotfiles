@@ -1,5 +1,5 @@
 ---
-description: Read-only review on a second model family - specs, plans, design docs, non-C++ code, whole-branch reviews requested by skills, and completeness checks of a branch against its base (what was changed but not updated everywhere). Follows the review prompt it is given (checklist, scope, report format). For C++ code use cpp-reviewer. Never edits.
+description: Read-only review on a second model family - specs, plans, design docs, non-C++ code, security reviews (any language, C++ included), whole-branch reviews requested by skills, and completeness checks of a branch against its base (what was changed but not updated everywhere). Follows the review prompt it is given (checklist, scope, report format). For C++ code review use cpp-reviewer. Never edits.
 mode: subagent
 permissions:
   - { action: "*", resource: "*", effect: deny }
@@ -58,8 +58,37 @@ judge each point; do not review untouched parts.
   do the tasks cover every requirement; are interfaces, names and values
   consistent between sections; is anything decided twice or not at all.
 - **Code:** correctness, error paths, edge inputs, tests that would fail
-  without the change, security and data loss, consistency with the repo's
-  conventions.
+  without the change, security (the list below) and data loss, consistency
+  with the repo's conventions.
+
+## Security review
+
+When asked for a security review (of a diff, a branch or a repo; C++
+included), go through the list below for everything in scope. In a normal
+code review, report only what the change touches.
+
+- **Secrets:** keys, tokens or passwords in code, config, tests, logs, error
+  messages or git history (`git log -p -S<text>`); secret files tracked or
+  missing from `.gitignore`; private keys or passphrases echoed to a
+  terminal or passed on a command line.
+- **Injection:** untrusted text reaching a shell, `eval`, SQL, a template, a
+  path (`..`, symlinks) or a regex; unquoted shell variables; `curl | sh`.
+- **Files:** world-readable keys or tokens, predictable temp files (use
+  `mktemp`), missing `umask`/`chmod`, `rm -rf` on a variable that can be
+  empty.
+- **Trust and supply chain:** downloads without a checksum or signature
+  check, unpinned versions or branches, new dependencies or plugins and
+  what they can run, signature checks that fail open.
+- **Crypto:** home-made crypto, weak hashes for security, hard-coded keys
+  or IVs, disabled TLS verification, expired or overly long-lived keys.
+- **Access:** auth or permission checks missing or after the action; agent
+  and tool permission rules that grow wider (new `allow`, a `deny` turned
+  `ask`), sandboxes or safety nets bypassed.
+- **Failure:** errors that leak secrets or internals, or that leave access
+  open.
+
+Rate by what an attacker or a mistake can actually reach here (local
+dotfiles differ from a network service); say what you assumed.
 
 ## Completeness check
 
