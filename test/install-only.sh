@@ -66,7 +66,7 @@ esac'
     printf '[ -x "%s/fake/$1" ] && exec "$@"\nexit 0\n' "${ROOT}"
   } >"${ROOT}/fake/sudo"
   chmod +x "${ROOT}/fake/sudo"
-  write_fake git 'case "$*" in *clone*) for last; do :; done; mkdir -p "$last/bin"; printf "#!/bin/sh\nexit 0\n" >"$last/bin/install_plugins"; chmod +x "$last/bin/install_plugins" ;; esac; exit 0'
+  write_fake git 'case "$*" in *clone*) for last; do :; done; mkdir -p "$last/bin"; for b in install_plugins update_plugins; do printf "#!/bin/sh\necho \"$b \$*\" >>\"\$CALLS\"\n" >"$last/bin/$b"; chmod +x "$last/bin/$b"; done ;; esac; exit 0'
   local f
   for f in curl apt-get dpkg gpg tee pacman makepkg brew tasklist.exe tmux nvim fastfetch; do
     write_fake "${f}"
@@ -83,6 +83,7 @@ run_install() {
   mkdir -p "${home}"
   cp -R "${REPO}" "${home}/dotfiles"
   rm -rf "${home}/dotfiles/.git"
+  [ -z "${PRE:-}" ] || "${PRE}" "${home}"
   mkdir -p "${home}/dotfiles/.local/bin"
   printf '#!/bin/sh\necho "update-zsh-plugins $*" >>"$CALLS"\n' >"${home}/dotfiles/.local/bin/update-zsh-plugins"
   chmod +x "${home}/dotfiles/.local/bin/update-zsh-plugins"
@@ -179,6 +180,25 @@ t_only_equals_form() {
   scenario debian
   run_install m5 --only=health || fail "--only= form"
   called '^fastfetch' || fail "health not run"
+}
+
+pre_p10k() { mkdir -p "${1}/powerlevel10k/.git"; }
+t_zsh_pulls_p10k() {
+  scenario debian
+  PRE=pre_p10k run_install m10 --only zsh || fail "exit"
+  called '^git -C .*/powerlevel10k pull --ff-only' || fail "p10k not pulled"
+  called '^update-zsh-plugins' || fail "zsh plugins not updated"
+}
+t_zsh_clones_p10k() {
+  scenario debian
+  run_install m11 --only zsh || fail "exit"
+  called '^git clone --depth=1 https://github.com/romkatv/powerlevel10k.git' || fail "p10k not cloned"
+}
+t_tmux_updates() {
+  scenario debian
+  run_install m12 --only tmux || fail "exit"
+  called '^install_plugins' || fail "plugins not installed"
+  called '^update_plugins all' || fail "plugins not updated"
 }
 
 write_fakes

@@ -1190,6 +1190,7 @@ install_tmux_plugins() {
   git clone --depth 1 https://github.com/tmux-plugins/tpm "${tpm_path}"
 
   "${tpm_path}/bin/install_plugins"
+  "${tpm_path}/bin/update_plugins" all
 }
 
 install_nvim_plugins() {
@@ -1208,7 +1209,7 @@ install_powerlevel10k() {
   if [ ! -d "${HOME}/powerlevel10k" ]; then
     git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${HOME}/powerlevel10k"
   else
-    echo "✅ powerlevel10k already exists, skipping clone."
+    git -C "${HOME}/powerlevel10k" pull --ff-only
   fi
 }
 
