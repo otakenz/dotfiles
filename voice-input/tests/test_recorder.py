@@ -62,3 +62,37 @@ def test_cancel_removes_clip(tmp_path, fake):
 
 def test_stop_without_start_is_none(tmp_path, fake):
     assert ParecordRecorder(command=fake, workdir=tmp_path).stop() is None
+
+
+# Writes a header and 0.5 s of silence at once, then keeps recording.
+LIVE = r"""
+import signal, sys, time, wave
+w = wave.open(sys.argv[-1], "wb")
+w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000)
+w.writeframes(b"\0\0" * 8000)
+w._file.flush()
+signal.signal(signal.SIGINT, lambda *_: (w.close(), sys.exit(0)))
+while True:
+    time.sleep(0.05)
+"""
+
+
+def test_live_level_while_recording(tmp_path):
+    script = tmp_path / "live.py"
+    script.write_text(LIVE)
+    rec = ParecordRecorder(
+        command=(sys.executable, str(script)), workdir=tmp_path
+    )
+    assert rec.live_level() is None
+    rec.start()
+    assert rec.live_level() == -120.0
+    rec.stop()
+    assert rec.live_level() is None
+
+
+def test_live_level_none_after_auto_stop(tmp_path, fake):
+    rec = ParecordRecorder(command=fake, workdir=tmp_path, max_s=0.3)
+    rec.start()
+    time.sleep(0.8)
+    assert rec.live_level() is None
+    assert rec.stop() is not None

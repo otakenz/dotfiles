@@ -8,6 +8,8 @@ import threading
 import time
 from pathlib import Path
 
+from .audio import tail_dbfs
+
 STARTUP_CHECK_S = 0.2
 
 
@@ -70,6 +72,12 @@ class ParecordRecorder:
         if self._clip is not None:
             self._clip.unlink(missing_ok=True)
         self._clip = None
+
+    def live_level(self) -> float | None:
+        clip, proc = self._clip, self._proc
+        if proc is None or clip is None or proc.poll() is not None:
+            return None
+        return tail_dbfs(clip)
 
     def _interrupt(self) -> None:
         proc = self._proc

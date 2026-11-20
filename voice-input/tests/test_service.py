@@ -34,6 +34,9 @@ class FakeRecorder:
     def cancel(self):
         self.cancels += 1
 
+    def live_level(self):
+        return -30.0
+
 
 class FakeTranscriber:
     def __init__(self, text="hello", gate=None):
@@ -167,3 +170,68 @@ def test_calls_are_serialized(tmp_path, config_dir):
     stopper.join(5)
     starter.join(5)
     assert done.is_set()
+
+
+IDLE = {
+    "state": "idle",
+    "level_dbfs": None,
+    "elapsed_s": None,
+    "warning": None,
+    "warning_age_s": None,
+}
+
+
+def test_status_idle(tmp_path, config_dir):
+    svc, _, _ = make(tmp_path, config_dir)
+    assert svc.status() == IDLE
+
+
+def test_status_recording_has_level_and_elapsed(tmp_path, config_dir):
+    svc, _, _ = make(tmp_path, config_dir)
+    svc.start()
+    st = svc.status()
+    assert st["state"] == "recording"
+    assert st["level_dbfs"] == -30.0
+    assert 0.0 <= st["elapsed_s"] < 1.0
+
+
+def test_status_keeps_last_warning(tmp_path, config_dir):
+    svc, _, _ = make(tmp_path, config_dir, tone(1.0, -60.0))
+    svc.start()
+    svc.stop()
+    st = svc.status()
+    assert st["state"] == "idle"
+    assert st["warning"] == "no audio – check mic"
+    assert st["warning_age_s"] >= 0.0
+
+
+def test_status_ignores_not_recording(tmp_path, config_dir):
+    svc, _, _ = make(tmp_path, config_dir)
+    svc.stop()
+    assert svc.status() == IDLE
+
+
+def test_status_during_transcription_does_not_block(tmp_path, config_dir):
+    gate = threading.Event()
+    svc, _, _ = make(tmp_path, config_dir, gate=gate)
+    svc.start()
+    stopper = threading.Thread(target=svc.stop)
+    stopper.start()
+    time.sleep(0.1)
+    began = time.perf_counter()
+    st = svc.status()
+    assert time.perf_counter() - began < 0.5
+    assert st["state"] == "transcribing"
+    gate.set()
+    stopper.join(5)
+    assert svc.status()["state"] == "idle"
+
+
+def test_status_reports_capture_stopped(tmp_path, config_dir):
+    svc, rec, _ = make(tmp_path, config_dir)
+    rec.live_level = lambda: None
+    svc.start()
+    st = svc.status()
+    assert st["state"] == "stopped"
+    assert st["level_dbfs"] is None
+    assert st["elapsed_s"] is None

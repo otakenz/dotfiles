@@ -38,3 +38,24 @@ def measure(wav: Path) -> Level:
         mean_dbfs=round(_dbfs(rms), 2),
         clipped=clipped,
     )
+
+
+def tail_dbfs(wav: Path, seconds: float = 0.1) -> float:
+    """RMS level of the last `seconds` of a 16 kHz mono WAV still being
+    written; reads only the tail, since the header sizes are not final."""
+    want = int(seconds * 16000) * 2
+    try:
+        with wav.open("rb") as f:
+            size = f.seek(0, 2)
+            if size <= 44:
+                return SILENT_DBFS
+            start = max(44, size - want)
+            start -= (start - 44) % 2
+            f.seek(start)
+            data = np.frombuffer(f.read(), dtype="<i2")
+    except FileNotFoundError:
+        return SILENT_DBFS
+    if not data.size:
+        return SILENT_DBFS
+    rms = float(np.sqrt(np.mean(data.astype(np.float64) ** 2)))
+    return round(_dbfs(rms), 2)

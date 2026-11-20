@@ -24,6 +24,9 @@ class FakeService:
     def cancel(self):
         return {"ok": True}
 
+    def status(self):
+        return {"state": "idle"}
+
     def health(self):
         return {"ok": True, "recording": False}
 
@@ -106,3 +109,8 @@ def test_localhost_host_header_is_accepted(served):
     port = server.server_address[1]
     headers = {"X-Voice-Input": "1", "Host": f"localhost:{port}"}
     assert call(base + "/start", "POST", headers=headers)[0] == 200
+
+
+def test_status_route(served):
+    _, _, base = served
+    assert call(base + "/status", "GET") == (200, {"state": "idle"})

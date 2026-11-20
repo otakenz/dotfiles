@@ -12,6 +12,7 @@ ROUTES = {
     ("POST", "/stop"): "stop",
     ("POST", "/cancel"): "cancel",
     ("GET", "/health"): "health",
+    ("GET", "/status"): "status",
 }
 
 

@@ -23,6 +23,8 @@ class Recorder(Protocol):
 
     def cancel(self) -> None: ...
 
+    def live_level(self) -> float | None: ...
+
 
 class Transcriber(Protocol):
     def transcribe(self, wav: Path, prompt: str) -> str: ...
@@ -37,6 +39,10 @@ class VoiceService:
         self._config_dir = config_dir
         self._lock = threading.Lock()
         self._recording = False
+        self._state = "idle"
+        self._started_at: float | None = None
+        self._warning: str | None = None
+        self._warning_at: float | None = None
 
     def start(self) -> dict:
         with self._lock:
@@ -46,8 +52,12 @@ class VoiceService:
             try:
                 self._recorder.start()
             except RuntimeError:
+                self._state = "idle"
+                self._remember(NO_AUDIO)
                 return {"ok": False, "warning": NO_AUDIO}
             self._recording = True
+            self._state = "recording"
+            self._started_at = time.monotonic()
             return {"ok": True}
 
     def stop(self) -> dict:
@@ -55,21 +65,57 @@ class VoiceService:
             if not self._recording:
                 return {"text": "", "warning": NOT_RECORDING}
             self._recording = False
+            self._state = "transcribing"
             began = time.perf_counter()
-            clip = self._recorder.stop()
-            if clip is None:
-                return {"text": "", "warning": NO_AUDIO}
             try:
-                return self._finish(clip, began)
+                clip = self._recorder.stop()
+                if clip is None:
+                    result = {"text": "", "warning": NO_AUDIO}
+                else:
+                    try:
+                        result = self._finish(clip, began)
+                    finally:
+                        clip.unlink(missing_ok=True)
             finally:
-                clip.unlink(missing_ok=True)
+                self._state = "idle"
+            self._remember(result["warning"])
+            return result
 
     def cancel(self) -> dict:
         with self._lock:
             if self._recording:
                 self._recorder.cancel()
                 self._recording = False
+                self._state = "idle"
             return {"ok": True}
+
+    def status(self) -> dict:
+        # No lock: must answer while stop() is transcribing.
+        state = self._state
+        level = self._recorder.live_level() if state == "recording" else None
+        if state == "recording" and level is None:
+            state = "stopped"  # time limit reached or parecord exited
+        recording = state == "recording"
+        started, warning_at = self._started_at, self._warning_at
+        return {
+            "state": state,
+            "level_dbfs": level,
+            "elapsed_s": (
+                round(time.monotonic() - started, 1)
+                if recording and started is not None
+                else None
+            ),
+            "warning": self._warning,
+            "warning_age_s": (
+                round(time.monotonic() - warning_at, 1)
+                if warning_at is not None
+                else None
+            ),
+        }
+
+    def _remember(self, warning: str | None) -> None:
+        self._warning = warning
+        self._warning_at = time.monotonic() if warning else None
 
     def health(self) -> dict:
         return {"ok": True, "recording": self._recording}
