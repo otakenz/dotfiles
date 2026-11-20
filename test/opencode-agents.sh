@@ -203,6 +203,10 @@ expect("build-runner", "cmake --build build/debug -j8", "allow")
 for cmd in ["git reset --hard", "git clean -fdx", "git checkout -- .",
             "git restore .", "git stash drop", "git push origin main"]:
     expect("build-runner", cmd, "not allow")
+for cmd in ["gh run rerun 1", "gh run cancel 1", "gh workflow run x"]:
+    expect("build-runner", cmd, "not allow")
+for cmd in ["gh run view 1 --log-failed", "gh run watch 1"]:
+    expect("build-runner", cmd, "allow")
 
 for aid, own, other in [("jira", "jira", "confluence"), ("confluence", "confluence", "jira")]:
     a = agents.get(aid)

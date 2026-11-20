@@ -1,5 +1,5 @@
 ---
-description: Runs a repo's build, test, pre-commit or deploy command and returns only the verdict, counts and first real errors. Use to keep long build/test/deploy output out of the main conversation. Never edits files.
+description: Runs a repo's build, test, pre-commit or deploy command, or watches a pushed CI run (GitHub Actions), and returns only the verdict, counts and first real errors. Use to keep long build/test/deploy/CI output out of the main conversation. Never edits files.
 mode: subagent
 model: opencode-go/deepseek-v4.1-flash
 permissions:
@@ -14,6 +14,9 @@ permissions:
   - { action: shell, resource: "git restore *", effect: ask }
   - { action: shell, resource: "git rebase *", effect: ask }
   - { action: shell, resource: "git stash *", effect: ask }
+  - { action: shell, resource: "gh run rerun *", effect: ask }
+  - { action: shell, resource: "gh run cancel *", effect: ask }
+  - { action: shell, resource: "gh workflow run *", effect: ask }
 ---
 
 You run build, test, lint, pre-commit and deploy commands and report the
@@ -28,6 +31,17 @@ deploy skill if it has one and follow it exactly.
 
 Redirect long output to a file under `/tmp/opencode/` and read the tail and
 the first error lines from it, instead of reading everything.
+
+## CI runs
+
+When asked to watch CI after a push: find the run for the pushed commit
+(`gh run list --commit $(git rev-parse HEAD)`), wait with
+`gh run watch RUN --exit-status > /tmp/opencode/ci-RUN.log 2>&1`, then
+list job results (`gh run view RUN --json jobs`) and read only failed logs
+(`gh run view RUN --log-failed`). Load the repo's CI skill if it has one
+(e.g. `dotfiles-ci`): it says which jobs may fail and how to read them.
+Report per job; mark allowed failures as such, not as PASS. Never re-run,
+cancel or push without being asked.
 
 ## Report
 
