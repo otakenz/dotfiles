@@ -9,14 +9,17 @@
 #
 #   test/ai-inventory.sh              check this machine
 #   test/ai-inventory.sh --self-test  check the checker against fixtures
+#   test/ai-inventory.sh --record     check, then write the context table into
+#                                     concepts/starting-context.md (once a day)
 #
 # Env: AI_WIKI_DIR (default ~/wiki/ai-workflow), OPENCODE_CONFIG_DIR_CHECK
-# (default ~/.config/opencode), AI_INVENTORY_PLUGINS (comma list; default:
+# (default ~/.config/opencode), AI_TODAY (record date), AI_INVENTORY_PLUGINS (comma list; default:
 # asked from the running OpenCode service).
 
 set -o nounset
 
 check() {
+  local record="${1:-}"
   local wiki="${AI_WIKI_DIR:-${HOME}/wiki/ai-workflow}"
   local cfg="${OPENCODE_CONFIG_DIR_CHECK:-${HOME}/.config/opencode}"
   local plugins="${AI_INVENTORY_PLUGINS-}"
@@ -27,6 +30,7 @@ check() {
       return 1
     fi
     printf "WARN: no notes wiki at %s; inventory not checked (see ./install --wiki)\n" "${wiki}" >&2
+    [ "${record}" = "--record" ] && return 1
     return 0
   fi
 
@@ -43,7 +47,7 @@ print(",".join(sorted(pkgs)))' 2>/dev/null)" || {
     }
   fi
 
-  INVENTORY="${wiki}/inventory.md" CFG="${cfg}" PLUGINS="${plugins}" python3 - <<'EOF'
+  INVENTORY="${wiki}/inventory.md" CFG="${cfg}" PLUGINS="${plugins}" RECORD="${record}" WIKI="${wiki}" python3 - <<'EOF'
 import json, os, re, sys
 from pathlib import Path
 
@@ -260,6 +264,33 @@ else:
         print(f"ok:   context: total {ms['total']} (median of {ms['sessions']} sessions, "
               f"target {budgets['target']})")
 
+if status == 0 and os.environ.get("RECORD") == "--record":
+    import datetime
+    today = os.environ.get("AI_TODAY") or datetime.date.today().isoformat()
+    page = Path(os.environ["WIKI"]) / "concepts" / "starting-context.md"
+    body = page.read_text() if page.is_file() else ""
+    pm = re.search(r"(<!-- context:begin -->\n)(.*?)(<!-- context:end -->)", body, re.S)
+    if not pm:
+        fail(f"{page} has no <!-- context:begin --> ... <!-- context:end --> block")
+    elif pm.group(2).startswith(f"Recorded: {today}"):
+        print("ok:   already recorded today")
+    else:
+        def cell(n):
+            return "n/a" if n is None else str(n)
+        rows = [("Instructions", ms["instructions"], budgets["instructions"], "files in opencode.json + AGENTS.md, chars // 4"),
+                ("Skill list", ms["skills"], budgets["skills"], "id + description + 40 per visible skill, chars // 4"),
+                ("Agent descriptions", ms["agents"], budgets["agents"], "name + description + 10 per subagent, chars // 4"),
+                ("Superpowers bootstrap", ms["bootstrap"], "", "using-superpowers SKILL.md, chars // 4"),
+                ("Own (sum)", ms["own"], budgets["own"], "instructions + skills + agents + bootstrap"),
+                ("Session total (median of %d)" % ms["sessions"], ms["total"], budgets["total"], "first assistant message of recent Claude sessions"),
+                ("OpenCode + memory + plugins", ms["rest"], "", "derived: total - own")]
+        lines = [f"Recorded: {today}", "", "| Part | Tokens | Budget | How measured |", "|---|---|---|---|"]
+        lines += [f"| {a} | {cell(b)} | {c} | {d} |" for a, b, c, d in rows]
+        out = body[:pm.start(2)] + "\n".join(lines) + "\n" + body[pm.start(3):]
+        out = re.sub(r"\A(---\n.*?^)updated:[^\n]*", lambda m: f"{m.group(1)}updated: {today}", out, count=1, flags=re.S | re.M)
+        page.write_text(out)
+        print(f"ok:   recorded {today} in {page}")
+
 if status == 0:
     print(f"ok:   inventory matches ({len(installed['Plugins'])} plugin(s) listed, not limited)")
 sys.exit(status)
@@ -267,7 +298,7 @@ EOF
 }
 
 self_test() {
-  local root failures=0
+  local root failures=0 RUN_ARG=
   root="$(mktemp -d /tmp/ai-inventory.XXXXXX)"
   # shellcheck disable=SC2064 # expand now: root is local
   trap "rm -rf '${root}'" RETURN
@@ -287,7 +318,8 @@ self_test() {
     [ -d "${root}/${1}/fake" ] && fake="${root}/${1}/fake"
     PATH="${fake}/bin:${PATH}" \
       AI_WIKI_DIR="${root}/${1}/wiki" OPENCODE_CONFIG_DIR_CHECK="${root}/${1}/cfg" \
-      AI_INVENTORY_PLUGINS="superpowers" bash "${BASH_SOURCE[0]}" >"${root}/${1}.log" 2>&1
+      AI_TODAY=2026-11-20 \
+      AI_INVENTORY_PLUGINS="superpowers" bash "${BASH_SOURCE[0]}" ${RUN_ARG:+"${RUN_ARG}"} >"${root}/${1}.log" 2>&1
   }
   expect() { # NAME WANT_EXIT GREP
     local got=0
@@ -553,11 +585,64 @@ EOF
   expect context_bad_session_shape_warns 0 "ok:   context: instructions"
   expect context_bad_session_shape_warns 0 "WARN: context: OpenCode service unavailable; total"
 
+  # record_case NAME PAGE_BODY [INSTR_CHARS]: a passing context case plus a page.
+  record_case() {
+    ctx_case "${1}" "${3:-400}" "${small_skills}" claude-x 20000 20000 20000
+    mkdir -p "${root}/${1}/wiki/concepts"
+    printf '%s\n' "${2}" >"${root}/${1}/wiki/concepts/starting-context.md"
+  }
+  RUN_ARG=--record
+  record_case record_writes_table $'# P\n<!-- context:begin -->\n<!-- context:end -->\nafter'
+  expect record_writes_table 0 "recorded"
+  if grep -q "Recorded: 2026-11-20" "${root}/record_writes_table/wiki/concepts/starting-context.md" &&
+    grep -q "^| Instructions | 100 |" "${root}/record_writes_table/wiki/concepts/starting-context.md" &&
+    grep -q "^after" "${root}/record_writes_table/wiki/concepts/starting-context.md"; then
+    echo "ok:   record_writes_table page"
+  else
+    echo "FAIL: record_writes_table page" >&2
+    failures=$((failures + 1))
+  fi
+
+  same_day=$'# P\n<!-- context:begin -->\nRecorded: 2026-11-20\n<!-- context:end -->'
+  record_case record_same_day_noop "${same_day}"
+  cp "${root}/record_same_day_noop/wiki/concepts/starting-context.md" "${root}/same.before"
+  expect record_same_day_noop 0 "already recorded today"
+  if cmp -s "${root}/same.before" "${root}/record_same_day_noop/wiki/concepts/starting-context.md"; then
+    echo "ok:   record_same_day_noop bytes"
+  else
+    echo "FAIL: record_same_day_noop bytes changed" >&2
+    failures=$((failures + 1))
+  fi
+
+  record_case record_missing_markers_fails "# no markers"
+  expect record_missing_markers_fails 1 "context:begin"
+
+  record_case record_check_fails_no_write $'<!-- context:begin -->\n<!-- context:end -->' 8400
+  cp "${root}/record_check_fails_no_write/wiki/concepts/starting-context.md" "${root}/fail.before"
+  expect record_check_fails_no_write 1 "instructions .* >= 2000"
+  if cmp -s "${root}/fail.before" "${root}/record_check_fails_no_write/wiki/concepts/starting-context.md"; then
+    echo "ok:   record_check_fails_no_write bytes"
+  else
+    echo "FAIL: record_check_fails_no_write bytes changed" >&2
+    failures=$((failures + 1))
+  fi
+  record_case record_next_day_bumps_updated $'---\ntitle: T\nupdated: 2026-11-19\n---\n# P\n<!-- context:begin -->\nRecorded: 2026-11-19\nold\n<!-- context:end -->\nafter'
+  expect record_next_day_bumps_updated 0 "recorded"
+  page="${root}/record_next_day_bumps_updated/wiki/concepts/starting-context.md"
+  if grep -q "^updated: 2026-11-20$" "${page}" && grep -q "^Recorded: 2026-11-20" "${page}" &&
+    ! grep -q "2026-11-19" "${page}" && grep -q "^title: T$" "${page}" && grep -q "^after$" "${page}"; then
+    echo "ok:   record_next_day_bumps_updated page"
+  else
+    echo "FAIL: record_next_day_bumps_updated page" >&2
+    failures=$((failures + 1))
+  fi
+  RUN_ARG=
+
   [ "${failures}" -eq 0 ]
 }
 
 if [ "${1:-}" = "--self-test" ]; then
   self_test
 else
-  check
+  check "${1:-}"
 fi
