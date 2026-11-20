@@ -207,15 +207,15 @@ The install script will setup the following on your system:
 
 #### [Ubuntu/Archlinux]
 
-- New Wezterm application installed on your desktop
+- WezTerm nightly (apt `wezterm-nightly` / AUR `wezterm-nightly-bin`; macOS: cask `wezterm@nightly`); an installed stable WezTerm is replaced
 - Config wezterm at ~/.config/wezterm/wezterm.lua
 
 #### [Windows/WSL2]
 
-- New Wezterm application installed on C:\Program Files\WezTerm with winget
+- New Wezterm nightly application installed on C:\Program Files\WezTerm by downloading the checksum-verified `WezTerm-nightly-setup.exe`
+  > [Why nightly](#13-wezterm-on-windows-must-be-nightly)
 - Config wezterm for windows is copied to %USERPROFILE%/.wezterm.lua.
   > Refer [ordering to this](https://wezterm.org/config/files.html)
-- [(Manual Fixed) Known issue](#13-unable-to-display-image-in-wezterm-windows-version) that image preview not working in Window's Wezterm
 - Optionally, if you don't want to copy the config file to %USERPROFILE%/.wezterm.lua, you can edit the properties of wezterm shortcut from startup menu.
 
 ```sh
@@ -745,12 +745,24 @@ wsl --shutdown
 export SSL_CERT_FILE=<path_to>/<proxy.crt
 ```
 
-### 13. Unable to display image in WezTerm Window's version
+### 13. WezTerm on Windows must be nightly
 
-- This is due to the outdated ConPTY delivered in earlier version of WezTerm
-  > As of May2025 latest release is that of Feb2024, but it is still outdated
-- **window admin privilege required** To fix this we need to replace the conpty.dll and OpenConsole.exe in the WezTerm installation folder, with the one in ~/dotfiles/mnt/c/Program Files/WezTerm/\*.
-  > Typically located at C:\Program Files\WezTerm
+The last stable release (20240203) has two problems that nightly fixes:
+
+- Images do not display, because it bundles an outdated ConPTY.
+- A tmux pane on the right side that scrolls also corrupts the pane on its
+  left: from column N on (N = number of terminal rows), the left pane
+  scrolls with it. Stable clamps the DECSLRM left margin by rows instead of
+  columns ([wezterm#5871](https://github.com/wezterm/wezterm/pull/5871)).
+
+To switch an existing stable install or update nightly, run
+`./install --only wezterm` (pieces: `zsh`, `wezterm`, `tmux`, `health`). The
+installer needs admin rights and closes all WezTerm windows, so on WSL close
+WezTerm first and run it from PowerShell:
+
+```powershell
+wsl.exe -e bash -lc '~/dotfiles/install --only wezterm'
+```
 
 ### 14. WSL starts with root instead of user
 

@@ -66,9 +66,51 @@ esac'
     printf '[ -x "%s/fake/$1" ] && exec "$@"\nexit 0\n' "${ROOT}"
   } >"${ROOT}/fake/sudo"
   chmod +x "${ROOT}/fake/sudo"
-  write_fake git 'case "$*" in *clone*) for last; do :; done; mkdir -p "$last/bin"; for b in install_plugins update_plugins; do printf "#!/bin/sh\necho \"$b \$*\" >>\"\$CALLS\"\n" >"$last/bin/$b"; chmod +x "$last/bin/$b"; done ;; esac; exit 0'
+  write_fake git 'case "$*" in *clone*) for last; do :; done; mkdir -p "$last"; case "$*" in *tpm*) mkdir -p "$last/bin"; for b in install_plugins update_plugins; do printf "#!/bin/sh\necho \"$b \$*\" >>\"\$CALLS\"\n" >"$last/bin/$b"; chmod +x "$last/bin/$b"; done ;; esac ;; esac; exit 0'
+  write_fake curl 'for url; do :; done
+out=
+while [ $# -gt 0 ]; do [ "$1" = -o ] && out="$2"; shift; done
+bytes() { case "$1" in *setup.exe) printf "#!/bin/sh\necho \"setup.exe \$*\" >>\"\$CALLS\"\n" ;; *) printf FAKEBYTES ;; esac; }
+hash() { if command -v sha256sum >/dev/null 2>&1; then sha256sum; else shasum -a 256; fi | cut -d" " -f1; }
+case "$url" in
+*.sha256)
+  h="$(bytes "${url%.sha256}" | hash)"
+  [ "${FAKE_BAD_SHA:-}" = 1 ] && h="$(printf "%064d" 0)"
+  printf "%s  %s\n" "$h" "${url%.sha256}" | sed "s# [^ ]*/# #" >"$out"
+  ;;
+*) [ -z "$out" ] || bytes "$url" >"$out" ;;
+esac
+exit 0'
+  write_fake tasklist.exe '[ -z "${FAKE_EXIT_TASKLIST_EXE:-}" ] || exit "$FAKE_EXIT_TASKLIST_EXE"
+[ "${FAKE_WEZTERM_RUNNING:-}" = 1 ] && echo "wezterm-gui.exe 123 Console 1 10 K"
+exit 0'
+  write_fake dpkg 'if [ "$1 ${2:-}" = "-s wezterm" ]; then [ "${FAKE_STABLE:-}" = 1 ]; exit; fi
+exit 0'
+  write_fake pacman 'if [ "$1 ${2:-}" = "-Q wezterm" ]; then [ "${FAKE_STABLE:-}" = 1 ]; exit; fi
+exit 0'
+  write_fake brew 'case "$*" in
+"fetch --cask wezterm@nightly") exit "${FAKE_EXIT_BREW_FETCH:-0}" ;;
+"list --cask wezterm@nightly") [ "${FAKE_NIGHTLY:-}" = 1 ]; exit ;;
+"list --cask wezterm") [ "${FAKE_STABLE:-}" = 1 ]; exit ;;
+esac
+exit 0'
+  cat >"${ROOT}/fake/makepkg" <<'EOS'
+#!/bin/sh
+echo "makepkg $* SRCDEST=$SRCDEST PKGDEST=$PKGDEST" >>"$CALLS"
+if [ "$1" = --packagelist ]; then
+  [ "${FAKE_MAKEPKG_LIST:-}" != fail ] || exit 1
+  [ "${FAKE_MAKEPKG_LIST:-}" != empty ] || exit 0
+  touch "$PKGDEST/wezterm-nightly-bin-1-1-x86_64.pkg.tar.zst"
+  echo "$PKGDEST/wezterm-nightly-bin-1-1-x86_64.pkg.tar.zst"
+  exit 0
+fi
+exit "${FAKE_EXIT_MAKEPKG:-0}"
+EOS
+  chmod +x "${ROOT}/fake/makepkg"
   local f
-  for f in curl apt-get dpkg gpg tee pacman makepkg brew tasklist.exe tmux nvim fastfetch; do
+  write_fake apt-get '[ "${FAKE_APT_INSTALL_FAIL:-}" = 1 ] && [ "$1" = install ] && exit 1
+exit "${FAKE_EXIT_APT_GET:-0}"'
+  for f in gpg tee nvim tmux fastfetch; do
     write_fake "${f}"
   done
 }
@@ -199,6 +241,119 @@ t_tmux_updates() {
   run_install m12 --only tmux || fail "exit"
   called '^install_plugins' || fail "plugins not installed"
   called '^update_plugins all' || fail "plugins not updated"
+  [ "$(grep -nE '^(install_plugins|update_plugins)' "${CALLS}" | cut -d: -f2 | cut -d' ' -f1 | tr '\n' ' ')" = "install_plugins update_plugins " ] || fail "order"
+}
+
+t_wsl_installs() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  run_install w1 --only wezterm || fail "exit"
+  called '^setup.exe /SILENT /SUPPRESSMSGBOXES /NORESTART /SP-' || fail "installer not run"
+  not_called 'winget' || fail "winget used"
+}
+t_wsl_running_wezterm_skips() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  FAKE_WEZTERM_RUNNING=1 run_install w2 --only wezterm || fail "exit"
+  not_called '^setup.exe' || fail "installer ran"
+  grep -q "install --only wezterm" "${ROOT}/w2.log" || fail "no hint"
+}
+t_wsl_bad_checksum_fails() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  ! FAKE_BAD_SHA=1 run_install w3 --only wezterm || fail "accepted bad hash"
+  not_called '^setup.exe' || fail "installer ran"
+  grep -q "try again" "${ROOT}/w3.log" || fail "no hint"
+}
+t_debian_stable_migrates() {
+  scenario debian
+  FAKE_STABLE=1 run_install d1 --only wezterm || fail "exit"
+  called 'apt-get install -y wezterm-nightly wezterm-$' || fail "no single transaction"
+  not_called 'apt-get remove' || fail "separate remove"
+}
+t_debian_nightly_updates() {
+  scenario debian
+  run_install d2 --only wezterm || fail "exit"
+  not_called 'apt-get remove' || fail "removed"
+  called 'apt-get install -y wezterm-nightly' || fail "nightly not installed"
+}
+t_arch_stable_migrates() {
+  skip_if_root "makepkg cannot run as root" || return 0
+  scenario arch
+  FAKE_STABLE=1 run_install a1 --only wezterm || fail "exit"
+  called 'pacman -R --noconfirm wezterm$' || fail "stable not removed"
+  not_called 'pacman -Rns' || fail "recursive removal"
+  called '^git clone https://aur.archlinux.org/wezterm-nightly-bin.git' || fail "no AUR clone"
+  called '^makepkg -s --noconfirm SRCDEST=.*/pkg PKGDEST=.*/pkg' || fail "makepkg"
+  called '^pacman -U --noconfirm .*/pkg/wezterm-nightly-bin' || fail "no pacman -U"
+  [ "$(grep -nE '^(makepkg -s |pacman -R |pacman -Rns|pacman -U)' "${CALLS}" | cut -d: -f2 | cut -d' ' -f1-2 | tr '\n' ',')" = "makepkg -s,pacman -R,pacman -U," ] || fail "order"
+}
+t_arch_nightly_updates() {
+  skip_if_root "makepkg cannot run as root" || return 0
+  scenario arch
+  run_install a2 --only wezterm || fail "exit"
+  not_called 'pacman -R ' || fail "removed"
+  called '^makepkg -s ' || fail "makepkg"
+  called '^pacman -U ' || fail "no pacman -U"
+}
+t_arch_bad_checksum_fails() {
+  skip_if_root "makepkg cannot run as root" || return 0
+  scenario arch
+  ! FAKE_STABLE=1 FAKE_BAD_SHA=1 run_install a3 --only wezterm || fail "accepted bad hash"
+  not_called '^makepkg' || fail "makepkg ran"
+  not_called 'pacman -R ' || fail "stable removed"
+}
+t_arch_build_failure_keeps_stable() {
+  skip_if_root "makepkg cannot run as root" || return 0
+  scenario arch
+  ! FAKE_STABLE=1 FAKE_EXIT_MAKEPKG=1 run_install a4 --only wezterm || fail "build failure accepted"
+  not_called 'pacman -R |pacman -Rns|pacman -U' || fail "stable removed"
+}
+t_macos_stable_migrates() {
+  scenario macos
+  FAKE_STABLE=1 run_install c1 --only wezterm || fail "exit"
+  called 'brew fetch --cask wezterm@nightly' || fail "no fetch"
+  called 'brew uninstall --cask wezterm$' || fail "stable not removed"
+  called 'brew install --cask wezterm@nightly' || fail "nightly not installed"
+}
+t_macos_nightly_updates() {
+  scenario macos
+  FAKE_NIGHTLY=1 run_install c2 --only wezterm || fail "exit"
+  called 'brew upgrade --cask --greedy wezterm@nightly' || fail "no upgrade"
+  not_called 'brew uninstall' || fail "uninstalled"
+}
+t_arch_packagelist_failure_keeps_stable() {
+  skip_if_root "makepkg cannot run as root" || return 0
+  scenario arch
+  ! FAKE_STABLE=1 FAKE_MAKEPKG_LIST=fail run_install a5 --only wezterm || fail "list failure accepted"
+  not_called 'pacman -R |pacman -Rns|pacman -U' || fail "stable removed or install ran"
+}
+t_arch_empty_packagelist_keeps_stable() {
+  skip_if_root "makepkg cannot run as root" || return 0
+  scenario arch
+  ! FAKE_STABLE=1 FAKE_MAKEPKG_LIST=empty run_install a6 --only wezterm || fail "empty list accepted"
+  not_called 'pacman -R |pacman -Rns|pacman -U' || fail "stable removed or install ran"
+}
+t_debian_apt_failure_keeps_stable() {
+  scenario debian
+  ! FAKE_STABLE=1 FAKE_APT_INSTALL_FAIL=1 run_install d3 --only wezterm || fail "apt failure accepted"
+  called 'apt-get install -y wezterm-nightly wezterm-$' || fail "transaction not attempted"
+  not_called 'apt-get remove' || fail "separate remove"
+}
+t_macos_fetch_failure_keeps_stable() {
+  scenario macos
+  ! FAKE_STABLE=1 FAKE_EXIT_BREW_FETCH=1 run_install c3 --only wezterm || fail "fetch failure accepted"
+  not_called 'brew (uninstall|install)' || fail "stable removed"
+}
+t_wsl_tasklist_failure_skips() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  FAKE_EXIT_TASKLIST_EXE=1 run_install w4 --only wezterm || fail "exit"
+  not_called '^setup.exe' || fail "installer ran"
+  grep -q "tasklist.exe failed" "${ROOT}/w4.log" || fail "no diagnostic"
+}
+t_brew_packages_no_wezterm() {
+  ! grep -qE '^  wezterm$' "${REPO}/install" || fail "wezterm in BREW_PACKAGES"
 }
 
 write_fakes

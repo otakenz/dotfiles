@@ -154,7 +154,6 @@ BREW_PACKAGES="
   shfmt
   tmux
   tree
-  wezterm
   wget
   xz
   yazi
@@ -327,12 +326,18 @@ _install_packages_debian() {
   rm "${_}"
 }
 
-_install_packages_macos() {
+_brew_env() {
+  command -v brew &>/dev/null && return 0
+
   local prefix="/opt/homebrew"
   [[ "${CPU_ARCH}" == "x86_64" ]] && prefix="/usr/local"
 
   # Ensure brew's paths are available for this script
   eval "$(${prefix}/bin/brew shellenv)"
+}
+
+_install_packages_macos() {
+  _brew_env
 
   # shellcheck disable=SC2086
   brew install ${BREW_PACKAGES}
@@ -1248,38 +1253,113 @@ install_nerdfont() {
   fi
 }
 
+WEZTERM_NIGHTLY_URL="https://github.com/wezterm/wezterm/releases/download/nightly"
+
+# _fetch_verified URL DIR: download URL and URL.sha256 into DIR, verify there
+_fetch_verified() {
+  local url="${1}" dir="${2}"
+  local file="${url##*/}"
+
+  mkdir -p "${dir}"
+  curl -fsSL -o "${dir}/${file}" "${url}"
+  curl -fsSL -o "${dir}/${file}.sha256" "${url}.sha256"
+
+  local check="sha256sum -c"
+  command -v sha256sum &>/dev/null || check="shasum -a 256 -c"
+  # shellcheck disable=SC2086
+  if ! (cd "${dir}" && ${check} "${file}.sha256" >/dev/null); then
+    rm -f "${dir}/${file}" "${dir}/${file}.sha256"
+    _error "Checksum mismatch for ${file}; a new nightly may have been published mid-download, try again"
+  fi
+}
+
+_wezterm_wsl() {
+  local procs
+  if ! procs="$(tasklist.exe /FI "IMAGENAME eq wezterm-gui.exe" /NH 2>/dev/null)"; then
+    echo "Skipping WezTerm nightly: could not list Windows processes (tasklist.exe failed)."
+    echo "Close all WezTerm windows, then from PowerShell run:"
+    echo "  wsl.exe -e bash -lc '${DOTFILES_PATH}/install --only wezterm'"
+    return 0
+  fi
+  if grep -q "wezterm-gui.exe" <<<"${procs}"; then
+    echo "WezTerm is running and the installer would close it."
+    echo "Close all WezTerm windows, then from PowerShell run:"
+    echo "  wsl.exe -e bash -lc '${DOTFILES_PATH}/install --only wezterm'"
+    return 0
+  fi
+
+  local dir="${WIN_USER_PATH}/AppData/Local/Temp"
+  local setup="WezTerm-nightly-setup.exe"
+  _fetch_verified "${WEZTERM_NIGHTLY_URL}/${setup}" "${dir}"
+  chmod +x "${dir}/${setup}"
+  "${dir}/${setup}" /SILENT /SUPPRESSMSGBOXES /NORESTART /SP-
+  rm -f "${dir}/${setup}" "${dir}/${setup}.sha256"
+}
+
+_wezterm_debian() {
+  sudo mkdir -p /etc/apt/keyrings
+  curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /etc/apt/keyrings/wezterm-fury.gpg
+  echo 'deb [signed-by=/etc/apt/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
+  sudo apt-get update
+  if dpkg -s wezterm &>/dev/null; then
+    # One transaction: apt downloads everything before it removes stable
+    sudo apt-get install -y wezterm-nightly wezterm-
+  else
+    sudo apt-get install -y wezterm-nightly
+  fi
+}
+
+_wezterm_arch() {
+  if [ "${EUID}" = 0 ]; then
+    echo "Skipping WezTerm nightly: makepkg cannot run as root"
+    return 0
+  fi
+  local tmp
+  tmp="$(mktemp -d)"
+  git clone https://aur.archlinux.org/wezterm-nightly-bin.git "${tmp}/pkg"
+  _fetch_verified "${WEZTERM_NIGHTLY_URL}/wezterm-nightly.Ubuntu24.04.tar.xz" "${tmp}/pkg"
+  (cd "${tmp}/pkg" && SRCDEST="${tmp}/pkg" PKGDEST="${tmp}/pkg" makepkg -s --noconfirm)
+  local list line
+  list="$(cd "${tmp}/pkg" && SRCDEST="${tmp}/pkg" PKGDEST="${tmp}/pkg" makepkg --packagelist)" ||
+    _error "makepkg --packagelist failed; stable WezTerm was left installed"
+  local pkgs=()
+  while IFS= read -r line; do
+    [ -z "${line}" ] && continue
+    [ -f "${line}" ] || _error "makepkg listed a package that was not built: ${line}"
+    pkgs+=("${line}")
+  done <<<"${list}"
+  [ "${#pkgs[@]}" -gt 0 ] || _error "makepkg built no package; stable WezTerm was left installed"
+  if pacman -Q wezterm &>/dev/null; then
+    sudo pacman -R --noconfirm wezterm
+  fi
+  sudo pacman -U --noconfirm "${pkgs[@]}"
+  rm -rf "${tmp}"
+}
+
+_wezterm_macos() {
+  _brew_env
+  if brew list --cask wezterm &>/dev/null; then
+    brew fetch --cask wezterm@nightly
+    brew uninstall --cask wezterm
+  fi
+  if brew list --cask wezterm@nightly &>/dev/null; then
+    brew upgrade --cask --greedy wezterm@nightly
+  else
+    brew install --cask wezterm@nightly
+  fi
+}
+
 install_wezterm() {
   _info "INSTALL WEZTERM"
 
   if [ "${OS_TYPE}" == "darwin" ]; then
-    return 0
-  fi
-
-  if [ -z "${OS_IN_WSL}" ]; then
-    if command -v wezterm &>/dev/null; then
-      echo "Skipping, since wezterm is already installed"
-      return 0
-    fi
-    if [ "${OS_DISTRO}" = "arch" ]; then
-      sudo pacman -S --noconfirm --needed wezterm
-      return 0
-    fi
-    sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://apt.fury.io/wez/gpg.key | sudo gpg --yes --dearmor -o /etc/apt/keyrings/wezterm-fury.gpg
-    echo 'deb [signed-by=/etc/apt/keyrings/wezterm-fury.gpg] https://apt.fury.io/wez/ * *' | sudo tee /etc/apt/sources.list.d/wezterm.list
-    sudo apt update && sudo apt install -y wezterm
+    _wezterm_macos
+  elif [ -n "${OS_IN_WSL}" ]; then
+    _wezterm_wsl
+  elif [ "${OS_DISTRO}" = "arch" ]; then
+    _wezterm_arch
   else
-    if command -v wezterm.exe &>/dev/null; then
-      echo "Skipping, since wezterm is already installed"
-      return 0
-    fi
-
-    if [ -d /mnt/c/Program\ Files/WezTerm/ ] || [ -d /c/Program\ Files/WezTerm/ ]; then
-      echo "Skipping, since wezterm is already installed"
-      return 0
-    fi
-
-    "${WIN_USER_PATH}/AppData/Local/Microsoft/WindowsApps/winget.exe" install wez.wezterm
+    _wezterm_debian
   fi
 }
 
