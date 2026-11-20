@@ -1304,7 +1304,18 @@ _wezterm_wsl_config() {
 }
 
 _wezterm_wsl() {
-  local procs
+  local dir="${WIN_USER_PATH}/AppData/Local/Temp"
+  local setup="WezTerm-nightly-setup.exe"
+  # The nightly has no version number; its checksum changes with every build.
+  local stamp="${XDG_STATE_HOME:-${HOME}/.local/state}/dotfiles/wezterm-nightly.sha256"
+  local latest procs
+
+  latest="$(curl -fsSL "${WEZTERM_NIGHTLY_URL}/${setup}.sha256" 2>/dev/null)" || latest=""
+  if [[ -n "${latest}" && -f "${stamp}" && "${latest}" == "$(cat "${stamp}")" ]]; then
+    echo "WezTerm nightly is up to date."
+    return 0
+  fi
+
   if ! procs="$(tasklist.exe /FI "IMAGENAME eq wezterm-gui.exe" /NH 2>/dev/null)"; then
     echo "Skipping WezTerm nightly: could not list Windows processes (tasklist.exe failed)."
     echo "Close all WezTerm windows, then from PowerShell run:"
@@ -1318,11 +1329,11 @@ _wezterm_wsl() {
     return 0
   fi
 
-  local dir="${WIN_USER_PATH}/AppData/Local/Temp"
-  local setup="WezTerm-nightly-setup.exe"
   _fetch_verified "${WEZTERM_NIGHTLY_URL}/${setup}" "${dir}"
   chmod +x "${dir}/${setup}"
   "${dir}/${setup}" /SILENT /SUPPRESSMSGBOXES /NORESTART /SP-
+  mkdir -p "${stamp%/*}"
+  cp "${dir}/${setup}.sha256" "${stamp}"
   rm -f "${dir}/${setup}" "${dir}/${setup}.sha256"
 }
 

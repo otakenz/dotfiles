@@ -76,7 +76,7 @@ case "$url" in
 *.sha256)
   h="$(bytes "${url%.sha256}" | hash)"
   [ "${FAKE_BAD_SHA:-}" = 1 ] && h="$(printf "%064d" 0)"
-  printf "%s  %s\n" "$h" "${url%.sha256}" | sed "s# [^ ]*/# #" >"$out"
+  printf "%s  %s\n" "$h" "${url%.sha256}" | sed "s# [^ ]*/# #" >"${out:-/dev/stdout}"
   ;;
 *) [ -z "$out" ] || bytes "$url" >"$out" ;;
 esac
@@ -250,6 +250,24 @@ t_wsl_installs() {
   run_install w1 --only wezterm || fail "exit"
   called '^setup.exe /SILENT /SUPPRESSMSGBOXES /NORESTART /SP-' || fail "installer not run"
   not_called 'winget' || fail "winget used"
+  [ "$(cat "${ROOT}/w1/.local/state/dotfiles/wezterm-nightly.sha256")" = "$(nightly_sha)" ] || fail "stamp not saved"
+}
+nightly_sha() { CALLS=/dev/null "${ROOT}/fake/curl" -fsSL "https://x/nightly/WezTerm-nightly-setup.exe.sha256"; }
+pre_stamp_current() { mkdir -p "${1}/.local/state/dotfiles" && nightly_sha >"${1}/.local/state/dotfiles/wezterm-nightly.sha256"; }
+pre_stamp_old() { mkdir -p "${1}/.local/state/dotfiles" && echo old >"${1}/.local/state/dotfiles/wezterm-nightly.sha256"; }
+t_wsl_up_to_date_skips() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  FAKE_WEZTERM_RUNNING=1 PRE=pre_stamp_current run_install w5 --only wezterm || fail "exit"
+  not_called '^(tasklist.exe|setup.exe)' || fail "checked processes or installed"
+  grep -q "up to date" "${ROOT}/w5.log" || fail "no message"
+}
+t_wsl_new_nightly_installs() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  PRE=pre_stamp_old run_install w6 --only wezterm || fail "exit"
+  called '^setup.exe' || fail "installer not run"
+  [ "$(cat "${ROOT}/w6/.local/state/dotfiles/wezterm-nightly.sha256")" = "$(nightly_sha)" ] || fail "stamp not updated"
 }
 t_wsl_running_wezterm_skips() {
   skip_if_root "warn_root would prompt in WSL" || return 0

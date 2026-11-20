@@ -212,7 +212,7 @@ The install script will setup the following on your system:
 
 #### [Windows/WSL2]
 
-- New Wezterm nightly application installed on C:\Program Files\WezTerm by downloading the checksum-verified `WezTerm-nightly-setup.exe`
+- New Wezterm nightly application installed on C:\Program Files\WezTerm by downloading the checksum-verified `WezTerm-nightly-setup.exe`. Its checksum is saved in `~/.local/state/dotfiles/wezterm-nightly.sha256`; a rerun skips the install while the published checksum still matches
   > [Why nightly](#13-wezterm-on-windows-must-be-nightly)
 - Config wezterm for windows is copied to %USERPROFILE%/.wezterm.lua by `install --only wezterm` (and a full install). Edit the repo file and rerun it: a copy that differs is replaced and the old one kept as `.wezterm.lua.bak`.
   > Refer [ordering to this](https://wezterm.org/config/files.html)
