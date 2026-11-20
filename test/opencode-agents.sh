@@ -51,7 +51,7 @@ def fail(msg):
 def ok(msg):
     print(f"ok:   {msg}")
 
-CHEAP = ["build-runner", "scribe", "jira", "confluence"]
+CHEAP = ["build-runner", "scribe", "jira", "confluence", "work-digest"]
 INHERIT = ["release-mapper"]
 CHEAP_MODEL = {"providerID": "opencode-go", "id": "deepseek-v4.1-flash"}
 # Models are pinned per config: Copilot at work, the free model at home.
@@ -223,6 +223,20 @@ for aid, own, other in [("jira", "jira", "confluence"), ("confluence", "confluen
             fail(f"{aid}: {server}_{own}_* not allowed")
         if effect(a, f"{server}_{other}_search", "*") == "allow":
             fail(f"{aid}: {server}_{other}_* allowed")
+
+# work-digest: the only shell command is our own gather tool (git arguments
+# cannot be bounded by glob patterns); no git, ls, read or glob access.
+expect("work-digest", "~/gitprojects/presentations/present gather --from 2026-11-13 --to 2026-11-20T10:00", "allow")
+for cmd in ["git -C x log", "git -C x checkout -b log HEAD", "git -C x branch new",
+            "git -C x show HEAD:.env",
+            "bash -c x ~/gitprojects/presentations/present gather y",
+            "ls ~", "rm -rf x"]:
+    expect("work-digest", cmd, "not allow")
+wd = agents.get("work-digest")
+if wd:
+    for res in [f"{H}/.ssh/id_ed25519", "src/.env"]:
+        if effect(wd, "read", res) == "allow":
+            fail(f"work-digest: read '{res}' is allowed")
 
 # Work secrets: the unattended store is off limits to agents, and no key is
 # substituted into the config (the API returns substituted values).
