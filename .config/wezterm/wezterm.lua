@@ -22,9 +22,10 @@ end
 
 -- Render on the dedicated GPU when there is one. Pick it by type, not by index:
 -- the enumeration order changes between drivers and WezTerm builds.
+-- Dx12, not Vulkan: a Vulkan surface on Windows ignores window_background_opacity.
 if is_windows and wezterm.gui then
 	for _, gpu in ipairs(wezterm.gui.enumerate_gpus()) do
-		if gpu.backend == "Vulkan" and gpu.device_type == "DiscreteGpu" then
+		if gpu.backend == "Dx12" and gpu.device_type == "DiscreteGpu" then
 			config.webgpu_preferred_adapter = gpu
 			config.front_end = "WebGpu"
 			break
