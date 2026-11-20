@@ -214,7 +214,7 @@ The install script will setup the following on your system:
 
 - New Wezterm nightly application installed on C:\Program Files\WezTerm by downloading the checksum-verified `WezTerm-nightly-setup.exe`
   > [Why nightly](#13-wezterm-on-windows-must-be-nightly)
-- Config wezterm for windows is copied to %USERPROFILE%/.wezterm.lua.
+- Config wezterm for windows is copied to %USERPROFILE%/.wezterm.lua by `install --only wezterm` (and a full install). Edit the repo file and rerun it: a copy that differs is replaced and the old one kept as `.wezterm.lua.bak`.
   > Refer [ordering to this](https://wezterm.org/config/files.html)
 - Optionally, if you don't want to copy the config file to %USERPROFILE%/.wezterm.lua, you can edit the properties of wezterm shortcut from startup menu.
 

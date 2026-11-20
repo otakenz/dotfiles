@@ -265,6 +265,34 @@ t_wsl_bad_checksum_fails() {
   not_called '^setup.exe' || fail "installer ran"
   grep -q "try again" "${ROOT}/w3.log" || fail "no hint"
 }
+# wsl_config NAME: WSL scenario with its own Windows home
+wsl_config() {
+  scenario wsl
+  WIN_USER_PATH="${ROOT}/win-${1}"
+  mkdir -p "${WIN_USER_PATH}"
+}
+t_wsl_config_copied() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  wsl_config c1
+  run_install c1 --only wezterm || fail "exit"
+  cmp -s "${REPO}/.config/wezterm/wezterm.lua" "${WIN_USER_PATH}/.wezterm.lua" || fail "not copied"
+  [ ! -e "${WIN_USER_PATH}/.wezterm.lua.bak" ] || fail "backup without old copy"
+}
+t_wsl_config_stale_replaced() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  wsl_config c2
+  echo "old" >"${WIN_USER_PATH}/.wezterm.lua"
+  FAKE_WEZTERM_RUNNING=1 run_install c2 --only wezterm || fail "exit"
+  cmp -s "${REPO}/.config/wezterm/wezterm.lua" "${WIN_USER_PATH}/.wezterm.lua" || fail "not replaced"
+  [ "$(cat "${WIN_USER_PATH}/.wezterm.lua.bak")" = old ] || fail "old copy not backed up"
+}
+t_wsl_config_current_untouched() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  wsl_config c3
+  cp "${REPO}/.config/wezterm/wezterm.lua" "${WIN_USER_PATH}/.wezterm.lua"
+  run_install c3 --only wezterm || fail "exit"
+  [ ! -e "${WIN_USER_PATH}/.wezterm.lua.bak" ] || fail "backed up an identical copy"
+}
 t_debian_stable_migrates() {
   scenario debian
   FAKE_STABLE=1 run_install d1 --only wezterm || fail "exit"

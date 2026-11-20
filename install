@@ -731,11 +731,6 @@ create_symlinks() {
         "sudo ln -fs ${DOTFILES_PATH}/etc/debian/wsl.conf /etc/wsl.conf"
       )
     fi
-
-    if [ ! -e "${WIN_USER_PATH}/.wezterm.lua" ]; then
-      cp "${DOTFILES_PATH}/.config/wezterm/wezterm.lua" "${WIN_USER_PATH}/.wezterm.lua"
-      echo "Copied wezterm.lua to window users"
-    fi
   else
     symlinks+=(
       "ln -fs ${DOTFILES_PATH}/.config/wezterm/wezterm.lua ${HOME}/.config/wezterm/wezterm.lua"
@@ -1289,6 +1284,25 @@ _fetch_verified() {
   fi
 }
 
+# Windows WezTerm cannot follow a symlink into WSL, so it reads a copy.
+_wezterm_wsl_config() {
+  local src="${DOTFILES_PATH}/.config/wezterm/wezterm.lua"
+  local dst="${WIN_USER_PATH}/.wezterm.lua"
+
+  if [ ! -d "${WIN_USER_PATH}" ]; then
+    echo "Skipping WezTerm config: Windows home '${WIN_USER_PATH}' not found."
+    return 0
+  fi
+  if [ ! -e "${dst}" ]; then
+    cp "${src}" "${dst}"
+    echo "Copied wezterm.lua to ${dst}"
+  elif ! cmp -s "${src}" "${dst}"; then
+    cp "${dst}" "${dst}.bak"
+    cp "${src}" "${dst}"
+    echo "Updated ${dst} (previous copy saved as ${dst}.bak)"
+  fi
+}
+
 _wezterm_wsl() {
   local procs
   if ! procs="$(tasklist.exe /FI "IMAGENAME eq wezterm-gui.exe" /NH 2>/dev/null)"; then
@@ -1371,6 +1385,7 @@ install_wezterm() {
   if [ "${OS_TYPE}" == "darwin" ]; then
     _wezterm_macos
   elif [ -n "${OS_IN_WSL}" ]; then
+    _wezterm_wsl_config
     _wezterm_wsl
   elif [ "${OS_DISTRO}" = "arch" ]; then
     _wezterm_arch
