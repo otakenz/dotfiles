@@ -439,7 +439,14 @@ Here are some additional tools that I use in my development environment:
 - AI-workflow notes live in a separate, private wiki repo of your own (optional). Clone it with
   `./install --wiki <git-url>` to `~/wiki/ai-workflow` (or `AI_WIKI_DIR`). If it has an
   `instructions.md`, OpenCode loads it as personal rules; `test/ai-inventory.sh` checks its
-  `inventory.md` against the installed agents and skills.
+  `inventory.md` against the installed agents and skills, that reviewers run on another model family
+  than the authors, and the starting context budget. The inventory states the budget on one line:
+  `Context: total < 25000 (target 20000), own < 10000, instructions < 2000, skills < 3000, agents < 1000`.
+  `test/ai-inventory.sh --record` writes the marked block in `concepts/starting-context.md`;
+  `--daily` does it once a day and `--status` prints the problems the last daily run found. Launching
+  `opencode` through the zsh wrapper (`.config/zsh/.aliases`) runs both: `--status` first, then
+  `--daily` in the background, which commits and pushes only that page (unsigned, hooks skipped; the
+  push is skipped if the wiki has other unpushed commits). Details: `~/wiki/ai-workflow/concepts/starting-context.md`.
 
 ## 🧪 Tests
 
@@ -450,7 +457,8 @@ bash test/install-only.sh              # ./install --only pieces, hermetic: fake
 ./run ci:keys:linux                    # same in Ubuntu 24.04, Ubuntu 26.04 and Arch containers
 ./run ci:install:linux ubuntu:26.04    # full first pass in one container, then checks the result
 test/opencode-agents.sh                # local only: global OpenCode subagents load with the intended models and permissions
-test/ai-inventory.sh                   # local only: agents and skills match the private wiki inventory (warns without it)
+test/ai-inventory.sh                   # local only: agents, skills, model families and context budget match the private wiki inventory (warns without it)
+test/ai-inventory.sh --self-test       # the checker and the zsh opencode wrapper against fixtures
 ```
 
 CI runs the keys and `./install --only` tests on Ubuntu 24.04/26.04, Arch and macOS for every push (`ci.yml`), and the full

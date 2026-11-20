@@ -4,17 +4,22 @@
 # a row, every row an installed item, and counts stay under the limits the
 # inventory states. Also checks that reviewers run on another model family
 # than the authors (opencode.json, agent files), and the starting context
-# budget (instructions, skills, agents, session total; chars // 4). Without the wiki it warns
-# and passes.
+# budget (instructions, skills, agents, session total; chars // 4). The plain
+# check warns and passes without the wiki; --record needs it.
 #
 #   test/ai-inventory.sh              check this machine
 #   test/ai-inventory.sh --self-test  check the checker against fixtures
 #   test/ai-inventory.sh --record     check, then write the context table into
 #                                     concepts/starting-context.md (once a day)
+#   test/ai-inventory.sh --daily      once a day: --record, save the problems to the
+#                                     state file, commit and push the wiki page
+#                                     (run by the `opencode` wrapper in .aliases)
+#   test/ai-inventory.sh --status     print the problems the last daily run found
 #
-# Env: AI_WIKI_DIR (default ~/wiki/ai-workflow), OPENCODE_CONFIG_DIR_CHECK
-# (default ~/.config/opencode), AI_TODAY (record date), AI_INVENTORY_PLUGINS (comma list; default:
-# asked from the running OpenCode service).
+# Env: AI_STATE_DIR (default ${XDG_STATE_HOME:-~/.local/state}/ai-inventory), AI_WIKI_DIR (default
+# ~/wiki/ai-workflow), OPENCODE_CONFIG_DIR_CHECK (default ~/.config/opencode), AI_TODAY (record/daily
+# date, default today), AI_INVENTORY_RETRY_DELAY (seconds between service API retries, default 2),
+# AI_INVENTORY_PLUGINS (comma list; default: asked from the running OpenCode service).
 
 set -o nounset
 
@@ -34,22 +39,25 @@ check() {
     return 0
   fi
 
-  if [ -z "${AI_INVENTORY_PLUGINS+set}" ]; then
-    # Plugin skills live under .../node_modules/<package>/skills/<id>/SKILL.md.
-    plugins="$(opencode api get "/api/skill?location[directory]=${HOME}" 2>/dev/null | python3 -c '
-import json, re, sys
-pkgs = {m.group(1) for s in json.load(sys.stdin)["data"]
-        if (m := re.search(r"/node_modules/((?:@[^/]+/)?[^/]+)/skills/", s.get("path", "")))}
-print(",".join(sorted(pkgs)))' 2>/dev/null)" || {
-      printf "FAIL: could not list skills from the OpenCode service; start opencode, or set\n" >&2
-      printf "      AI_INVENTORY_PLUGINS to the comma-separated plugin names (e.g. superpowers)\n" >&2
-      return 1
-    }
-  fi
+  local discover=
+  [ -z "${AI_INVENTORY_PLUGINS+set}" ] && discover=1
 
-  INVENTORY="${wiki}/inventory.md" CFG="${cfg}" PLUGINS="${plugins}" RECORD="${record}" WIKI="${wiki}" python3 - <<'EOF'
-import json, os, re, sys
+  INVENTORY="${wiki}/inventory.md" CFG="${cfg}" PLUGINS="${plugins}" DISCOVER="${discover}" RECORD="${record}" WIKI="${wiki}" python3 - <<'EOF'
+import hashlib, json, os, re, statistics, subprocess, sys, time
 from pathlib import Path
+
+
+def api(path):
+    for _ in range(2):
+        try:
+            r = subprocess.run(["opencode", "api", "get", path],
+                               capture_output=True, text=True, timeout=60)
+            if r.returncode == 0:
+                j = json.loads(r.stdout)
+                return j["data"] if isinstance(j, dict) and "data" in j else j
+        except Exception:
+            pass
+    return None
 
 text = Path(os.environ["INVENTORY"]).read_text()
 cfg = Path(os.environ["CFG"])
@@ -77,6 +85,28 @@ for line in text.splitlines():
         first = line.strip().strip("|").split("|")[0].strip().strip("`")
         if first and first != "Id" and not set(first) <= set("-: "):
             listed[section].add(first)
+
+# Plugin skills live under .../node_modules/<package>/skills/<id>/SKILL.md.
+# Right after the service starts the first list can omit them: ask up to 3 times.
+# Without an answer the plugins are unknown and only their comparison is skipped.
+plugins_known = True
+if os.environ.get("DISCOVER"):
+    wanted = listed["Plugins"]
+    for attempt in range(3):
+        data = api("/api/skill?location[directory]=" + os.path.expanduser("~"))
+        if not isinstance(data, list):
+            plugins_known = False
+            break
+        installed["Plugins"] = {m.group(1) for s in data if isinstance(s, dict)
+                                for m in [re.search(r"/node_modules/((?:@[^/]+/)?[^/]+)/skills/", str(s.get("path", "")))] if m}
+        if wanted <= installed["Plugins"]:
+            break
+        if attempt < 2:
+            time.sleep(float(os.environ.get("AI_INVENTORY_RETRY_DELAY", "2")))
+    if not plugins_known:
+        installed["Plugins"] = set(listed["Plugins"])
+        print("WARN: could not list plugins from the OpenCode service; plugin rows not checked", file=sys.stderr)
+        print("      (set AI_INVENTORY_PLUGINS to the comma-separated plugin names, e.g. superpowers, to pin them)", file=sys.stderr)
 
 for kind in installed:
     for name in sorted(installed[kind] - listed[kind]):
@@ -136,19 +166,6 @@ else:
 
 # Starting context: what a new session carries before the first prompt.
 # Tokens are estimated as chars // 4.
-import statistics, subprocess
-
-def api(path):
-    for _ in range(2):
-        try:
-            r = subprocess.run(["opencode", "api", "get", path],
-                               capture_output=True, text=True, timeout=60)
-            if r.returncode == 0:
-                j = json.loads(r.stdout)
-                return j["data"] if isinstance(j, dict) and "data" in j else j
-        except Exception:
-            pass
-    return None
 
 def tok(s):
     return len(s) // 4
@@ -288,13 +305,145 @@ if status == 0 and os.environ.get("RECORD") == "--record":
         lines += [f"| {a} | {cell(b)} | {c} | {d} |" for a, b, c, d in rows]
         out = body[:pm.start(2)] + "\n".join(lines) + "\n" + body[pm.start(3):]
         out = re.sub(r"\A(---\n.*?^)updated:[^\n]*", lambda m: f"{m.group(1)}updated: {today}", out, count=1, flags=re.S | re.M)
-        page.write_text(out)
-        print(f"ok:   recorded {today} in {page}")
+        data = out.encode()
+        if os.environ.get("RECORD_GUARD"):
+            r = subprocess.run(["git", "-C", os.environ["WIKI"], "show", "HEAD:concepts/starting-context.md"],
+                               capture_output=True)
+            if r.returncode != 0 or r.stdout != page.read_bytes():
+                print("WARN: concepts/starting-context.md changed during the run; daily record skipped", file=sys.stderr)
+                data = None
+        if data is not None:
+            page.write_bytes(data)
+            blob = hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
+            print(f"ok:   recorded {today} in {page}")
+            print(f"blob: {blob}")
 
 if status == 0:
     print(f"ok:   inventory matches ({len(installed['Plugins'])} plugin(s) listed, not limited)")
 sys.exit(status)
 EOF
+}
+
+state_dir() {
+  printf '%s' "${AI_STATE_DIR:-${XDG_STATE_HOME:-${HOME}/.local/state}/ai-inventory}"
+}
+
+daily_fail() { # STATE TODAY MESSAGE
+  printf '%s\nFAIL: daily lock failed: %s\n' "${2}" "${3}" >"${1}/last" 2>/dev/null
+}
+
+# Runs non-interactively in the background (no prompts); all results go to the
+# state file `last`. Git and network calls have no timeouts.
+daily() {
+  local state today wiki msg rc
+  state="$(state_dir)"
+  today="${AI_TODAY:-$(date +%F)}"
+  wiki="${AI_WIKI_DIR:-${HOME}/wiki/ai-workflow}"
+  mkdir -p "${state}" || return 0
+  [ "$(head -n1 "${state}/last" 2>/dev/null)" = "${today}" ] && return 0
+  # The kernel drops this lock when the process ends, so nothing goes stale.
+  # The python child takes it on fd 9; it lives on while this shell keeps fd 9.
+  # Exit 75 means another launch holds it; anything else is recorded in `last`.
+  if [ -d "${state}/lock" ] && ! rmdir "${state}/lock" 2>/dev/null; then
+    daily_fail "${state}" "${today}" "${state}/lock is a non-empty directory"
+    return 0
+  fi
+  if ! { exec 9>"${state}/lock"; } 2>/dev/null; then
+    daily_fail "${state}" "${today}" "cannot open ${state}/lock"
+    return 0
+  fi
+  msg="$(python3 -c '
+import fcntl, sys
+try:
+    fcntl.flock(9, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except BlockingIOError:
+    sys.exit(75)
+except Exception as e:
+    print(e, file=sys.stderr)
+    sys.exit(1)' 2>&1)" || {
+    rc=$?
+    [ "${rc}" -eq 75 ] && return 0
+    daily_fail "${state}" "${today}" "${msg:-python3 exited ${rc}}"
+    return 0
+  }
+  daily_record "${state}" "${today}" "${wiki}"
+}
+
+daily_record() { # STATE TODAY WIKI
+  local state="${1}" today="${2}" wiki="${3}" out rc=0 problems page=concepts/starting-context.md dirty="" head tip branch remote mergeref nopush="" recsha newsha
+  [ "$(head -n1 "${state}/last" 2>/dev/null)" = "${today}" ] && return 0
+  export GIT_TERMINAL_PROMPT=0 GIT_ASKPASS=true SSH_ASKPASS=true GIT_SSH_COMMAND="ssh -o BatchMode=yes"
+  wgit() { git -C "${wiki}" -c credential.helper= -c core.hooksPath="${state}/no-hooks" "$@" </dev/null; }
+
+  head="$(wgit rev-parse HEAD 2>/dev/null)"
+  tip="$(wgit rev-parse '@{u}' 2>/dev/null)"
+  branch="$(wgit symbolic-ref --short -q HEAD 2>/dev/null)"
+  remote="$(wgit config "branch.${branch}.remote" 2>/dev/null)"
+  mergeref="$(wgit config "branch.${branch}.merge" 2>/dev/null)"
+  if [ -z "${tip}" ] || [ -z "${remote}" ] || [ -z "${mergeref}" ]; then
+    nopush="no upstream"
+  elif [ "${head}" != "${tip}" ]; then
+    nopush="unpushed commits"
+  fi
+
+  if [ -n "$(wgit status --porcelain -- "${page}" 2>/dev/null)" ]; then
+    dirty=1
+    out="$(check 2>&1)" || rc=$?
+  else
+    wgit rev-parse --git-dir >/dev/null 2>&1 && export RECORD_GUARD=1
+    out="$(check --record 2>&1)" || rc=$?
+  fi
+  problems="$(printf '%s\n' "${out}" | grep -E '^(FAIL|WARN):' || true)"
+  if [ "${rc}" -ne 0 ] && ! printf '%s\n' "${out}" | grep -q '^FAIL:'; then
+    problems="${problems:+${problems}$'\n'}FAIL: ai-inventory check exited ${rc}; run bash ~/dotfiles/test/ai-inventory.sh"
+  fi
+
+  if [ -n "${dirty}" ]; then
+    problems="${problems:+${problems}$'\n'}WARN: ${page} has uncommitted edits; daily record skipped"
+  elif [ "${rc}" -eq 0 ] && printf '%s\n' "${out}" | grep -q '^ok:   recorded ' &&
+    wgit rev-parse --git-dir >/dev/null 2>&1; then
+    recsha="$(printf '%s\n' "${out}" | sed -n 's/^blob: //p')"
+    # Unsigned is intentional for the unattended daily record (user decision 2026-11-20).
+    # All hooks are skipped (--no-verify, core.hooksPath to a missing dir): nobody is there to answer one.
+    if [ -z "${recsha}" ] || [ "$(wgit hash-object --no-filters -- "${wiki}/${page}" 2>/dev/null)" != "${recsha}" ]; then
+      problems="${problems:+${problems}$'\n'}WARN: ${page} changed during the run; daily commit skipped"
+    elif [ "$(wgit rev-parse HEAD 2>/dev/null)" != "${head}" ]; then
+      problems="${problems:+${problems}$'\n'}WARN: wiki HEAD moved during the run; daily record not committed"
+    elif wgit -c commit.gpgsign=false commit -q --no-verify -m "chore: context record ${today}" -- "${page}" >/dev/null 2>&1; then
+      newsha="$(wgit rev-parse HEAD 2>/dev/null)"
+      if [ -z "${newsha}" ] || [ "$(wgit rev-parse "${newsha}^" 2>/dev/null)" != "${head}" ]; then
+        problems="${problems:+${problems}$'\n'}WARN: wiki HEAD moved during the run; daily record committed but not pushed"
+      elif [ -n "${nopush}" ]; then
+        problems="${problems:+${problems}$'\n'}WARN: wiki has ${nopush}; daily record committed but not pushed"
+      elif [ "$(wgit rev-parse HEAD 2>/dev/null)" != "${newsha}" ]; then
+        problems="${problems:+${problems}$'\n'}WARN: wiki HEAD moved during the run; daily record committed but not pushed"
+      else
+        # Push exactly the new commit id, never other outstanding ones.
+        wgit push -q --no-verify "${remote}" "${newsha}:${mergeref}" >/dev/null 2>&1 ||
+          problems="${problems:+${problems}$'\n'}WARN: wiki push failed; push ~/wiki/ai-workflow by hand"
+      fi
+    else
+      problems="${problems:+${problems}$'\n'}WARN: wiki commit failed; commit ${page} in ~/wiki/ai-workflow by hand"
+    fi
+  fi
+  printf '%s\n%s\n' "${today}" "${problems}" | sed '/^$/d' >"${state}/last"
+  return 0
+}
+
+status() {
+  local f date d
+  f="$(state_dir)/last"
+  d="$(state_dir)"
+  while [ ! -e "${d}" ] && [ "${d}" != "/" ] && [ "${d}" != "." ]; do d="$(dirname "${d}")"; done
+  if [ ! -w "${d}" ]; then
+    printf 'ai-inventory: %s is not writable; daily record cannot run\n' "$(state_dir)"
+  fi
+  [ -f "${f}" ] || return 0
+  date="$(head -n1 "${f}")"
+  tail -n +2 "${f}" | grep -E '^(FAIL|WARN):' | while IFS= read -r line; do
+    printf 'ai-inventory (%s): %s\n' "${date}" "${line}"
+  done
+  return 0
 }
 
 self_test() {
@@ -318,13 +467,13 @@ self_test() {
     [ -d "${root}/${1}/fake" ] && fake="${root}/${1}/fake"
     PATH="${fake}/bin:${PATH}" \
       AI_WIKI_DIR="${root}/${1}/wiki" OPENCODE_CONFIG_DIR_CHECK="${root}/${1}/cfg" \
-      AI_TODAY=2026-11-20 \
+      AI_TODAY=2026-11-20 AI_STATE_DIR="${root}/${1}/state" \
       AI_INVENTORY_PLUGINS="superpowers" bash "${BASH_SOURCE[0]}" ${RUN_ARG:+"${RUN_ARG}"} >"${root}/${1}.log" 2>&1
   }
   expect() { # NAME WANT_EXIT GREP
     local got=0
     run "${1}" || got=$?
-    if [ "${got}" -eq "${2}" ] && grep -q -- "${3}" "${root}/${1}.log"; then
+    if [ "${got}" -eq "${2}" ] && { [ -z "${3}" ] || grep -q -- "${3}" "${root}/${1}.log"; }; then
       echo "ok:   ${1}"
     else
       echo "FAIL: ${1}: exit ${got}, want ${2} and '${3}'" >&2
@@ -346,6 +495,7 @@ self_test() {
     cat >"${d}/bin/opencode" <<'EOS'
 #!/bin/sh
 d="$(dirname "$0")/.."
+echo "$*" >>"$d/calls.log"
 case "$3" in
 */api/skill*) cat "$d/skills.json" ;;
 */api/agent*) cat "$d/agents.json" ;;
@@ -353,7 +503,15 @@ case "$3" in
   id="${3#*/api/session/}"
   cat "$d/ctx-${id%/context}.json"
   ;;
-*/api/session?*) cat "$d/sessions.json" ;;
+*/api/session?*)
+  [ -n "${FAKE_TOUCH:-}" ] && echo "edit during run" >>"$FAKE_TOUCH"
+  if [ -n "${FAKE_COMMIT:-}" ]; then
+    echo x >"${FAKE_COMMIT}/unrelated-run.md"
+    git -C "${FAKE_COMMIT}" add unrelated-run.md
+    git -C "${FAKE_COMMIT}" -c commit.gpgsign=false commit -q -m "unrelated during run" -- unrelated-run.md
+  fi
+  cat "$d/sessions.json"
+  ;;
 *) exit 1 ;;
 esac
 EOS
@@ -459,11 +617,25 @@ EOF
   PATH="${root}/bin:${PATH}" AI_WIKI_DIR="${root}/service_down_hints/wiki" \
     OPENCODE_CONFIG_DIR_CHECK="${root}/service_down_hints/cfg" \
     bash "${BASH_SOURCE[0]}" >"${root}/service_down_hints.log" 2>&1 || got=$?
-  if [ "${got}" -eq 1 ] && grep -q "AI_INVENTORY_PLUGINS" "${root}/service_down_hints.log"; then
+  if [ "${got}" -eq 0 ] && grep -q "WARN: could not list plugins from the OpenCode service" "${root}/service_down_hints.log" &&
+    grep -q "AI_INVENTORY_PLUGINS" "${root}/service_down_hints.log"; then
     echo "ok:   service_down_hints"
   else
-    echo "FAIL: service_down_hints: exit ${got}, want 1 and a hint naming AI_INVENTORY_PLUGINS" >&2
+    echo "FAIL: service_down_hints: exit ${got}, want 0 and a WARN naming AI_INVENTORY_PLUGINS" >&2
     sed 's/^/      /' "${root}/service_down_hints.log" >&2
+    failures=$((failures + 1))
+  fi
+
+  ctx_case service_down_instructions_over_fails 8400 "${small_skills}" claude-x 20000
+  got=0
+  PATH="${root}/bin:${PATH}" AI_WIKI_DIR="${root}/service_down_instructions_over_fails/wiki" \
+    OPENCODE_CONFIG_DIR_CHECK="${root}/service_down_instructions_over_fails/cfg" \
+    bash "${BASH_SOURCE[0]}" >"${root}/service_down_instructions_over_fails.log" 2>&1 || got=$?
+  if [ "${got}" -eq 1 ] && grep -q "FAIL: context: instructions .* >= 2000" "${root}/service_down_instructions_over_fails.log"; then
+    echo "ok:   service_down_instructions_over_fails"
+  else
+    echo "FAIL: service_down_instructions_over_fails: exit ${got}, want 1 and the instructions FAIL" >&2
+    sed 's/^/      /' "${root}/service_down_instructions_over_fails.log" >&2
     failures=$((failures + 1))
   fi
 
@@ -484,6 +656,48 @@ EOF
   else
     echo "FAIL: scoped_plugin_detected: exit ${got}, want 0" >&2
     sed 's/^/      /' "${root}/scoped_plugin_detected.log" >&2
+    failures=$((failures + 1))
+  fi
+
+  # flaky_plugins NAME ALWAYS_OMIT: opencode whose first skill list omits the plugin.
+  flaky_plugins() {
+    local d="${root}/${1}/flaky"
+    fixture "${1}" "alpha beta" "one"
+    good_inventory | inventory "${1}"
+    mkdir -p "${d}"
+    cat >"${d}/opencode" <<EOS
+#!/bin/sh
+case "\$3" in
+*/api/skill*)
+  echo x >>"${d}/skill-calls"
+  if [ "${2}" = 1 ] || [ "\$(wc -l <"${d}/skill-calls")" -lt 2 ]; then
+    echo '{"data":[{"id":"b","path":"skill://b"}]}'
+  else
+    echo '{"data":[{"id":"x","path":"/c/node_modules/superpowers/skills/x/SKILL.md"}]}'
+  fi
+  ;;
+*) echo '{"data":[]}' ;;
+esac
+EOS
+    chmod +x "${d}/opencode"
+    got=0
+    PATH="${d}:${PATH}" AI_INVENTORY_RETRY_DELAY=0 AI_WIKI_DIR="${root}/${1}/wiki" \
+      OPENCODE_CONFIG_DIR_CHECK="${root}/${1}/cfg" \
+      bash "${BASH_SOURCE[0]}" >"${root}/${1}.log" 2>&1 || got=$?
+  }
+  flaky_plugins plugin_list_retried_passes 0
+  if [ "${got}" -eq 0 ] && grep -q "inventory matches" "${root}/plugin_list_retried_passes.log"; then
+    echo "ok:   plugin_list_retried_passes"
+  else
+    echo "FAIL: plugin_list_retried_passes: exit ${got}" >&2
+    failures=$((failures + 1))
+  fi
+  flaky_plugins plugin_always_missing_fails 1
+  if [ "${got}" -eq 1 ] && grep -q "'superpowers' is in the inventory but not installed" "${root}/plugin_always_missing_fails.log" &&
+    [ "$(wc -l <"${root}/plugin_always_missing_fails/flaky/skill-calls")" -ge 3 ]; then
+    echo "ok:   plugin_always_missing_fails"
+  else
+    echo "FAIL: plugin_always_missing_fails: exit ${got}" >&2
     failures=$((failures + 1))
   fi
 
@@ -638,11 +852,366 @@ EOF
   fi
   RUN_ARG=
 
+  # git_wiki NAME: the case's wiki as a git repo with a bare remote; the page
+  # is committed and pushed, other.txt stays uncommitted.
+  git_wiki() {
+    local w="${root}/${1}/wiki" r="${root}/${1}/remote.git"
+    git init -q --bare -b main "${r}"
+    git init -q -b main "${w}"
+    git -C "${w}" config user.name t
+    git -C "${w}" config user.email t@t
+    git -C "${w}" config commit.gpgsign false
+    git -C "${w}" add concepts/starting-context.md
+    git -C "${w}" commit -q -m init
+    git -C "${w}" remote add origin "${r}"
+    git -C "${w}" push -q -u origin main
+    echo x >"${w}/other.txt"
+    echo staged >"${w}/staged.txt"
+    git -C "${w}" add staged.txt
+  }
+  RUN_ARG=--daily
+  record_case daily_runs_once $'# P\n<!-- context:begin -->\n<!-- context:end -->\nafter'
+  expect daily_runs_once 0 ""
+  if [ "$(head -n1 "${root}/daily_runs_once/state/last")" = "2026-11-20" ] &&
+    grep -q "Recorded: 2026-11-20" "${root}/daily_runs_once/wiki/concepts/starting-context.md"; then
+    echo "ok:   daily_runs_once first"
+  else
+    echo "FAIL: daily_runs_once first" >&2
+    failures=$((failures + 1))
+  fi
+  rm -f "${root}/daily_runs_once/fake/calls.log"
+  expect daily_runs_once 0 ""
+  if [ ! -e "${root}/daily_runs_once/fake/calls.log" ]; then
+    echo "ok:   daily_runs_once second"
+  else
+    echo "FAIL: daily_runs_once second made opencode calls" >&2
+    failures=$((failures + 1))
+  fi
+
+  record_case daily_commits_only_page $'# P\n<!-- context:begin -->\n<!-- context:end -->'
+  git_wiki daily_commits_only_page
+  for h in pre-commit pre-push prepare-commit-msg post-commit; do
+    printf '#!/bin/sh\ntouch "%s/hook-ran"\nexit 1\n' "${root}" >"${root}/daily_commits_only_page/wiki/.git/hooks/${h}"
+    chmod +x "${root}/daily_commits_only_page/wiki/.git/hooks/${h}"
+  done
+  expect daily_commits_only_page 0 ""
+  r="${root}/daily_commits_only_page/remote.git"
+  if [ "$(git --git-dir="${r}" rev-list --count main)" = 2 ] &&
+    [ "$(git --git-dir="${r}" diff-tree --no-commit-id --name-only -r main)" = "concepts/starting-context.md" ] &&
+    [ "$(git --git-dir="${r}" log -1 --format=%s main)" = "chore: context record 2026-11-20" ] &&
+    git -C "${root}/daily_commits_only_page/wiki" status --porcelain | grep -q '^?? other.txt' &&
+    [ "$(git -C "${root}/daily_commits_only_page/wiki" diff --cached --name-only)" = "staged.txt" ] &&
+    [ "$(git -C "${root}/daily_commits_only_page/wiki" show :staged.txt)" = "staged" ] &&
+    [ ! -e "${root}/hook-ran" ]; then
+    echo "ok:   daily_commits_only_page remote"
+  else
+    echo "FAIL: daily_commits_only_page remote" >&2
+    failures=$((failures + 1))
+  fi
+
+  record_case daily_push_failure_warns $'# P\n<!-- context:begin -->\n<!-- context:end -->'
+  git_wiki daily_push_failure_warns
+  rm -rf "${root}/daily_push_failure_warns/remote.git"
+  expect daily_push_failure_warns 0 ""
+  if grep -q "^WARN: wiki push failed" "${root}/daily_push_failure_warns/state/last"; then
+    echo "ok:   daily_push_failure_warns last"
+  else
+    echo "FAIL: daily_push_failure_warns last" >&2
+    failures=$((failures + 1))
+  fi
+
+  commits_in_remote() {
+    git --git-dir="${root}/${1}/remote.git" rev-list --count main
+  }
+  record_case daily_unpushed_commit_not_published $'# P\n<!-- context:begin -->\n<!-- context:end -->'
+  git_wiki daily_unpushed_commit_not_published
+  w="${root}/daily_unpushed_commit_not_published/wiki"
+  echo u >"${w}/unrelated.md"
+  git -C "${w}" add unrelated.md
+  git -C "${w}" commit -q -m unrelated -- unrelated.md
+  expect daily_unpushed_commit_not_published 0 ""
+  if [ "$(git --git-dir="${root}/daily_unpushed_commit_not_published/remote.git" rev-list --count main)" = 1 ] &&
+    [ "$(git -C "${w}" log -1 --format=%s)" = "chore: context record 2026-11-20" ] &&
+    [ "$(git -C "${w}" rev-list --count HEAD)" = 3 ] &&
+    grep -q "^WARN: wiki has unpushed commits; daily record committed but not pushed" "${root}/daily_unpushed_commit_not_published/state/last"; then
+    echo "ok:   daily_unpushed_commit_not_published"
+  else
+    echo "FAIL: daily_unpushed_commit_not_published" >&2
+    failures=$((failures + 1))
+  fi
+
+  record_case daily_page_edited_during_run $'# P\n<!-- context:begin -->\n<!-- context:end -->'
+  git_wiki daily_page_edited_during_run
+  w="${root}/daily_page_edited_during_run/wiki"
+  FAKE_TOUCH="${w}/concepts/starting-context.md" expect daily_page_edited_during_run 0 ""
+  if [ "$(git -C "${w}" rev-list --count HEAD)" = 1 ] &&
+    [ "$(commits_in_remote daily_page_edited_during_run)" = 1 ] &&
+    grep -q "^edit during run" "${w}/concepts/starting-context.md" &&
+    ! grep -q "^Recorded:" "${w}/concepts/starting-context.md" &&
+    grep -q "^WARN: concepts/starting-context.md changed during the run; daily record skipped" "${root}/daily_page_edited_during_run/state/last"; then
+    echo "ok:   daily_page_edited_during_run"
+  else
+    echo "FAIL: daily_page_edited_during_run" >&2
+    failures=$((failures + 1))
+  fi
+
+  record_case daily_head_moved_during_run $'# P\n<!-- context:begin -->\n<!-- context:end -->'
+  git_wiki daily_head_moved_during_run
+  w="${root}/daily_head_moved_during_run/wiki"
+  FAKE_COMMIT="${w}" expect daily_head_moved_during_run 0 ""
+  if [ "$(commits_in_remote daily_head_moved_during_run)" = 1 ] &&
+    [ "$(git -C "${w}" rev-list --count HEAD)" = 2 ] &&
+    [ "$(git -C "${w}" log -1 --format=%s)" = "unrelated during run" ] &&
+    grep -q "^Recorded:" "${w}/concepts/starting-context.md" &&
+    grep -q "^WARN: wiki HEAD moved during the run; daily record not committed" "${root}/daily_head_moved_during_run/state/last"; then
+    echo "ok:   daily_head_moved_during_run"
+  else
+    echo "FAIL: daily_head_moved_during_run" >&2
+    failures=$((failures + 1))
+  fi
+
+  record_case daily_failed_check_writes_last $'<!-- context:begin -->\n<!-- context:end -->' 8400
+  expect daily_failed_check_writes_last 0 ""
+  if [ "$(head -n1 "${root}/daily_failed_check_writes_last/state/last")" = "2026-11-20" ] &&
+    grep -q "^FAIL: context: instructions" "${root}/daily_failed_check_writes_last/state/last"; then
+    echo "ok:   daily_failed_check_writes_last last"
+  else
+    echo "FAIL: daily_failed_check_writes_last last" >&2
+    failures=$((failures + 1))
+  fi
+
+  # dirty_case NAME INSTR_CHARS: a git wiki whose page has an uncommitted edit.
+  dirty_case() {
+    record_case "${1}" $'# P\n<!-- context:begin -->\n<!-- context:end -->' "${2}"
+    git_wiki "${1}"
+    echo "my edit" >>"${root}/${1}/wiki/concepts/starting-context.md"
+  }
+  dirty_case daily_dirty_page_failing_check 8400
+  expect daily_dirty_page_failing_check 0 ""
+  dirty_case daily_dirty_page_passing_check 400
+  expect daily_dirty_page_passing_check 0 ""
+  for n in daily_dirty_page_failing_check daily_dirty_page_passing_check; do
+    if [ "$(commits_in_remote "${n}")" = 1 ] && [ "$(git -C "${root}/${n}/wiki" log --oneline | wc -l)" -eq 1 ] &&
+      grep -q "^WARN: concepts/starting-context.md has uncommitted edits; daily record skipped" "${root}/${n}/state/last" &&
+      grep -q "^my edit" "${root}/${n}/wiki/concepts/starting-context.md" &&
+      ! grep -q "^Recorded:" "${root}/${n}/wiki/concepts/starting-context.md"; then
+      echo "ok:   ${n} no commit"
+    else
+      echo "FAIL: ${n} no commit" >&2
+      failures=$((failures + 1))
+    fi
+  done
+
+  record_case daily_already_recorded_no_commit $'# P\n<!-- context:begin -->\nRecorded: 2026-11-20\n<!-- context:end -->'
+  git_wiki daily_already_recorded_no_commit
+  expect daily_already_recorded_no_commit 0 ""
+  if [ "$(commits_in_remote daily_already_recorded_no_commit)" = 1 ] &&
+    [ "$(git -C "${root}/daily_already_recorded_no_commit/wiki" log --oneline | wc -l)" -eq 1 ]; then
+    echo "ok:   daily_already_recorded_no_commit"
+  else
+    echo "FAIL: daily_already_recorded_no_commit committed" >&2
+    failures=$((failures + 1))
+  fi
+
+  # hold_lock NAME: a background python holding the case's lock; sets HOLDER.
+  hold_lock() {
+    local d="${root}/${1}/state" _
+    mkdir -p "${d}"
+    python3 -c 'import fcntl, sys, time
+f = open(sys.argv[1], "w")
+fcntl.flock(f, fcntl.LOCK_EX)
+open(sys.argv[2], "w").close()
+time.sleep(10)' "${d}/lock" "${d}/ready" &
+    HOLDER=$!
+    for _ in $(seq 50); do
+      if [ -e "${d}/ready" ]; then return 0; fi
+      sleep 0.1
+    done
+    echo "FAIL: ${1}: lock holder did not start" >&2
+    failures=$((failures + 1))
+    kill "${HOLDER}" 2>/dev/null
+    return 1
+  }
+  record_case daily_lock_held_skips $'# P\n<!-- context:begin -->\n<!-- context:end -->'
+  if hold_lock daily_lock_held_skips; then
+    expect daily_lock_held_skips 0 ""
+    kill "${HOLDER}" 2>/dev/null
+    if [ ! -e "${root}/daily_lock_held_skips/fake/calls.log" ] && [ ! -e "${root}/daily_lock_held_skips/state/last" ]; then
+      echo "ok:   daily_lock_held_skips no record"
+    else
+      echo "FAIL: daily_lock_held_skips recorded despite lock" >&2
+      failures=$((failures + 1))
+    fi
+  fi
+
+  record_case daily_lock_released_after_holder_dies $'# P\n<!-- context:begin -->\n<!-- context:end -->'
+  if hold_lock daily_lock_released_after_holder_dies; then
+    kill "${HOLDER}"
+    wait "${HOLDER}" 2>/dev/null
+    expect daily_lock_released_after_holder_dies 0 ""
+    if [ "$(head -n1 "${root}/daily_lock_released_after_holder_dies/state/last")" = "2026-11-20" ]; then
+      echo "ok:   daily_lock_released_after_holder_dies"
+    else
+      echo "FAIL: daily_lock_released_after_holder_dies did not record" >&2
+      failures=$((failures + 1))
+    fi
+  fi
+
+  # Lock taken, but another run finished the day in between: no record.
+  record_case daily_last_rechecked_after_lock $'# P\n<!-- context:begin -->\n<!-- context:end -->'
+  mkdir -p "${root}/daily_last_rechecked_after_lock/state"
+  echo 2026-11-20 >"${root}/daily_last_rechecked_after_lock/state/last"
+  (
+    # shellcheck disable=SC2030 # subshell-local on purpose
+    export PATH="${root}/daily_last_rechecked_after_lock/fake/bin:${PATH}" \
+      AI_WIKI_DIR="${root}/daily_last_rechecked_after_lock/wiki" \
+      OPENCODE_CONFIG_DIR_CHECK="${root}/daily_last_rechecked_after_lock/cfg" \
+      AI_INVENTORY_PLUGINS=superpowers
+    daily_record "${root}/daily_last_rechecked_after_lock/state" 2026-11-20 "${AI_WIKI_DIR}"
+  ) >/dev/null 2>&1
+  if [ ! -e "${root}/daily_last_rechecked_after_lock/fake/calls.log" ]; then
+    echo "ok:   daily_last_rechecked_after_lock"
+  else
+    echo "FAIL: daily_last_rechecked_after_lock recorded" >&2
+    failures=$((failures + 1))
+  fi
+
+  record_case daily_legacy_lock_dir_recorded $'# P\n<!-- context:begin -->\n<!-- context:end -->'
+  mkdir -p "${root}/daily_legacy_lock_dir_recorded/state/lock"
+  expect daily_legacy_lock_dir_recorded 0 ""
+  if [ "$(head -n1 "${root}/daily_legacy_lock_dir_recorded/state/last")" = "2026-11-20" ] &&
+    [ -f "${root}/daily_legacy_lock_dir_recorded/state/lock" ]; then
+    echo "ok:   daily_legacy_lock_dir_recorded"
+  else
+    echo "FAIL: daily_legacy_lock_dir_recorded" >&2
+    failures=$((failures + 1))
+  fi
+
+  record_case daily_legacy_lock_dir_not_empty_fails $'# P\n<!-- context:begin -->\n<!-- context:end -->'
+  mkdir -p "${root}/daily_legacy_lock_dir_not_empty_fails/state/lock"
+  touch "${root}/daily_legacy_lock_dir_not_empty_fails/state/lock/pid"
+  expect daily_legacy_lock_dir_not_empty_fails 0 ""
+  if grep -q "^FAIL: daily lock failed" "${root}/daily_legacy_lock_dir_not_empty_fails/state/last"; then
+    echo "ok:   daily_legacy_lock_dir_not_empty_fails"
+  else
+    echo "FAIL: daily_legacy_lock_dir_not_empty_fails" >&2
+    failures=$((failures + 1))
+  fi
+
+  record_case daily_lock_error_recorded $'# P\n<!-- context:begin -->\n<!-- context:end -->'
+  printf '#!/bin/sh\ncase "$*" in *fcntl*) echo "boom" >&2; exit 1 ;; esac\nexec %s "$@"\n' "$(command -v python3)" >"${root}/daily_lock_error_recorded/fake/bin/python3"
+  chmod +x "${root}/daily_lock_error_recorded/fake/bin/python3"
+  expect daily_lock_error_recorded 0 ""
+  if [ "$(head -n1 "${root}/daily_lock_error_recorded/state/last")" = "2026-11-20" ] &&
+    grep -q "^FAIL: daily lock failed: boom" "${root}/daily_lock_error_recorded/state/last" &&
+    [ ! -e "${root}/daily_lock_error_recorded/fake/calls.log" ]; then
+    echo "ok:   daily_lock_error_recorded"
+  else
+    echo "FAIL: daily_lock_error_recorded" >&2
+    failures=$((failures + 1))
+  fi
+
+  record_case daily_checker_crash_recorded $'# P\n<!-- context:begin -->\n<!-- context:end -->'
+  # The lock still needs the real python3; only the checker's heredoc run crashes.
+  printf '#!/bin/sh\ncase "$*" in *fcntl*) exec %s "$@" ;; esac\necho Traceback >&2\nexit 1\n' "$(command -v python3)" >"${root}/daily_checker_crash_recorded/fake/bin/python3"
+  chmod +x "${root}/daily_checker_crash_recorded/fake/bin/python3"
+  expect daily_checker_crash_recorded 0 ""
+  if grep -q "^FAIL: ai-inventory check exited 1; run bash" "${root}/daily_checker_crash_recorded/state/last"; then
+    echo "ok:   daily_checker_crash_recorded"
+  else
+    echo "FAIL: daily_checker_crash_recorded" >&2
+    failures=$((failures + 1))
+  fi
+
+  RUN_ARG=--status
+  mkdir -p "${root}/status_prints_problems/state"
+  printf '2026-11-20\nWARN: something odd\n' >"${root}/status_prints_problems/state/last"
+  expect status_prints_problems 0 "^ai-inventory (2026-11-20): WARN: something odd"
+
+  mkdir -p "${root}/status_quiet_when_clean/state"
+  printf '2026-11-20\n' >"${root}/status_quiet_when_clean/state/last"
+  run status_quiet_when_clean
+  if [ ! -s "${root}/status_quiet_when_clean.log" ]; then
+    echo "ok:   status_quiet_when_clean"
+  else
+    echo "FAIL: status_quiet_when_clean printed output" >&2
+    failures=$((failures + 1))
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    echo "skip: status_unwritable_state_warns (root)"
+  else
+    mkdir -p "${root}/status_unwritable_state_warns/state"
+    chmod 555 "${root}/status_unwritable_state_warns/state"
+    expect status_unwritable_state_warns 0 "is not writable; daily record cannot run"
+    chmod 755 "${root}/status_unwritable_state_warns/state"
+  fi
+  if [ "$(id -u)" -eq 0 ]; then
+    echo "skip: status_unwritable_parent_warns (root)"
+  else
+    mkdir -p "${root}/status_unwritable_parent_warns/ro"
+    chmod 555 "${root}/status_unwritable_parent_warns/ro"
+    # run() sets the state dir to <case>/state; point it below the read-only parent.
+    got=0
+    AI_WIKI_DIR="${root}/x" AI_STATE_DIR="${root}/status_unwritable_parent_warns/ro/sub/ai-inventory" \
+      bash "${BASH_SOURCE[0]}" --status >"${root}/status_unwritable_parent_warns.log" 2>&1 || got=$?
+    if [ "${got}" -eq 0 ] && grep -q "is not writable; daily record cannot run" "${root}/status_unwritable_parent_warns.log"; then
+      echo "ok:   status_unwritable_parent_warns"
+    else
+      echo "FAIL: status_unwritable_parent_warns" >&2
+      failures=$((failures + 1))
+    fi
+    chmod 755 "${root}/status_unwritable_parent_warns/ro"
+  fi
+  # wrapper_case NAME LINKED: source .aliases from a fake HOME and call opencode.
+  wrapper_case() {
+    local n="${1}" h="${root}/${1}" i
+    mkdir -p "${h}/repo/test" "${h}/repo/.config/zsh" "${h}/home/.config/zsh" "${h}/bin"
+    cp "$(dirname "${BASH_SOURCE[0]}")/../.config/zsh/.aliases" "${h}/repo/.config/zsh/.aliases"
+    printf '#!/bin/sh\necho "$*" >>"%s/inv.log"\n' "${h}" >"${h}/repo/test/ai-inventory.sh"
+    printf '#!/bin/sh\necho "$*" >>"%s/oc.log"\nexit 7\n' "${h}" >"${h}/bin/opencode"
+    chmod +x "${h}/repo/test/ai-inventory.sh" "${h}/bin/opencode"
+    if [ "${2}" = linked ]; then
+      ln -s "${h}/repo/.config/zsh/.aliases" "${h}/home/.config/zsh/.aliases"
+    else
+      cp "${h}/repo/.config/zsh/.aliases" "${h}/home/.config/zsh/.aliases"
+    fi
+    got=0
+    # shellcheck disable=SC2031 # PATH set in a subshell above is not wanted here
+    HOME="${h}/home" XDG_CONFIG_HOME="${h}/home/.config" PATH="${h}/bin:${PATH}" \
+      bash -c '. "$1" >/dev/null 2>&1; opencode run "a b"' _ "${h}/home/.config/zsh/.aliases" >"${h}.log" 2>&1 || got=$?
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+      grep -qs -- "--daily" "${h}/inv.log" && break
+      sleep 0.2
+    done
+  }
+  wrapper_case wrapper_linked linked
+  if [ "${got}" -eq 7 ] && grep -qx -- "--status" "${root}/wrapper_linked/inv.log" &&
+    grep -qx -- "--daily" "${root}/wrapper_linked/inv.log" &&
+    [ "$(cat "${root}/wrapper_linked/oc.log")" = "run a b" ]; then
+    echo "ok:   wrapper_linked"
+  else
+    echo "FAIL: wrapper_linked (exit ${got})" >&2
+    failures=$((failures + 1))
+  fi
+  wrapper_case wrapper_unlinked copy
+  if [ "${got}" -eq 7 ] && [ ! -e "${root}/wrapper_unlinked/inv.log" ] &&
+    [ "$(cat "${root}/wrapper_unlinked/oc.log")" = "run a b" ]; then
+    echo "ok:   wrapper_unlinked"
+  else
+    echo "FAIL: wrapper_unlinked (exit ${got})" >&2
+    failures=$((failures + 1))
+  fi
+  RUN_ARG=
+
   [ "${failures}" -eq 0 ]
 }
 
 if [ "${1:-}" = "--self-test" ]; then
   self_test
+elif [ "${1:-}" = "--daily" ]; then
+  daily
+elif [ "${1:-}" = "--status" ]; then
+  status
 else
   check "${1:-}"
 fi

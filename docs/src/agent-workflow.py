@@ -531,7 +531,7 @@ def story():
             "4 Review",
             chip("cpp-reviewer", SOL) + " / " + chip("reviewer", SOL),
             "Review the branch against main.",
-            "Fresh context, different model family; cpp-reviewer for C++ code, reviewer for the rest. Findings by severity with file:line. Fixes go back to coder.",
+            "Fresh context, different model family; cpp-reviewer for C++ code (incl. memory safety), reviewer for the rest and for security reviews in any language. Findings by severity with file:line. Fixes go back to coder.",
             "Findings, fix commits",
         ],
         [
@@ -633,14 +633,14 @@ def story():
                     "cpp-reviewer",
                     "GPT-6.1 Sol",
                     "limits",
-                    "Read-only C++ review by severity, file:line",
+                    "Read-only C++ code review incl. memory safety, by severity, file:line",
                     "Review this branch against main",
                 ],
                 [
                     "reviewer",
                     "GPT-6.1 Sol",
                     "limits",
-                    "Read-only review of specs, plans, non-C++ code; follows the skill's review prompt. Completeness check: reads ~ except hidden entries and .env (best effort)",
+                    "Read-only review of specs, plans, non-C++ code, and security reviews in any language (checklist); follows the skill's review prompt. Completeness check: reads ~ except hidden entries and .env (best effort)",
                     "Review this spec / plan; skill-requested branch reviews; completeness check before a PR",
                 ],
                 [
@@ -654,7 +654,7 @@ def story():
                     "build-runner",
                     "Flash",
                     "noise, cheap",
-                    "Runs build/test/deploy, returns verdict and first errors",
+                    "Runs build/test/deploy and watches pushed CI runs, returns verdict and first errors",
                     "Run the unit tests",
                 ],
                 [
@@ -813,7 +813,7 @@ def story():
                 [
                     "Inventory check",
                     "test/ai-inventory.sh",
-                    "Fails on unlisted items, stale rows or a limit reached; warns and passes without a wiki",
+                    "Fails on unlisted items, stale rows, a limit reached, a reviewer on the author's model family or a context budget reached; warns and passes without a wiki",
                 ],
                 [
                     "Agent check",
@@ -864,6 +864,10 @@ def story():
                 ],
                 ["Check agents", "test/opencode-agents.sh"],
                 ["Check inventory", "test/ai-inventory.sh"],
+                [
+                    "Record the context budget",
+                    "test/ai-inventory.sh --record; --status shows the last daily problems; the opencode zsh wrapper runs --daily once a day",
+                ],
                 [
                     "Quick question, kept out of the context",
                     "/btw &lt;question&gt; (answer in a dialog, not added to the conversation)",

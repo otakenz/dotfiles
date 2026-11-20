@@ -50,6 +50,7 @@ KEYS_TESTS="t1_work_pc_fresh t10_renewed_in_public" bash test/keys.sh   # subset
 ONLY_TESTS="t_wsl_installs t_tmux_updates" bash test/install-only.sh     # subset; t_ prefix required
 bash test/wiki.sh
 bash test/ai-inventory.sh            # add --record to write the daily context table
+# --daily runs from the `opencode` wrapper in .config/zsh/.aliases; --status shows its problems
 ```
 
 To check an older commit, run the same commands in a worktree:

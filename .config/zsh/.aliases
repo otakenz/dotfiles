@@ -49,6 +49,19 @@ alias pf="fzf ${FZF_CTRL_T_OPTS}"
 alias drop_cache="sudo sh -c \"echo 3 >'/proc/sys/vm/drop_caches' && swapoff -a && swapon -a && printf '\n%s\n' 'Ram-cache and Swap Cleared'\""
 
 # ---- Functions ----#
+# Report and refresh the context budget (test/ai-inventory.sh) on launch.
+opencode() {
+  local link repo inv
+  link="$(readlink "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/.aliases" 2>/dev/null)"
+  repo="${link%/.config/zsh/.aliases}"
+  inv="${repo}/test/ai-inventory.sh"
+  if [ -n "${link}" ] && [ "${repo}" != "${link}" ] && [ -x "${inv}" ]; then
+    bash "${inv}" --status
+    (bash "${inv}" --daily </dev/null >/dev/null 2>&1 &)
+  fi
+  command opencode "$@"
+}
+
 # Git Branch Checkout (with preview)
 gco() {
   _fzf_git_each_ref --no-multi | xargs git checkout
