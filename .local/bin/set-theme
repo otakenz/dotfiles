@@ -11,24 +11,33 @@ from subprocess import PIPE, run
 
 
 def get_windows_user():
+    # Full path: appendWindowsPath=false keeps System32 off PATH in WSL.
     try:
         result = run(
-            ["powershell.exe", "$env:UserName"],
+            ["/mnt/c/Windows/System32/cmd.exe", "/c", "echo %USERNAME%"],
             stdout=PIPE,
+            stderr=PIPE,
             text=True,
             check=False,
+            cwd="/mnt/c",
         )
 
-        return result.stdout.rstrip()
+        return result.stdout.strip() or None
     except FileNotFoundError:
-        result = ""
+        return None
 
-    return None
 
+WIN_HOME = f"/mnt/c/Users/{get_windows_user()}"
+WEZTERM_MATCHES = [
+    {
+        "find": '^config.color_scheme = ".*"',
+        "replace": 'config.color_scheme = "%theme"',
+    },
+]
 
 TERMINALS = {
     "windows-terminal": {
-        "path": f"/mnt/c/Users/{get_windows_user()}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json",
+        "path": f"{WIN_HOME}/AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState/settings.json",
         "matches": [
             {
                 "find": '"colorScheme": ".*"',
@@ -40,25 +49,27 @@ TERMINALS = {
             },
         ],
     },
+    # The repo config (through its symlink) and the copy Windows WezTerm reads.
     "wezterm": {
-        "path": f"{os.environ.get('USERPROFILE')}/.wezterm.lua",
-        "matches": [
-            {
-                "find": '"theme": ".*"',
-                "replace": '"theme": "%theme"',
-            },
-        ],
+        "path": f"{Path.home()}/.config/wezterm/wezterm.lua",
+        "matches": WEZTERM_MATCHES,
+    },
+    "wezterm-windows": {
+        "path": f"{WIN_HOME}/.wezterm.lua",
+        "matches": WEZTERM_MATCHES,
     },
 }
 
 THEMES = {
     "tokyonight-moon": {
         "windows-terminal": "Tokyonight Moon",
-        "wezterm": "tokyonight_moon",
+        "wezterm": "Tokyo Night Moon",
+        "wezterm-windows": "Tokyo Night Moon",
     },
     "gruvbox-dark-medium": {
         "windows-terminal": "Gruvbox Dark Medium",
         "wezterm": "GruvboxDark",
+        "wezterm-windows": "GruvboxDark",
         "nvim": {
             "colorscheme": "gruvbox",
             "variant": {
