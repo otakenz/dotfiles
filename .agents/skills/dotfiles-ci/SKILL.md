@@ -1,6 +1,6 @@
 ---
 name: dotfiles-ci
-description: Use when CI fails in the dotfiles repo, or before pushing changes to shell scripts, test/*.sh, ./install or ./run, to reproduce the GitHub Actions lint and keys jobs locally. Covers shellcheck findings that appear only in CI, macOS-only test failures, the known Ubuntu 26.04 libgcrypt failure, and './run ci:test' being blocked.
+description: Use when CI fails in the dotfiles repo, or before pushing changes to shell scripts, test/*.sh, ./install or ./run, to reproduce the GitHub Actions lint and keys jobs locally, or when writing tests in test/install-only.sh (fakes, FAKE_* switches, root skips). Covers shellcheck findings that appear only in CI, macOS-only test failures, the known Ubuntu 26.04 libgcrypt failure, and './run ci:test' being blocked.
 ---
 
 # Dotfiles CI
@@ -10,7 +10,7 @@ description: Use when CI fails in the dotfiles repo, or before pushing changes t
 | Workflow | Job | Runs | Notes |
 |---|---|---|---|
 | `ci.yml` | Test Linting and Testing | `./run ci:test`: shellcheck, shfmt, ruff | Runner's shellcheck is **0.9.0**; info-level findings fail the job |
-| `ci.yml` | Keys phase (ubuntu-24.04, archlinux, macos) | `bash test/deps.sh`, `bash test/keys.sh` | macOS uses BSD tools and brew bash |
+| `ci.yml` | Keys phase (ubuntu-24.04, archlinux, macos) | `bash test/deps.sh`, `bash test/keys.sh`, `bash test/install-only.sh` | macOS uses BSD tools and brew bash; Linux jobs run as root in containers |
 | `ci.yml` | Keys phase (ubuntu-26.04) | same | `known_issue: true`, so it may fail without failing the run (libgcrypt 1.12.0, LP #2174038, "Bad secret key") |
 | `install.yml` | Full install (4 platforms) | `test/install-prep.sh`, `./install`, `test/install-check.sh` | ~10 min |
 
@@ -47,6 +47,7 @@ docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:v0.9.0 \
 shfmt --diff . .config/zsh/.{aliases,zprofile,zshrc}
 ruff check && ruff format --check --diff
 KEYS_TESTS="t1_work_pc_fresh t10_renewed_in_public" bash test/keys.sh   # subset; omit for all
+ONLY_TESTS="t_wsl_installs t_tmux_updates" bash test/install-only.sh     # subset; t_ prefix required
 bash test/wiki.sh
 bash test/ai-inventory.sh
 ```
@@ -54,6 +55,35 @@ bash test/ai-inventory.sh
 To check an older commit, run the same commands in a worktree:
 `git worktree add /tmp/opencode/ci-SHA SHA`, then `git worktree remove` it.
 To only read a file as it was, `git show SHA:path` is enough.
+
+## `test/install-only.sh` (`./install --only` pieces)
+
+Hermetic: each `run_install NAME ARGS...` gets a fresh `HOME`, a repo copy
+and fake commands first on `PATH`. Every fake appends `<cmd> <args>` to the
+call log; tests assert with `called` / `not_called` (ERE over that log).
+`KEEP=1` keeps the temp dir (`NAME.log`, `NAME.calls`) after a failure.
+
+| Need | Use |
+|---|---|
+| Pick the OS | `scenario debian\|arch\|macos\|wsl` at the start of the test |
+| Make a fake exit non-zero | `FAKE_EXIT_<NAME>=N`, name upper-cased, non-alphanumerics to `_` (`tasklist.exe` → `FAKE_EXIT_TASKLIST_EXE`, `apt-get` → `FAKE_EXIT_APT_GET`) |
+| Any other scenario switch | a `FAKE_*` variable: `run_install` forwards all of them through `env -i`; nothing else gets through |
+| Stable vs nightly WezTerm present | `FAKE_STABLE=1`, `FAKE_NIGHTLY=1` |
+| Set up `HOME` before the run | `PRE=func run_install ...`; `func` gets the home dir as `$1` |
+| Test that needs non-root (WSL, Arch/makepkg) | first line `skip_if_root "why" \|\| return 0`; Linux CI is root and prints "skipped (root)" |
+| A new fake | `write_fake NAME 'sh body'` in `write_fakes` |
+
+Fakes model reality, not convenience:
+
+- A fake must not do what the real command does not. Example: real `curl -o`
+  makes a non-executable file, so the fake does not `chmod +x`; the code
+  under test must. A helpful fake hides exactly the bug the test is for.
+- The fake `sudo` runs the rest only if it is another fake; real commands
+  (`mkdir /etc/...`) are only logged.
+- A failure test must fail at the step it claims (fail `apt-get install`,
+  not the earlier `apt-get update`), and assert the dangerous step did not
+  run (`not_called 'pacman -R'`).
+- Hashing works on macOS too: `sha256sum` if present, else `shasum -a 256`.
 
 ## Portability traps (macOS job)
 

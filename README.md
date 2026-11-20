@@ -3,7 +3,7 @@
 [![CI](https://github.com/otakenz/dotfiles/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/otakenz/dotfiles/actions/workflows/ci.yml)
 [![Install](https://github.com/otakenz/dotfiles/actions/workflows/install.yml/badge.svg?branch=main)](https://github.com/otakenz/dotfiles/actions/workflows/install.yml)
 
-- **CI:** lint, plus the keys-pass test on Ubuntu 24.04, Ubuntu 26.04, Arch and macOS, on every push
+- **CI:** lint, plus the keys-pass and `./install --only` tests on Ubuntu 24.04, Ubuntu 26.04, Arch and macOS, on every push
 - **Install:** the full first-pass install on the same four platforms, weekly and when `install` changes
 
 Welcome to my dotfiles! This is a collection of my personal tools and
@@ -446,13 +446,14 @@ Here are some additional tools that I use in my development environment:
 ```sh
 ./run ci:keys                          # keys pass, hermetic: temp HOME, generated keys, local stores
 ./run ci:wiki                          # wiki pass, hermetic: temp HOME, local wiki repo
+bash test/install-only.sh              # ./install --only pieces, hermetic: fake commands, temp HOME
 ./run ci:keys:linux                    # same in Ubuntu 24.04, Ubuntu 26.04 and Arch containers
 ./run ci:install:linux ubuntu:26.04    # full first pass in one container, then checks the result
 test/opencode-agents.sh                # local only: global OpenCode subagents load with the intended models and permissions
 test/ai-inventory.sh                   # local only: agents and skills match the private wiki inventory (warns without it)
 ```
 
-CI runs the keys test on Ubuntu 24.04/26.04, Arch and macOS for every push (`ci.yml`), and the full
+CI runs the keys and `./install --only` tests on Ubuntu 24.04/26.04, Arch and macOS for every push (`ci.yml`), and the full
 install weekly, on demand, and when `install` changes (`install.yml`).
 
 ## 📗 Troubleshooting:
