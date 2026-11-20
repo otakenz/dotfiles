@@ -2,7 +2,9 @@
 # Checks the installed OpenCode agents and skills against the inventory in
 # the private notes wiki (see `./install --wiki`): every installed item needs
 # a row, every row an installed item, and counts stay under the limits the
-# inventory states. Without the wiki it warns and passes.
+# inventory states. Also checks that reviewers run on another model family
+# than the authors (opencode.json, agent files). Without the wiki it warns
+# and passes.
 #
 #   test/ai-inventory.sh              check this machine
 #   test/ai-inventory.sh --self-test  check the checker against fixtures
@@ -41,7 +43,7 @@ print(",".join(sorted(pkgs)))' 2>/dev/null)" || {
   fi
 
   INVENTORY="${wiki}/inventory.md" CFG="${cfg}" PLUGINS="${plugins}" python3 - <<'EOF'
-import os, re, sys
+import json, os, re, sys
 from pathlib import Path
 
 text = Path(os.environ["INVENTORY"]).read_text()
@@ -87,6 +89,45 @@ else:
             fail(f"{kind}: {n} installed, limit is < {limit}; prune or raise the limit on purpose")
         else:
             print(f"ok:   {kind}: {n} installed, limit < {limit}")
+
+# Reviews need another model family than the authors. Model comes from
+# agents.<id>.model in opencode.json, else the agent file's `model:`.
+AUTHORS, REVIEWERS = ("general", "coder"), ("reviewer", "cpp-reviewer")
+FAMILIES = (("claude", r"claude|anthropic"), ("gpt", r"gpt|openai|\bo\d"),
+            ("gemini", r"gemini"), ("deepseek", r"deepseek"), ("qwen", r"qwen"))
+conf = cfg / "opencode.json"
+if not conf.is_file():
+    print(f"WARN: no {conf}; model families not checked", file=sys.stderr)
+else:
+    try:
+        data = json.loads(conf.read_text())
+    except ValueError as e:
+        data = None
+        fail(f"{conf} is not plain JSON ({e}); model families not checked")
+    if data is not None:
+        pinned = data.get("agents") or data.get("agent") or {}
+        def model_of(agent):
+            m = (pinned.get(agent) or {}).get("model")
+            f = cfg / "agents" / f"{agent}.md"
+            if not m and f.is_file():
+                fm = re.match(r"---\n(.*?)\n---", f.read_text(), re.S)
+                mm = fm and re.search(r"^model:\s*(\S+)", fm.group(1), re.M)
+                m = mm and mm.group(1)
+            return m or None
+        def family(model):
+            return next((n for n, rx in FAMILIES if re.search(rx, model.split("/")[-1])), None)
+        roles = {a: model_of(a) for a in AUTHORS + REVIEWERS}
+        unknown = [f"{a}={m or 'inherit'}" for a, m in roles.items() if not m or not family(m)]
+        if unknown:
+            print(f"WARN: model family unknown, not checked: {', '.join(unknown)}", file=sys.stderr)
+        known = {a: family(m) for a, m in roles.items() if m and family(m)}
+        authors = {known[a] for a in AUTHORS if a in known}
+        clash = [f"{r} ({known[r]})" for r in REVIEWERS if known.get(r) in authors]
+        if clash:
+            fail(f"same model family as the authors ({', '.join(sorted(authors))}): {', '.join(clash)}")
+        elif authors and any(r in known for r in REVIEWERS):
+            revs = sorted({known[r] for r in REVIEWERS if r in known})
+            print(f"ok:   model families: authors {', '.join(sorted(authors))}, reviewers {', '.join(revs)}")
 
 if status == 0:
     print(f"ok:   inventory matches ({len(installed['Plugins'])} plugin(s) listed, not limited)")
@@ -228,6 +269,40 @@ EOF
   # shellcheck disable=SC2016 # literal backticks
   good_inventory | sed 's/| `beta` |/| beta |/' | inventory row_without_backticks_counts
   expect row_without_backticks_counts 0 "inventory matches"
+
+  # models NAME AUTHOR REVIEWER: an opencode.json pinning both roles.
+  models() {
+    cat >"${root}/${1}/cfg/opencode.json" <<EOF
+{"model": "x/top", "agents": {
+  "general": {"model": "${2}"}, "coder": {"model": "${2}"},
+  "reviewer": {"model": "${3}"}, "cpp-reviewer": {"model": "${3}"}}}
+EOF
+  }
+
+  fixture families_differ_passes "alpha beta" "one"
+  good_inventory | inventory families_differ_passes
+  models families_differ_passes github-copilot/claude-sonnet-9 github-copilot/gpt-9-sol
+  expect families_differ_passes 0 "ok:   model families"
+
+  fixture same_family_fails "alpha beta" "one"
+  good_inventory | inventory same_family_fails
+  models same_family_fails github-copilot/claude-sonnet-9 github-copilot/claude-opus-9
+  expect same_family_fails 1 "same model family"
+
+  fixture unknown_family_warns "alpha beta" "one"
+  good_inventory | inventory unknown_family_warns
+  models unknown_family_warns opencode/big-pickle opencode/big-pickle
+  expect unknown_family_warns 0 "WARN: .*big-pickle"
+
+  # Reviewer pinned only in its agent file, not in JSON.
+  fixture agent_file_model_counts "alpha beta reviewer" "one"
+  # shellcheck disable=SC2016 # literal backticks
+  good_inventory | sed '/`beta`/a | `reviewer` | r | 2026-11-19 | 2026-11-19 |' |
+    sed 's/agents < 3/agents < 9/' | inventory agent_file_model_counts
+  echo '{"agents": {"general": {"model": "github-copilot/claude-sonnet-9"}}}' \
+    >"${root}/agent_file_model_counts/cfg/opencode.json"
+  printf -- '---\nmodel: github-copilot/claude-opus-9\n---\n' >"${root}/agent_file_model_counts/cfg/agents/reviewer.md"
+  expect agent_file_model_counts 1 "same model family"
 
   [ "${failures}" -eq 0 ]
 }
