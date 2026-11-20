@@ -479,6 +479,10 @@ detect_env() {
     if [[ -z "${IN_CONTAINER}" && "$(uname -a)" == *"WSL2"* ]]; then
       OS_IN_WSL=1
       WIN_USER_PATH="${WIN_USER_PATH:-$(_get_win_users_path)}"
+      # tasklist.exe and wsl.exe live here; appendWindowsPath=false leaves it off PATH.
+      if [[ -d /mnt/c/Windows/System32 && ":${PATH}:" != *":/mnt/c/Windows/System32:"* ]]; then
+        PATH="${PATH}:/mnt/c/Windows/System32"
+      fi
     fi
 
     ;;
