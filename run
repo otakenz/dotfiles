@@ -39,9 +39,10 @@ format() {
   fi
 
   local shfmt_args=("--write")
+  local check=""
 
   for arg in "${@}"; do
-    [ "${arg}" == "--check" ] && shfmt_args+=("--diff")
+    [ "${arg}" == "--check" ] && shfmt_args+=("--diff") && check=1
 
     if [ "${arg}" == "-d" ] || [ "${arg}" == "--diff" ] || [ "${shfmt_args[1]}" == "--diff" ]; then
       unset "shfmt_args[0]"
@@ -50,7 +51,8 @@ format() {
 
   "${shfmt_cmd[@]}" "${shfmt_args[@]}" . .config/zsh/.{aliases,zprofile,zshrc}
 
-  "${ruff_cmd[@]}" check --fix
+  # --check must not modify files (pre-commit hook, CI); lint covers ruff check.
+  [ -n "${check}" ] || "${ruff_cmd[@]}" check --fix
   "${ruff_cmd[@]}" format "${@}"
 }
 

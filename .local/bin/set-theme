@@ -7,7 +7,7 @@ import re
 import sys
 import textwrap
 from pathlib import Path
-from subprocess import PIPE, run
+from subprocess import run
 
 
 def get_windows_user():
@@ -15,8 +15,7 @@ def get_windows_user():
     try:
         result = run(
             ["/mnt/c/Windows/System32/cmd.exe", "/c", "echo %USERNAME%"],
-            stdout=PIPE,
-            stderr=PIPE,
+            capture_output=True,
             text=True,
             check=False,
             cwd="/mnt/c",

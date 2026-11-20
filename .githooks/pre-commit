@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Runs the CI lint job (`./run ci:test`: shellcheck, shfmt, ruff) before each
+# commit. Checks the working tree, read-only. Bypass with
+# `git commit --no-verify`. Enabled by ./install (core.hooksPath .githooks).
+
+set -o nounset
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${root}" || exit 1
+
+if ! ./run ci:test >/dev/null 2>&1; then
+  printf "pre-commit: ./run ci:test failed; details:\n" >&2
+  ./run ci:test 2>&1 | grep -v '^All checks passed!$' | tail -40 >&2
+  exit 1
+fi

@@ -4,7 +4,7 @@
 #
 #   bash test/public-leak-test.sh
 
-# shellcheck disable=SC2317 # test functions are called by name from the loop
+# shellcheck disable=SC2317,SC2329 # test functions are called by name from the loop
 set -o nounset
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -1,6 +1,6 @@
 ---
 name: dotfiles-ci
-description: Use when CI fails in the dotfiles repo, or before pushing changes to shell scripts, test/*.sh, ./install or ./run, to reproduce the GitHub Actions lint and keys jobs locally, or when writing tests in test/install-only.sh (fakes, FAKE_* switches, root skips). Covers shellcheck findings that appear only in CI, macOS-only test failures, the known Ubuntu 26.04 libgcrypt failure, and './run ci:test' being blocked.
+description: Use when CI fails in the dotfiles repo, or before pushing changes to shell scripts, test/*.sh, ./install or ./run, to reproduce the GitHub Actions lint and keys jobs locally, or when writing tests in test/install-only.sh (fakes, FAKE_* switches, root skips). Covers shellcheck findings that appear only in CI, macOS-only test failures, the known Ubuntu 26.04 libgcrypt failure, the pre-commit hook, and './run ci:test' being blocked.
 ---
 
 # Dotfiles CI
@@ -38,10 +38,15 @@ machine logs (`m10.log` etc.) are often warnings, not the cause.
 
 ## Reproduce locally
 
-`./run ci:test` (and any `./run` task) may be refused by the agent safety
-net because `run` contains an `rm -rf` in another task. Run the steps
-directly; use the CI shellcheck version, a newer local one misses findings
-(e.g. SC2015):
+`.githooks/pre-commit` runs `./run ci:test` (read-only: `format --check`
+skips `ruff check --fix`) on every commit; bypass with `--no-verify`.
+
+The agent safety net refuses `./run` tasks only when the shell's working
+directory is `~` (rule `rm.recursive-force-home-cwd`, because `run` holds an
+`rm -rf` for the container test). Run from the repo root, not
+`cd ~/dotfiles && ./run ...`. The local shellcheck may differ from CI's
+0.9.0 both ways: older misses findings (e.g. SC2015), newer adds rules
+(SC2329). Check against CI's version:
 
 ```bash
 docker run --rm -v "$PWD:/mnt" koalaman/shellcheck:v0.9.0 \
