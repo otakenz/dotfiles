@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Voice input service and mic check: `voice-input serve` | `voice-input check`.
+# Runs dotfiles/voice-input with the venv and model in ~/.local/share/voice-input.
+
+set -o errexit
+set -o pipefail
+
+self="$(readlink -f "${BASH_SOURCE[0]}")"
+dotfiles="$(cd "$(dirname "${self}")/../.." && pwd)"
+data="${HOME}/.local/share/voice-input"
+python="${data}/.venv/bin/python"
+
+if [ ! -x "${python}" ]; then
+  printf "voice-input: no venv at %s (see %s/voice-input/README.md)\n" "${data}/.venv" "${dotfiles}" >&2
+  exit 1
+fi
+
+site="$("${python}" -c 'import site; print(site.getsitepackages()[0])')"
+export LD_LIBRARY_PATH="${site}/nvidia/cublas/lib:${site}/nvidia/cudnn/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+export PYTHONPATH="${dotfiles}/voice-input${PYTHONPATH:+:${PYTHONPATH}}"
+
+exec "${python}" -m voice_input "$@"

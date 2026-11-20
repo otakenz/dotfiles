@@ -1,0 +1,10 @@
+[Unit]
+Description=Voice input: Whisper transcription for hold-to-talk (Ctrl+Q in WezTerm)
+
+[Service]
+ExecStart=%h/.local/bin/voice-input serve
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
