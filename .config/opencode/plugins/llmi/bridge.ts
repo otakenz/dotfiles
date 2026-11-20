@@ -36,7 +36,8 @@ export interface BridgeOptions {
 async function fetchObject(url: string, authorization: string | undefined): Promise<JsonObject> {
   const result = await fetch(url, {
     headers: authorization ? { Authorization: authorization } : {},
-    signal: AbortSignal.timeout(8_000),
+    // Stay under opencode-quota's 5 s requestTimeoutMs so it gets a 502, not a timeout.
+    signal: AbortSignal.timeout(4_000),
   })
   const body = await result.json()
   if (!result.ok || !body || typeof body !== "object" || Array.isArray(body)) throw new Error(`LLMi ${result.status}`)
