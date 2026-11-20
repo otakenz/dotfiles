@@ -1,0 +1,3 @@
+# Fix-ups applied to each transcript, in order. One rule per line:
+#   python-regex => replacement
+\bSOME[\s,-]+IP\b => SOME/IP

@@ -1,0 +1,13 @@
+# Terms Whisper should recognise, one per line. Used as its prompt.
+OpenCode
+WSL
+WezTerm
+tmux
+CommonAPI
+SOME/IP
+proxy
+CMake
+Git
+rebase
+pull request
+object detection
