@@ -88,3 +88,20 @@ voice-input.ahk (AutoHotkey v2)           voice-input.service (systemd --user)
 | Nothing happens on Ctrl+Q | AutoHotkey not running: re-run `install-windows.sh` |
 
 Tests: `cd ~/dotfiles/voice-input && ~/.local/share/voice-input/.venv/bin/python -m pytest tests`
+
+## Indicator in OpenCode
+
+The TUI plugin `.config/opencode/tui-plugins/voice-input` (registered in
+`cli.json`) shows the state under the prompt:
+
+| Footer | Meaning |
+|---|---|
+| `🎙 ready` | service up, idle |
+| `🔴 ▁▃▆█▆▃▁ 4.2s` | recording; the bar follows your voice, flat means not heard |
+| `⏹ recording stopped – release Ctrl+Q` | 120 s limit reached or recording failed; release to transcribe what was caught |
+| `… transcribing` | text comes next |
+| `⚠ no audio – check mic` | last clip's warning, for 10 s |
+| `🎙 off` | service not running |
+
+It polls `GET /status` every 0.2 s while recording, every 2 s otherwise.
+Tests: `cd ~/dotfiles/.config/opencode/tui-plugins/voice-input && bun test`

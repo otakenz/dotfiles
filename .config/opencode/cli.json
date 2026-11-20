@@ -35,5 +35,6 @@
     "verbosity": "low"
   },
   "animations": true,
-  "highlights": true
+  "highlights": true,
+  "plugins": [{ "package": "./tui-plugins/voice-input" }]
 }
