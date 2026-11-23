@@ -356,19 +356,14 @@ Add plugins by editing `opencode.json` / `opencode_work.json` here, not with
 - Persistent memory using local vector search
 - OpenCode v2 support requires 2.42.0 or later (`plugins` config key)
 
-3. [cc-safety-net](https://github.com/kenryu42/cc-safety-net) (safety)
-
-- Blocks destructive commands and reads of SSH keys / `.env` files before they run
-- OpenCode v2 support requires 2.0.6 or later; needs Node.js 22+
-
-4. [opencode-quota](https://github.com/slkiser/opencode-quota) (observability)
+3. [opencode-quota](https://github.com/slkiser/opencode-quota) (observability)
 
 - `/quota` and `/quota_usage`: limits, tokens and cost for Copilot and OpenCode Go
 - Requires OpenCode 2.0.26 or later and Node.js 22.13+
 
 Context management uses V2's built-in compaction (`compaction.auto: true`), not a plugin.
 
-5. `llmi` (local, `.config/opencode/plugins/llmi/`, work config only)
+4. `llmi` (local, `.config/opencode/plugins/llmi/`, work config only)
 
 - Loads the AUMOVIO LLMi chat models, limits and USD prices from the gateway
   (`/v1/models`, `/v1/model/info`) every 15 minutes, so new models need no config edit

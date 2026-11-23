@@ -820,11 +820,6 @@ def story():
                     "test/opencode-agents.sh",
                     "Models, modes and permission rules of every agent",
                 ],
-                [
-                    "Safety net",
-                    "cc-safety-net plugin",
-                    "Blocks destructive shell commands before they run",
-                ],
             ],
             [1.4, 2.4, 4.2],
         )

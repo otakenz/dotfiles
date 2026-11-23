@@ -41,10 +41,7 @@ machine logs (`m10.log` etc.) are often warnings, not the cause.
 `.githooks/pre-commit` runs `./run ci:test` (read-only: `format --check`
 skips `ruff check --fix`) on every commit; bypass with `--no-verify`.
 
-The agent safety net refuses `./run` tasks only when the shell's working
-directory is `~` (rule `rm.recursive-force-home-cwd`, because `run` holds an
-`rm -rf` for the container test). Run from the repo root, not
-`cd ~/dotfiles && ./run ...`. The local shellcheck may differ from CI's
+The local shellcheck may differ from CI's
 0.9.0 both ways: older misses findings (e.g. SC2015), newer adds rules
 (SC2329). Check against CI's version:
 
