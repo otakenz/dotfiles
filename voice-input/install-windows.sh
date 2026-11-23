@@ -24,7 +24,7 @@ for candidate in \
 done
 if [ -z "${ahk}" ]; then
   printf "AutoHotkey v2 not found. Install it from https://www.autohotkey.com (v2, current user), then re-run.\n" >&2
-  exit 1
+  exit 3 # ./install --only voice-input reads 3 as "AutoHotkey missing"
 fi
 
 dest="${profile}/voice-input"

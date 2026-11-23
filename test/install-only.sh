@@ -86,7 +86,22 @@ exit 0'
 exit 0'
   write_fake dpkg 'if [ "$1 ${2:-}" = "-s wezterm" ]; then [ "${FAKE_STABLE:-}" = 1 ]; exit; fi
 exit 0'
+  # FAKE_PULSE: missing | residual (removed, config kept) | unset = installed
+  write_fake dpkg-query 'case "${FAKE_PULSE:-}" in
+missing) exit 1 ;;
+residual) printf "deinstall ok config-files" ;;
+*) printf "install ok installed" ;;
+esac'
   write_fake pacman 'if [ "$1 ${2:-}" = "-Q wezterm" ]; then [ "${FAKE_STABLE:-}" = 1 ]; exit; fi
+if [ "$1 ${2:-}" = "-Q libpulse" ]; then [ "${FAKE_PULSE:-}" != missing ]; exit; fi
+exit 0'
+  # `uv venv DIR` leaves a python stub in DIR/bin that logs as "venv-python".
+  write_fake uv 'if [ "$1" = venv ]; then
+  for last; do :; done
+  mkdir -p "$last/bin"
+  printf "#!/bin/sh\necho \"venv-python \$*\" >>\"\$CALLS\"\n" >"$last/bin/python"
+  chmod +x "$last/bin/python"
+fi
 exit 0'
   write_fake brew 'case "$*" in
 "fetch --cask wezterm@nightly") exit "${FAKE_EXIT_BREW_FETCH:-0}" ;;
@@ -110,7 +125,7 @@ EOS
   local f
   write_fake apt-get '[ "${FAKE_APT_INSTALL_FAIL:-}" = 1 ] && [ "$1" = install ] && exit 1
 exit "${FAKE_EXIT_APT_GET:-0}"'
-  for f in gpg tee nvim tmux fastfetch; do
+  for f in gpg tee nvim tmux fastfetch nvidia-smi systemctl; do
     write_fake "${f}"
   done
 }
@@ -179,7 +194,7 @@ scenario() { # debian | arch | macos | wsl
 t_only_unknown_piece() {
   scenario debian
   ! run_install m1 --only zsh,nope || fail "unknown piece accepted"
-  grep -q "zsh, wezterm, tmux, health" "${ROOT}/m1.log" || fail "valid names not listed"
+  grep -q "zsh, wezterm, tmux, health, voice-input" "${ROOT}/m1.log" || fail "valid names not listed"
   not_called '^(git|apt-get|update-zsh-plugins|tmux|fastfetch)' || fail "ran something"
 }
 t_only_empty() {
@@ -400,6 +415,149 @@ t_wsl_tasklist_failure_skips() {
 }
 t_brew_packages_no_wezterm() {
   ! grep -qE '^  wezterm$' "${REPO}/install" || fail "wezterm in BREW_PACKAGES"
+}
+
+# The real install-windows.sh calls cmd.exe and powershell.exe; never run it here.
+pre_voice() {
+  printf '#!/bin/sh\necho "install-windows.sh $*" >>"$CALLS"\nexit "${FAKE_AHK_EXIT:-0}"\n' \
+    >"${1}/dotfiles/voice-input/install-windows.sh"
+}
+# pre_voice_done HOME: venv that imports faster_whisper, and a complete turbo model
+TURBO=models--mobiuslabsgmbh--faster-whisper-large-v3-turbo
+model_files() { # DIR FILES...: a snapshot holding FILES
+  local dir="${1}" f
+  shift
+  mkdir -p "${dir}"
+  for f in "${@}"; do touch "${dir}/${f}"; done
+}
+ALL_MODEL_FILES=(config.json model.bin preprocessor_config.json tokenizer.json vocabulary.json)
+pre_voice_venv() {
+  pre_voice "${1}"
+  local data="${1}/.local/share/voice-input"
+  mkdir -p "${data}/.venv/bin"
+  printf '#!/bin/sh\necho "venv-python $*" >>"$CALLS"\n' >"${data}/.venv/bin/python"
+  chmod +x "${data}/.venv/bin/python"
+}
+pre_voice_done() {
+  pre_voice_venv "${1}"
+  model_files "${1}/.local/share/voice-input/models/${TURBO}/snapshots/abc" "${ALL_MODEL_FILES[@]}"
+}
+pre_voice_partial() { # model.bin finished, tokenizer.json still downloading
+  pre_voice_venv "${1}"
+  model_files "${1}/.local/share/voice-input/models/${TURBO}/snapshots/abc" config.json model.bin
+}
+pre_voice_other_model() { # only large-v3, which the service does not load
+  pre_voice_venv "${1}"
+  model_files "${1}/.local/share/voice-input/models/models--Systran--faster-whisper-large-v3/snapshots/abc" "${ALL_MODEL_FILES[@]}"
+}
+pre_voice_mixed() { # older complete snapshot, newer one (the service's pick) incomplete
+  pre_voice_done "${1}"
+  model_files "${1}/.local/share/voice-input/models/${TURBO}/snapshots/zzz" model.bin
+}
+t_voice_skips_off_wsl() {
+  scenario debian
+  run_install v1 --only voice-input || fail "exit"
+  not_called '^(nvidia-smi|uv|systemctl|apt-get)' || fail "ran setup off WSL"
+  grep -q "needs WSL2" "${ROOT}/v1.log" || fail "no skip message"
+}
+t_voice_skips_macos() {
+  scenario macos
+  run_install v2 --only voice-input || fail "exit"
+  not_called '^(nvidia-smi|uv|systemctl|brew)' || fail "ran setup on macOS"
+  grep -q "needs WSL2" "${ROOT}/v2.log" || fail "no skip message"
+}
+t_voice_installs() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  FAKE_PULSE=missing PRE=pre_voice run_install v3 --only voice-input || fail "exit"
+  local home="${ROOT}/v3"
+  called '^nvidia-smi -L' || fail "GPU not checked"
+  called 'apt-get install -y pulseaudio-utils' || fail "parecord not installed"
+  called '^uv venv --python 3\.12 .*/\.local/share/voice-input/\.venv$' || fail "no venv"
+  called '^uv pip install --python .*/\.venv faster-whisper==1\.2\.1 nvidia-cublas-cu12 nvidia-cudnn-cu12==9\.\* av<16$' || fail "packages"
+  called '^venv-python -c .*download_model\("large-v3-turbo", cache_dir=sys\.argv\[1\]\) .*/\.local/share/voice-input/models$' || fail "model not downloaded, or cache dir not passed as an argument"
+  called '^systemctl --user daemon-reload' || fail "no daemon-reload"
+  called '^systemctl --user enable --now voice-input$' || fail "service not enabled"
+  called '^install-windows.sh' || fail "Windows side not installed"
+  [ -L "${home}/.config/voice-input" ] || fail "config not linked"
+  [ -L "${home}/.config/systemd/user/voice-input.service" ] || fail "unit not linked"
+  [ -L "${home}/.local/bin/voice-input" ] || fail "wrapper not linked"
+  [ "$(grep -nE '^(uv venv|systemctl --user enable)' "${CALLS}" | cut -d: -f2 | cut -d' ' -f1 | tr '\n' ' ')" = "uv systemctl " ] || fail "order"
+  grep -q "Let desktop apps access your microphone" "${ROOT}/v3.log" || fail "no mic reminder"
+}
+t_voice_residual_pulse_installs() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  FAKE_PULSE=residual PRE=pre_voice_done run_install v11 --only voice-input || fail "exit"
+  called 'apt-get install -y pulseaudio-utils' || fail "removed package (config kept) taken as installed"
+}
+t_voice_installed_pulse_skips() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  PRE=pre_voice_done run_install v12 --only voice-input || fail "exit"
+  not_called 'apt-get install' || fail "reinstalled parecord"
+}
+pre_voice_own_config() { # a real folder with the user's own word list
+  pre_voice_done "${1}"
+  mkdir -p "${1}/.config/voice-input"
+  echo "MyTerm" >"${1}/.config/voice-input/vocab.txt"
+}
+t_voice_keeps_own_config_dir() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  PRE=pre_voice_own_config run_install v13 --only voice-input || fail "exit"
+  local dir="${ROOT}/v13/.config/voice-input"
+  [ ! -L "${dir}" ] || fail "folder replaced"
+  [ ! -e "${dir}/voice-input" ] || fail "nested link created"
+  [ "$(cat "${dir}/vocab.txt")" = MyTerm ] || fail "word list changed"
+  grep -q "Kept your own" "${ROOT}/v13.log" || fail "not reported"
+}
+t_voice_no_gpu_fails() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  ! FAKE_EXIT_NVIDIA_SMI=1 PRE=pre_voice run_install v4 --only voice-input || fail "accepted no GPU"
+  not_called '^(uv|venv-python|systemctl|apt-get)' || fail "set up without GPU"
+  grep -q "NVIDIA" "${ROOT}/v4.log" || fail "no hint"
+}
+t_voice_no_ahk_hints() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  FAKE_AHK_EXIT=3 PRE=pre_voice run_install v5 --only voice-input || fail "exit"
+  called '^systemctl --user enable --now voice-input$' || fail "service not enabled"
+  grep -q "winget install AutoHotkey.AutoHotkey" "${ROOT}/v5.log" || fail "no hint"
+}
+t_voice_windows_failure_fails() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  ! FAKE_AHK_EXIT=1 PRE=pre_voice run_install v8 --only voice-input || fail "accepted a failed Windows install"
+}
+t_voice_rerun_skips() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  PRE=pre_voice_done run_install v6 --only voice-input || fail "exit"
+  not_called '^(uv|apt-get)' || fail "reinstalled"
+  not_called 'download_model' || fail "downloaded again"
+  called '^systemctl --user enable --now voice-input$' || fail "service not enabled"
+}
+t_voice_partial_model_downloads() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  PRE=pre_voice_partial run_install v7 --only voice-input || fail "exit"
+  called 'download_model' || fail "partial model taken as done"
+  not_called '^uv' || fail "venv reinstalled"
+}
+
+t_voice_other_model_downloads() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  PRE=pre_voice_other_model run_install v9 --only voice-input || fail "exit"
+  called 'download_model\("large-v3-turbo"' || fail "large-v3 taken as the turbo model"
+}
+t_voice_mixed_snapshots_download() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  PRE=pre_voice_mixed run_install v10 --only voice-input || fail "exit"
+  called 'download_model' || fail "older complete snapshot hid the incomplete one the service loads"
 }
 
 write_fakes

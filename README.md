@@ -23,6 +23,10 @@ on your machine. Instruction is provided below.
 - macOS (tested on Apple Silicon macOS 15)
 - wsl2 (Archlinux/ Ubuntu22+)
 
+Voice input (hold Ctrl+Q in WezTerm to dictate) works on WSL2 with an NVIDIA
+GPU only. It is opt-in: `./install --only voice-input`, see
+[voice-input/README.md](voice-input/README.md).
+
 ## 🔗 Requirements
 
 - git

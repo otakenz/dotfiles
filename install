@@ -20,7 +20,7 @@ KEYS_DIR=
 
 ONLY_UPDATE=
 ONLY_PIECES=
-PIECES=(zsh wezterm tmux health)
+PIECES=(zsh wezterm tmux health voice-input)
 
 PACMAN_PACKAGES="
   7zip
@@ -1406,6 +1406,82 @@ install_wezterm() {
   fi
 }
 
+# The service loads the newest large-v3-turbo snapshot (voice_input/transcriber.py);
+# Hugging Face links each file in when its own download finishes.
+_voice_model_ready() {
+  local snapshots="${1}/models--mobiuslabsgmbh--faster-whisper-large-v3-turbo/snapshots"
+  local newest="" snap file
+  for snap in "${snapshots}"/*/; do newest="${snap}"; done
+  [ -d "${newest}" ] || return 1
+  for file in config.json model.bin preprocessor_config.json tokenizer.json vocabulary.json; do
+    [ -e "${newest}${file}" ] || return 1
+  done
+}
+
+# Voice input (hold Ctrl+Q in WezTerm): Whisper on the GPU in WSL, hotkey in
+# Windows. Opt-in through --only voice-input; see voice-input/README.md.
+install_voice_input() {
+  _info "INSTALL VOICE INPUT"
+
+  if [ -z "${OS_IN_WSL}" ]; then
+    echo "Voice input needs WSL2 with an NVIDIA GPU; skipping."
+    return 0
+  fi
+  nvidia-smi -L >/dev/null 2>&1 ||
+    _error "No NVIDIA GPU found (nvidia-smi -L failed); voice input needs one"
+
+  if [ "${OS_DISTRO}" = "arch" ]; then
+    pacman -Q libpulse &>/dev/null || sudo pacman -S --noconfirm libpulse
+  elif [ "$(dpkg-query -W -f='${Status}' pulseaudio-utils 2>/dev/null)" != "install ok installed" ]; then
+    # dpkg -s also succeeds for a removed package whose config files are left.
+    sudo apt-get install -y pulseaudio-utils
+  fi
+
+  local data="${HOME}/.local/share/voice-input"
+  local python="${data}/.venv/bin/python"
+  if ! "${python}" -c "import faster_whisper" 2>/dev/null; then
+    command -v uv >/dev/null 2>&1 || _error "uv not found; run ./install first"
+    [ -x "${python}" ] || uv venv --python 3.12 "${data}/.venv"
+    uv pip install --python "${data}/.venv" faster-whisper==1.2.1 nvidia-cublas-cu12 \
+      "nvidia-cudnn-cu12==9.*" "av<16"
+  fi
+  if ! _voice_model_ready "${data}/models"; then
+    echo "Downloading the Whisper model large-v3-turbo (about 1.6 GB)..."
+    "${python}" -c 'import sys; from faster_whisper.utils import download_model; download_model("large-v3-turbo", cache_dir=sys.argv[1])' \
+      "${data}/models"
+  fi
+
+  mkdir -p "${HOME}/.local/bin" "${HOME}/.config/systemd/user"
+  ln -fs "${DOTFILES_PATH}/.local/bin/voice-input" "${HOME}/.local/bin/voice-input"
+  if [ -d "${HOME}/.config/voice-input" ] && [ ! -L "${HOME}/.config/voice-input" ]; then
+    echo "Kept your own ${HOME}/.config/voice-input (a folder, not a link). To use the"
+    echo "dotfiles' word lists, move it away and re-run ./install --only voice-input."
+  else
+    ln -sfn "${DOTFILES_PATH}/.config/voice-input" "${HOME}/.config/voice-input"
+  fi
+  ln -fs "${DOTFILES_PATH}/voice-input/voice-input.service" "${HOME}/.config/systemd/user/voice-input.service"
+  systemctl --user daemon-reload
+  systemctl --user enable --now voice-input
+
+  local rc=0
+  "${DOTFILES_PATH}/voice-input/install-windows.sh" || rc=$?
+  case "${rc}" in
+  0) ;;
+  3)
+    echo "AutoHotkey v2 is missing. In Windows run: winget install AutoHotkey.AutoHotkey"
+    echo "then re-run: ${DOTFILES_PATH}/install --only voice-input"
+    ;;
+  *) _error "voice-input/install-windows.sh failed (exit ${rc})" ;;
+  esac
+
+  cat <<EOF
+
+Windows Settings > Privacy & security > Microphone:
+turn on "Let desktop apps access your microphone", then run wsl --shutdown if it was off.
+Check the mic with: voice-input check
+EOF
+}
+
 healthcheck() {
   _info "CHECK INFORMATION AND VERSIONS"
 
@@ -1483,6 +1559,14 @@ You can safely close this terminal.
 
 The next time you open your terminal everything will be ready to go!
 EOF
+
+  if [ -n "${OS_IN_WSL}" ]; then
+    cat <<EOF
+
+Voice input (hold Ctrl+Q in WezTerm, needs an NVIDIA GPU):
+  ${DOTFILES_PATH}/install --only voice-input
+EOF
+  fi
 
   if [ "${OS_TYPE}" == "darwin" ]; then
     cat <<EOF
@@ -2087,7 +2171,7 @@ _check_pieces() {
     for p in "${PIECES[@]}"; do [ "${p}" = "${name}" ] && known=1; done
     if [ -z "${known}" ]; then
       IFS=' '
-      _error "Unknown piece '${name}'. Pieces: zsh, wezterm, tmux, health"
+      _error "Unknown piece '${name}'. Pieces: zsh, wezterm, tmux, health, voice-input"
     fi
   done
 }
@@ -2107,6 +2191,7 @@ _run_pieces() {
     wezterm) install_wezterm ;;
     tmux) install_tmux_plugins ;;
     health) healthcheck ;;
+    voice-input) install_voice_input ;;
     esac
   done
 }
@@ -2147,6 +2232,8 @@ LOCAL=1 ./install
 #   wezterm  install or update WezTerm nightly
 #   tmux     tmux plugins
 #   health   print versions
+#   voice-input  WSL only: voice input service, Whisper model and CUDA
+#                libraries (~3 GB), AutoHotkey script (never in a normal run)
 ./install --only wezterm,tmux
 
 # Show this help menu.

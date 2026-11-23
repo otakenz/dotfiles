@@ -23,42 +23,52 @@ voice-input.ahk (AutoHotkey v2)           voice-input.service (systemd --user)
 
 ## One-time setup
 
+WSL2 with an NVIDIA GPU only; macOS and native Linux are not supported.
+
 1. Windows **Settings → Privacy & security → Microphone**: turn on
    "Let desktop apps access your microphone" (WSL counts as a desktop app).
    If it was off, run `wsl --shutdown` afterwards.
 2. Optional, for noise: NVIDIA Broadcast, Microphone tab, Noise Removal +
    Room Echo Removal; set Windows default input to
    "Microphone (NVIDIA Broadcast)" and Broadcast's source to the headset.
-3. Python environment and model (about 3 GB with the CUDA libraries):
+3. Install AutoHotkey v2 in Windows: `winget install AutoHotkey.AutoHotkey`
+   (or autohotkey.com, current user).
+4. In WSL:
 
    ```sh
-   d=~/.local/share/voice-input
-   uv venv --python 3.12 "$d/.venv"
-   uv pip install --python "$d/.venv" faster-whisper nvidia-cublas-cu12 \
-     "nvidia-cudnn-cu12==9.*" "av<16" pytest
-   "$d/.venv/bin/python" -c "from faster_whisper.utils import download_model; \
-     download_model('large-v3-turbo', cache_dir='$d/models')"
+   ~/dotfiles/install --only voice-input
    ```
 
-4. Links and service:
+   Installs `parecord`, the Python environment and the model (about 3 GB
+   with the CUDA libraries), links the config and starts the service, then
+   runs `install-windows.sh`. Safe to re-run: finished steps are skipped.
+   A normal `./install` never does this.
 
-   ```sh
-   ln -fs ~/dotfiles/.local/bin/voice-input ~/.local/bin/voice-input
-   ln -sfn ~/dotfiles/.config/voice-input ~/.config/voice-input
-   mkdir -p ~/.config/systemd/user
-   ln -fs ~/dotfiles/voice-input/voice-input.service ~/.config/systemd/user/
-   systemctl --user daemon-reload
-   systemctl --user enable --now voice-input
-   ```
+### Manual setup (what the command does)
 
-5. Install AutoHotkey v2 (autohotkey.com, current user), then:
+```sh
+sudo apt-get install -y pulseaudio-utils     # Arch: sudo pacman -S libpulse
+d=~/.local/share/voice-input
+uv venv --python 3.12 "$d/.venv"
+uv pip install --python "$d/.venv" faster-whisper==1.2.1 nvidia-cublas-cu12 \
+  "nvidia-cudnn-cu12==9.*" "av<16"
+"$d/.venv/bin/python" -c 'import sys; from faster_whisper.utils import download_model; \
+  download_model("large-v3-turbo", cache_dir=sys.argv[1])' "$d/models"
 
-   ```sh
-   ~/dotfiles/voice-input/install-windows.sh
-   ```
+ln -fs ~/dotfiles/.local/bin/voice-input ~/.local/bin/voice-input
+ln -sfn ~/dotfiles/.config/voice-input ~/.config/voice-input
+mkdir -p ~/.config/systemd/user
+ln -fs ~/dotfiles/voice-input/voice-input.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now voice-input
 
-   Copies the script to `%USERPROFILE%\voice-input`, adds it to the Startup
-   folder and starts it. Re-run after changing `voice-input.ahk`.
+~/dotfiles/voice-input/install-windows.sh
+```
+
+`install-windows.sh` copies the script to `%USERPROFILE%\voice-input`, adds
+it to the Startup folder and starts it. Re-run it after changing
+`voice-input.ahk`. For development, add pytest:
+`uv pip install --python ~/.local/share/voice-input/.venv pytest`.
 
 ## New mic or new place (e.g. office headset)
 

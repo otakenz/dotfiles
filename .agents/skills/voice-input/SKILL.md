@@ -38,7 +38,14 @@ cd voice-input && ~/.local/share/voice-input/.venv/bin/python -m pytest tests -q
 cd .config/opencode/tui-plugins/voice-input && bun test
 systemctl --user restart voice-input          # after Python changes
 voice-input/install-windows.sh                # after .ahk changes
+./install --only voice-input                  # setup on a WSL machine; re-run safe
+ONLY_TESTS="t_voice_installs t_voice_rerun_skips" bash test/install-only.sh  # all: omit ONLY_TESTS
 ```
+
+Setup is `install_voice_input` in `install` (WSL only, opt-in; off WSL it
+skips with exit 0). `install-windows.sh` exits 3 when AutoHotkey is missing;
+the install piece then prints the winget hint and still succeeds. The footer
+stays empty until the service has answered once (machines without it).
 
 AutoHotkey has no tests: check syntax with
 `AutoHotkey64.exe /ErrorStdOut /validate <script>` (copy it to a Windows
