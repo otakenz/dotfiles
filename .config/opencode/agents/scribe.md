@@ -10,6 +10,9 @@ permissions:
   - { action: edit, resource: "*/docs/reports/*.html", effect: allow }
   - { action: edit, resource: "/tmp/opencode/*", effect: allow }
   - { action: external_directory, resource: "/tmp/opencode/*", effect: allow }
+  - { action: external_directory, resource: "~/*", effect: allow }
+  - { action: external_directory, resource: "~/.*", effect: deny }
+  - { action: read, resource: "~/.*", effect: deny }
   - { action: external_directory, resource: "~/.config/opencode/skills/html-report/*", effect: allow }
   - { action: external_directory, resource: "~/dotfiles/.config/opencode/skills/html-report/*", effect: allow }
   - { action: shell, resource: "git status *", effect: allow }
