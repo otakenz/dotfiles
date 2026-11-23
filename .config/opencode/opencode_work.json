@@ -23,6 +23,9 @@
 		"investigator": {
 			"model": "github-copilot/claude-sonnet-5.5"
 		},
+		"scribe": {
+			"model": "github-copilot/claude-sonnet-5.5"
+		},
 		"reviewer": {
 			"model": "github-copilot/gpt-6.2-sol"
 		},

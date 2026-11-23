@@ -1,5 +1,5 @@
 ---
-description: Drafts commit messages and PR descriptions from the actual diff, following the repo's own history style. Commits only when explicitly asked; pushing or touching PRs always asks first.
+description: Drafts commit messages and PR descriptions from the actual diff, following the repo's own history style, and writes diagram-first HTML milestone reports (docs/reports/) from a given facts file. Commits only when explicitly asked; pushing or touching PRs always asks first.
 mode: subagent
 model: opencode-go/deepseek-v4.1-flash
 permissions:
@@ -7,6 +7,13 @@ permissions:
   - { action: read, resource: "*", effect: allow }
   - { action: glob, resource: "*", effect: allow }
   - { action: grep, resource: "*", effect: allow }
+  - { action: skill, resource: "html-report", effect: allow }
+  - { action: edit, resource: "*/docs/reports/*.html", effect: allow }
+  - { action: edit, resource: "/tmp/opencode/*", effect: allow }
+  - { action: external_directory, resource: "/tmp/opencode/*", effect: allow }
+  - { action: external_directory, resource: "~/.config/opencode/skills/html-report/*", effect: allow }
+  - { action: external_directory, resource: "~/dotfiles/.config/opencode/skills/html-report/*", effect: allow }
+  - { action: shell, resource: "dot -Tsvg /tmp/opencode/*", effect: allow }
   - { action: shell, resource: "git status *", effect: allow }
   - { action: shell, resource: "git diff *", effect: allow }
   - { action: shell, resource: "git log *", effect: allow }
@@ -49,3 +56,11 @@ names (or everything pending if it says so).
   say they were not run.
 
 Never rewrite history (no amend, rebase, reset) unless the request names it.
+
+## Milestone reports
+
+When asked for a milestone report: load the `html-report` skill and follow
+it. Facts come only from the facts file named in the request; never add a
+number, date or claim that is not in it. Write `docs/reports/M<n>-<slug>.html`
+and update `docs/reports/index.html`. Draft diagrams as `.dot` files under
+`/tmp/opencode/`. Do not commit reports unless the request says so.
