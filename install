@@ -1553,6 +1553,15 @@ EOF
        ${DOTFILES_PATH}/install --keys ~/key-backup${work_flag}
 
 EOF
+  if [ ! -d "${AI_WIKI_DIR}/.git" ]; then
+    cat <<EOF
+  4. Clone your notes wiki (OpenCode reads its instructions.md and the
+     agent/skill inventory). It is private, so the SSH key must be
+     registered first:
+       ${DOTFILES_PATH}/install --wiki <git-url>
+
+EOF
+  fi
 
   cat <<EOF
 You can safely close this terminal.
