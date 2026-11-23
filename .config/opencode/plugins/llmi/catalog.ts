@@ -8,8 +8,11 @@ export interface DiscoveredModel {
   modelID: string
   name: string
   package?: string
-  /** Chat Completions only: lets LiteLLM route a session to the same warm cache. */
-  compatibility?: { supportsPromptCacheKey: true }
+  /**
+   * Chat Completions: prompt_cache_key lets LiteLLM route a session to the same warm cache.
+   * Claude: Azure behind the gateway rejects thinking.block_binding, which OpenCode adds for Claude 5.1+.
+   */
+  compatibility?: { supportsPromptCacheKey: true } | { supportsThinkingBlockBinding: false }
   capabilities: { tools: boolean; input: string[]; output: string[] }
   variants: never[]
   time: { released: number }
@@ -66,7 +69,11 @@ export function toInventory(models: JsonObject, info: JsonObject): DiscoveredMod
       modelID: model.id,
       name: model.id,
       package: runtime,
-      ...(runtime ? {} : { compatibility: { supportsPromptCacheKey: true as const } }),
+      ...(runtime === ANTHROPIC_PACKAGE
+        ? { compatibility: { supportsThinkingBlockBinding: false as const } }
+        : runtime
+          ? {}
+          : { compatibility: { supportsPromptCacheKey: true as const } }),
       capabilities: {
         tools: detail.supports_function_calling !== false,
         input: detail.supports_vision === true ? ["text", "image"] : ["text"],

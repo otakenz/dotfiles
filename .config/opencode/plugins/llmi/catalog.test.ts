@@ -81,8 +81,15 @@ describe("toInventory", () => {
   test("asks Chat Completions models to send prompt_cache_key so the gateway routes turns to a warm cache", () => {
     const [claude, gpt, deepseek] = toInventory(models, info)
     expect(deepseek.compatibility).toEqual({ supportsPromptCacheKey: true })
-    expect(claude.compatibility).toBeUndefined()
+    expect(claude.compatibility).not.toHaveProperty("supportsPromptCacheKey")
     expect(gpt.compatibility).toBeUndefined()
+  })
+
+  test("keeps thinking.block_binding off Claude requests, which Azure behind the gateway rejects", () => {
+    const [claude, gpt, deepseek] = toInventory(models, info)
+    expect(claude.compatibility).toEqual({ supportsThinkingBlockBinding: false })
+    expect(gpt.compatibility).toBeUndefined()
+    expect(deepseek.compatibility).not.toHaveProperty("supportsThinkingBlockBinding")
   })
 
   test("converts per-token LiteLLM prices to per-million OpenCode costs", () => {
