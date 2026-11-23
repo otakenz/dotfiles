@@ -7,6 +7,9 @@ permissions:
   - { action: glob, resource: "*", effect: allow }
   - { action: grep, resource: "*", effect: allow }
   - { action: skill, resource: "*", effect: allow }
+  - { action: external_directory, resource: "~/*", effect: allow }
+  - { action: external_directory, resource: "~/.*", effect: deny }
+  - { action: read, resource: "~/.*", effect: deny }
   - { action: shell, resource: "git diff *", effect: allow }
   - { action: shell, resource: "git log *", effect: allow }
   - { action: shell, resource: "git show *", effect: allow }
