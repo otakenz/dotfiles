@@ -66,7 +66,11 @@ esac'
     printf '[ -x "%s/fake/$1" ] && exec "$@"\nexit 0\n' "${ROOT}"
   } >"${ROOT}/fake/sudo"
   chmod +x "${ROOT}/fake/sudo"
-  write_fake git 'case "$*" in *clone*) for last; do :; done; mkdir -p "$last"; case "$*" in *tpm*) mkdir -p "$last/bin"; for b in install_plugins update_plugins; do printf "#!/bin/sh\necho \"$b \$*\" >>\"\$CALLS\"\n" >"$last/bin/$b"; chmod +x "$last/bin/$b"; done ;; esac ;; esac; exit 0'
+  # FAKE_SKILLS_SRC: tree an anthropics/skills clone gets; FAKE_SKILLS_SHA: its HEAD.
+  write_fake git '[ -z "${FAKE_EXIT_GIT:-}" ] || exit "$FAKE_EXIT_GIT"
+case "$*" in *rev-parse*) echo "${FAKE_SKILLS_SHA:-0000000}"; exit 0 ;; esac
+case "$*" in *clone*anthropics/skills*) for last; do :; done; mkdir -p "$last"; [ -z "${FAKE_SKILLS_SRC:-}" ] || cp -R "$FAKE_SKILLS_SRC/." "$last"; exit 0 ;; esac
+case "$*" in *clone*) for last; do :; done; mkdir -p "$last"; case "$*" in *tpm*) mkdir -p "$last/bin"; for b in install_plugins update_plugins; do printf "#!/bin/sh\necho \"$b \$*\" >>\"\$CALLS\"\n" >"$last/bin/$b"; chmod +x "$last/bin/$b"; done ;; esac ;; esac; exit 0'
   write_fake curl 'for url; do :; done
 out=
 while [ $# -gt 0 ]; do [ "$1" = -o ] && out="$2"; shift; done
@@ -194,7 +198,7 @@ scenario() { # debian | arch | macos | wsl
 t_only_unknown_piece() {
   scenario debian
   ! run_install m1 --only zsh,nope || fail "unknown piece accepted"
-  grep -q "zsh, wezterm, tmux, health, voice-input" "${ROOT}/m1.log" || fail "valid names not listed"
+  grep -q "zsh, wezterm, tmux, skills, health, voice-input" "${ROOT}/m1.log" || fail "valid names not listed"
   not_called '^(git|apt-get|update-zsh-plugins|tmux|fastfetch)' || fail "ran something"
 }
 t_only_empty() {
@@ -558,6 +562,117 @@ t_voice_mixed_snapshots_download() {
   scenario wsl
   PRE=pre_voice_mixed run_install v10 --only voice-input || fail "exit"
   called 'download_model' || fail "older complete snapshot hid the incomplete one the service loads"
+}
+
+# Upstream: a (folded description, own metadata, new.txt), b (plain),
+# e (no metadata). Local: listed a (stale.txt), c (gone upstream); own d.
+skills_src() {
+  local src="${ROOT}/skills-src/skills"
+  [ -d "${src}" ] && return 0
+  mkdir -p "${src}/a" "${src}/b" "${src}/e"
+  printf -- '---\nname: a\ndescription: >\n  Long upstream\n  description text\nlicense: Apache\nmetadata:\n  author: x\n---\n# A body v2\n' >"${src}/a/SKILL.md"
+  echo new >"${src}/a/new.txt"
+  printf -- '---\nname: b\ndescription: B upstream\n---\nB body\n' >"${src}/b/SKILL.md"
+  printf -- '---\nname: e\ndescription: E upstream\nlicense: L\n---\nE body\n' >"${src}/e/SKILL.md"
+  mkdir -p "${src}/f" "${src}/g"
+  printf -- '---\nname: f\ndescription: |-\n  Para one\n\n  Para two\nmetadata:\n    author: y\n    opencode/autoinvoke: true\n---\nF body\n' >"${src}/f/SKILL.md"
+  printf -- '---\nname: g\nmetadata: # note\n    author: z\nlicense: L\n---\nG body\n' >"${src}/g/SKILL.md"
+}
+t_skills_multiparagraph_description() {
+  run_skills s6 || fail "exit"
+  local f="${ROOT}/s6/dotfiles/.config/opencode/skills/f/SKILL.md"
+  ! grep -q 'Para' "${f}" || fail "description paragraph left behind"
+  grep -qxF 'description: "Short f"' "${f}" || fail "f description not overridden"
+}
+t_skills_existing_key_set_false() {
+  run_skills s7 || fail "exit"
+  local f="${ROOT}/s7/dotfiles/.config/opencode/skills/f/SKILL.md"
+  ! grep -q 'autoinvoke: true' "${f}" || fail "upstream true kept"
+  [ "$(grep -c '^    opencode/autoinvoke: false$' "${f}")" -eq 1 ] || fail "key not set to false"
+  grep -q '^    author: y$' "${f}" || fail "metadata entry lost"
+}
+t_skills_metadata_comment_indent() {
+  run_skills s8 || fail "exit"
+  local f="${ROOT}/s8/dotfiles/.config/opencode/skills/g/SKILL.md"
+  [ "$(grep -c '^metadata:' "${f}")" -eq 1 ] || fail "second metadata added"
+  grep -A2 '^metadata:' "${f}" | grep -qx '    opencode/autoinvoke: false' || fail "key not under metadata with its indent"
+}
+pre_skills() {
+  local s="${1}/dotfiles/.config/opencode/skills"
+  rm -rf "${s}"
+  mkdir -p "${s}/a" "${s}/c" "${s}/d"
+  cat >"${s}/upstream.conf" <<'EOF'
+# comment
+commit old
+
+a | hidden | Short "a" \x
+b | - |
+c | - |
+e | hidden |
+f | hidden | Short f
+g | hidden |
+EOF
+  printf -- '---\nname: a\ndescription: old\n---\nold body\n' >"${s}/a/SKILL.md"
+  echo stale >"${s}/a/stale.txt"
+  echo "local c" >"${s}/c/SKILL.md"
+  echo "own d" >"${s}/d/SKILL.md"
+  cp -R "${s}" "${1}/before"
+}
+run_skills() { # NAME [PRE]: refresh against the fixture
+  skills_src
+  scenario debian
+  FAKE_SKILLS_SRC="${ROOT}/skills-src" FAKE_SKILLS_SHA=abc123 PRE="${2:-pre_skills}" \
+    run_install "${1}" --only skills
+}
+t_skills_refresh() {
+  run_skills s1 || fail "exit"
+  local s="${ROOT}/s1/dotfiles/.config/opencode/skills" b="${ROOT}/s1/before"
+  local up="${ROOT}/skills-src/skills"
+  grep -qxF 'description: "Short \"a\" \\x"' "${s}/a/SKILL.md" || fail "a description not overridden"
+  ! grep -q 'Long upstream\|description text' "${s}/a/SKILL.md" || fail "folded description left behind"
+  [ "$(grep -c '^metadata:' "${s}/a/SKILL.md")" -eq 1 ] || fail "metadata duplicated"
+  [ "$(grep -c '^  opencode/autoinvoke: false$' "${s}/a/SKILL.md")" -eq 1 ] || fail "a not hidden"
+  grep -q '^  author: x$' "${s}/a/SKILL.md" || fail "upstream metadata lost"
+  grep -q '^# A body v2$' "${s}/a/SKILL.md" || fail "a body not upstream"
+  [ -f "${s}/a/new.txt" ] || fail "new upstream file missing"
+  [ ! -e "${s}/a/stale.txt" ] || fail "stale file kept"
+  cmp -s "${up}/b/SKILL.md" "${s}/b/SKILL.md" || fail "b changed"
+  grep -q "c.*not in anthropics/skills" "${ROOT}/s1.log" || fail "no warning for c"
+  cmp -s "${b}/c/SKILL.md" "${s}/c/SKILL.md" || fail "local c changed"
+  cmp -s "${b}/d/SKILL.md" "${s}/d/SKILL.md" || fail "own d changed"
+  grep -qx 'commit abc123' "${s}/upstream.conf" || fail "commit not recorded"
+  ! grep -qx 'commit old' "${s}/upstream.conf" || fail "old commit kept"
+  grep -qx 'a | hidden | Short "a" \\x' "${s}/upstream.conf" || fail "manifest lines changed"
+}
+t_skills_hidden_no_metadata() {
+  run_skills s2 || fail "exit"
+  local f="${ROOT}/s2/dotfiles/.config/opencode/skills/e/SKILL.md"
+  [ "$(awk 'NR > 1 && /^---$/ { exit } NR > 1' "${f}" | tail -n 2 | tr '\n' '|')" = "metadata:|  opencode/autoinvoke: false|" ] ||
+    fail "metadata not added at the end of the frontmatter"
+  grep -q '^description: E upstream$' "${f}" || fail "e description changed"
+  grep -q '^E body$' "${f}" || fail "e body lost"
+}
+pre_skills_again() {
+  pre_skills "${1}"
+  rm -rf "${1}/dotfiles/.config/opencode/skills"
+  cp -R "${ROOT}/s3a/dotfiles/.config/opencode/skills" "${1}/dotfiles/.config/opencode/skills"
+}
+t_skills_refresh_twice() {
+  run_skills s3a || fail "first exit"
+  run_skills s3b pre_skills_again || fail "second exit"
+  local s="${ROOT}/s3b/dotfiles/.config/opencode/skills"
+  [ "$(grep -c 'opencode/autoinvoke: false' "${s}/a/SKILL.md")" -eq 1 ] || fail "a hidden twice"
+  [ "$(grep -c 'opencode/autoinvoke: false' "${s}/e/SKILL.md")" -eq 1 ] || fail "e hidden twice"
+  [ "$(grep -c '^metadata:' "${s}/e/SKILL.md")" -eq 1 ] || fail "e metadata twice"
+}
+t_skills_clone_failure() {
+  FAKE_EXIT_GIT=1 run_skills s4 && fail "clone failure accepted"
+  diff -r "${ROOT}/s4/before" "${ROOT}/s4/dotfiles/.config/opencode/skills" >/dev/null || fail "skills changed"
+}
+t_only_zsh_no_skills() {
+  scenario debian
+  run_install s5 --only zsh || fail "exit"
+  not_called 'anthropics/skills' || fail "skills fetched"
 }
 
 write_fakes

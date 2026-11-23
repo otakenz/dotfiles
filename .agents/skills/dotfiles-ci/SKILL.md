@@ -1,6 +1,6 @@
 ---
 name: dotfiles-ci
-description: Use when CI fails in the dotfiles repo, or before pushing changes to shell scripts, test/*.sh, ./install or ./run, to reproduce the GitHub Actions lint and keys jobs locally, or when writing tests in test/install-only.sh (fakes, FAKE_* switches, root skips). Covers shellcheck findings that appear only in CI, macOS-only test failures, the known Ubuntu 26.04 libgcrypt failure, the pre-commit hook, and './run ci:test' being blocked.
+description: Use when CI fails in the dotfiles repo, or before pushing changes to shell scripts, test/*.sh, ./install or ./run, to reproduce the GitHub Actions lint and keys jobs locally, or when writing tests in test/install-only.sh (fakes, FAKE_* switches, root skips), or when refreshing the OpenCode skills from anthropics/skills. Covers shellcheck findings that appear only in CI, macOS-only test failures, the known Ubuntu 26.04 libgcrypt failure, the pre-commit hook, and './run ci:test' being blocked.
 ---
 
 # Dotfiles CI
@@ -17,6 +17,23 @@ description: Use when CI fails in the dotfiles repo, or before pushing changes t
 `test/wiki.sh` and `test/ai-inventory.sh` are not in CI; run them by hand.
 
 The repo is public: `.githooks/pre-push` (enabled by `./install`) runs `test/public-leak.sh` on the pushed range and blocks company identifiers in added lines and commit messages. Patterns live in the private wiki (`~/wiki/ai-workflow/public-leak-patterns.txt`, or `$PUBLIC_LEAK_PATTERNS`); bypass deliberately with `git push --no-verify`. Test: `bash test/public-leak-test.sh` (in CI).
+
+## Refresh the OpenCode skills
+
+`.config/opencode/skills/` is committed; `upstream.conf` lists the Anthropic
+skills, our short descriptions and `hidden` flags, and the upstream commit.
+
+```bash
+LOCAL=1 ./install --only skills      # clone anthropics/skills main, replace listed folders, re-apply overrides
+git status --short .config/opencode/skills   # new upstream files are untracked: git diff misses them
+git add .config/opencode/skills && git diff --cached --stat
+bash test/ai-inventory.sh            # skills context budget still fits
+git checkout -- .config/opencode/skills && git clean -fd .config/opencode/skills   # undo a bad refresh
+```
+
+Unlisted folders are own skills and never touched. A new upstream skill is
+only used once it gets a line in `upstream.conf`. The folder is excluded from
+shellcheck, shfmt and ruff (vendored code).
 
 ## Read a failure
 

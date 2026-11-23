@@ -332,6 +332,12 @@ install v1). Terminal settings live in `~/.config/opencode/cli.json`; the legacy
 
 #### Claude-skills
 
+The global skills in `.config/opencode/skills/` are committed. The Anthropic ones are listed in
+`upstream.conf` there, with our local changes (shorter descriptions, `hidden` = not offered to the
+model, load with `@id`) and the anthropics/skills commit they come from. Refresh them with
+`./install --only skills`, review the result with `git diff`, then commit. Skills not listed there
+are our own and never touched.
+
 1. [obra/superpowers](https://github.com/obra/superpowers) A framework that comes with a set of skills for software development
 2. [anthropics/skills](https://github.com/anthropics/skills) Official claude skill list
 3. [travisvn/awesome-claude-skills](https://github.com/travisvn/awesome-claude-skills) Community curated list of Claude skills

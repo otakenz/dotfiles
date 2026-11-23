@@ -20,7 +20,7 @@ KEYS_DIR=
 
 ONLY_UPDATE=
 ONLY_PIECES=
-PIECES=(zsh wezterm tmux health voice-input)
+PIECES=(zsh wezterm tmux skills health voice-input)
 
 PACMAN_PACKAGES="
   7zip
@@ -1210,6 +1210,102 @@ install_tmux_plugins() {
   "${tpm_path}/bin/update_plugins" all
 }
 
+# Rewrites the frontmatter of SKILL.md ($1) in place: description from $2
+# (empty: keep), $3=hidden adds opencode/autoinvoke: false under metadata.
+_skill_overrides() {
+  local file="${1}" desc="${2}" hidden=
+  [ "${3}" = hidden ] && hidden=1
+  desc="${desc//\\/\\\\}"
+  desc="${desc//\"/\\\"}"
+  DESC="${desc}" HIDDEN="${hidden}" awk '
+    { line[NR] = $0 }
+    END {
+      desc = ENVIRON["DESC"]; hidden = ENVIRON["HIDDEN"]; end = 0
+      if (line[1] == "---")
+        for (i = 2; i <= NR; i++) if (line[i] == "---") { end = i; break }
+      ind = "  "
+      for (i = 2; i < end; i++) {
+        if (line[i] ~ /^metadata:[ \t]*(#.*)?$/) {
+          meta = i
+          if (match(line[i + 1], /^[ \t]+/)) ind = substr(line[i + 1], 1, RLENGTH)
+        }
+        if (hidden && line[i] ~ /^[ \t]+opencode\/autoinvoke:/) {
+          match(line[i], /^[ \t]+/)
+          line[i] = substr(line[i], 1, RLENGTH) "opencode/autoinvoke: false"
+          has_key = 1
+        }
+      }
+      if (has_key) hidden = ""
+      for (i = 1; i <= NR; i++) {
+        if (i > 1 && i < end) {
+          # Continuation of a folded/literal scalar: indented or blank lines.
+          if (skip && line[i] ~ /^([ \t]|$)/) continue
+          skip = 0
+          if (desc != "" && line[i] ~ /^description:/) {
+            print "description: \"" desc "\""
+            skip = 1
+            continue
+          }
+        }
+        if (hidden && i == end && !meta) print "metadata:\n  opencode/autoinvoke: false"
+        print line[i]
+        if (hidden && i == meta) print ind "opencode/autoinvoke: false"
+      }
+    }' "${file}" >"${file}.new"
+  mv "${file}.new" "${file}"
+}
+
+_trim() {
+  local s="${1}"
+  s="${s#"${s%%[! ]*}"}"
+  printf '%s' "${s%"${s##*[! ]}"}"
+}
+
+# Piece `skills`: replaces the Anthropic skills listed in upstream.conf with
+# anthropics/skills main, re-applies the local overrides and records the
+# commit. Own skills (not listed) are never touched. Review, then commit.
+install_skills() {
+  _info "UPDATE OPENCODE SKILLS"
+
+  local dir="${DOTFILES_PATH}/.config/opencode/skills"
+  local conf="${dir}/upstream.conf"
+  [ -f "${conf}" ] || _error "${conf} is missing"
+
+  local tmp sha name flag desc
+  tmp="$(mktemp -d)"
+  if ! git clone --depth=1 https://github.com/anthropics/skills.git "${tmp}/src"; then
+    rm -rf "${tmp}"
+    _error "Could not clone anthropics/skills; nothing changed"
+  fi
+  sha="$(git -C "${tmp}/src" rev-parse HEAD)"
+
+  mkdir "${tmp}/out"
+  while IFS='|' read -r name flag desc; do
+    name="$(_trim "${name}")"
+    case "${name}" in "" | "#"* | "commit "*) continue ;; esac
+    if [ ! -f "${tmp}/src/skills/${name}/SKILL.md" ]; then
+      printf "\e[33;1mWARN:\e[0m %s is not in anthropics/skills; keeping the local copy\n" "${name}" >&2
+      continue
+    fi
+    cp -R "${tmp}/src/skills/${name}" "${tmp}/out/${name}"
+    _skill_overrides "${tmp}/out/${name}/SKILL.md" "$(_trim "${desc}")" "$(_trim "${flag}")"
+  done <"${conf}"
+
+  for name in "${tmp}/out"/*; do
+    [ -d "${name}" ] || continue
+    rm -rf "${dir:?}/${name##*/}"
+    mv "${name}" "${dir}/"
+  done
+
+  awk -v sha="${sha}" '/^commit / { print "commit " sha; found = 1; next } { print }
+    END { if (!found) print "commit " sha }' "${conf}" >"${tmp}/conf"
+  cat "${tmp}/conf" >"${conf}"
+  rm -rf "${tmp}"
+
+  echo "Skills now at anthropics/skills ${sha:0:7}; review with:"
+  echo "  git -C ${DOTFILES_PATH} diff -- .config/opencode/skills"
+}
+
 install_nvim_plugins() {
   _info "INSTALL NEOVIM PLUGINS"
 
@@ -2180,7 +2276,7 @@ _check_pieces() {
     for p in "${PIECES[@]}"; do [ "${p}" = "${name}" ] && known=1; done
     if [ -z "${known}" ]; then
       IFS=' '
-      _error "Unknown piece '${name}'. Pieces: zsh, wezterm, tmux, health, voice-input"
+      _error "Unknown piece '${name}'. Pieces: zsh, wezterm, tmux, skills, health, voice-input"
     fi
   done
 }
@@ -2199,6 +2295,7 @@ _run_pieces() {
       ;;
     wezterm) install_wezterm ;;
     tmux) install_tmux_plugins ;;
+    skills) install_skills ;;
     health) healthcheck ;;
     voice-input) install_voice_input ;;
     esac
@@ -2240,6 +2337,8 @@ LOCAL=1 ./install
 #   zsh      zsh plugins and powerlevel10k
 #   wezterm  install or update WezTerm nightly
 #   tmux     tmux plugins
+#   skills   refresh the Anthropic OpenCode skills listed in
+#            .config/opencode/skills/upstream.conf (review, then commit)
 #   health   print versions
 #   voice-input  WSL only: voice input service, Whisper model and CUDA
 #                libraries (~3 GB), AutoHotkey script (never in a normal run)
