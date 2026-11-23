@@ -23,6 +23,9 @@
 		"investigator": {
 			"model": "opencode/big-pickle"
 		},
+		"scribe": {
+			"model": "opencode-go/deepseek-v4.1-flash"
+		},
 		"reviewer": {
 			"model": "opencode/big-pickle"
 		},

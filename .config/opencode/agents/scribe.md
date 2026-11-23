@@ -1,7 +1,6 @@
 ---
 description: Drafts commit messages and PR descriptions from the actual diff, following the repo's own history style, and writes diagram-first HTML milestone reports (docs/reports/) from a given facts file. Commits only when explicitly asked; pushing or touching PRs always asks first.
 mode: subagent
-model: opencode-go/deepseek-v4.1-flash
 permissions:
   - { action: "*", resource: "*", effect: deny }
   - { action: read, resource: "*", effect: allow }
@@ -13,7 +12,6 @@ permissions:
   - { action: external_directory, resource: "/tmp/opencode/*", effect: allow }
   - { action: external_directory, resource: "~/.config/opencode/skills/html-report/*", effect: allow }
   - { action: external_directory, resource: "~/dotfiles/.config/opencode/skills/html-report/*", effect: allow }
-  - { action: shell, resource: "dot -Tsvg /tmp/opencode/*", effect: allow }
   - { action: shell, resource: "git status *", effect: allow }
   - { action: shell, resource: "git diff *", effect: allow }
   - { action: shell, resource: "git log *", effect: allow }
@@ -63,4 +61,5 @@ When asked for a milestone report: load the `html-report` skill and follow
 it. Facts come only from the facts file named in the request; never add a
 number, date or claim that is not in it. Write `docs/reports/M<n>-<slug>.html`
 and update `docs/reports/index.html`. Draft diagrams as `.dot` files under
-`/tmp/opencode/`. Do not commit reports unless the request says so.
+`/tmp/opencode/` with `<!-- dot: … -->` placeholders; say in your reply that
+`inline_dot.py` still has to run (you have no shell for it). Do not commit reports unless the request says so.
