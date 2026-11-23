@@ -24,7 +24,7 @@
 			"model": "github-copilot/claude-sonnet-5.5"
 		},
 		"scribe": {
-			"model": "github-copilot/claude-sonnet-5.5"
+			"model": "opencode-go/deepseek-v4.1-flash"
 		},
 		"reviewer": {
 			"model": "github-copilot/gpt-6.2-sol"
