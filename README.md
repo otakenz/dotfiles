@@ -779,7 +779,8 @@ The last stable release (20240203) has two problems that nightly fixes:
   columns ([wezterm#5871](https://github.com/wezterm/wezterm/pull/5871)).
 
 To switch an existing stable install or update nightly, run
-`./install --only wezterm` (pieces: `zsh`, `wezterm`, `tmux`, `health`). The
+`./install --only wezterm` (pieces: `zsh`, `wezterm`, `tmux`, `health`, and
+`voice-input` on WSL2 only; see `./install --help`). The
 installer needs admin rights and closes all WezTerm windows, so on WSL close
 WezTerm first and run it from PowerShell:
 

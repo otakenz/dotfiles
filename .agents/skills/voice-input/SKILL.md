@@ -58,7 +58,7 @@ it as a variable.
 |---|---|
 | "no audio" / flat bar | Windows default input (should be the NVIDIA Broadcast mic), Broadcast running and its source set; `pactl list short sources` shows `RDPSource` |
 | `parecord` makes 44-byte files, `pactl` hangs | Windows "Let desktop apps access your microphone" off → turn on, then `wsl --shutdown` |
-| "voice service not running" / footer `🎙 off` | `systemctl --user status voice-input`, `journalctl --user -u voice-input` |
+| "voice service not running" / footer `🎙 off` (service answered before, now unreachable) / footer blank (no answer yet this session) | `systemctl --user status voice-input`, `journalctl --user -u voice-input`; blank on a set-up machine usually means the service never started |
 | Wrong words | add terms to `vocab.txt`, spelling fixes to `replacements.txt`; check the mic: `voice-input check` (peak, clipping, timing) |
 | Poor accuracy overall | Bluetooth headsets (AirPods) switch to call mode: use wired/USB. large-v3 was tested: not better, twice as slow. ffmpeg denoise before Whisper made it worse |
 | Ctrl+Q does nothing | AutoHotkey not running → re-run `install-windows.sh` |

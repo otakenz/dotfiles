@@ -427,8 +427,8 @@ def story():
     )
     s.append(
         p(
-            "plan blocks the edit tool, not the shell: a command that writes files still runs unless the "
-            "safety plugin stops it. Treat it as no-accidental-edits, not as a sandbox.",
+            "plan blocks the edit tool, not the shell: a command that writes files still runs. "
+            "Treat it as no-accidental-edits, not as a sandbox.",
             S_NOTE,
         )
     )
@@ -731,7 +731,7 @@ def story():
                     "GPT-6.2 Sol",
                     "$2 / $10",
                     "cpp-reviewer, reviewer",
-                    "agent file",
+                    "agent overrides in opencode_work.json",
                 ],
                 [
                     chip("Mechanical", FLASH),

@@ -42,9 +42,14 @@ WSL2 with an NVIDIA GPU only; macOS and native Linux are not supported.
    Installs `parecord`, the Python environment and the model (about 3 GB
    with the CUDA libraries), links the config and starts the service, then
    runs `install-windows.sh`. Safe to re-run: finished steps are skipped.
-   A normal `./install` never does this.
+   A normal `./install` never does this. Run a normal `./install` first: the
+   piece needs `uv` from it.
 
-### Manual setup (what the command does)
+   If AutoHotkey is missing, the WSL service is still installed but Ctrl+Q
+   does nothing yet; the piece prints the `winget` command. Install
+   AutoHotkey, then re-run `./install --only voice-input`.
+
+### Manual setup (the same steps by hand)
 
 ```sh
 sudo apt-get install -y pulseaudio-utils     # Arch: sudo pacman -S libpulse
@@ -56,7 +61,9 @@ uv pip install --python "$d/.venv" faster-whisper==1.2.1 nvidia-cublas-cu12 \
   download_model("large-v3-turbo", cache_dir=sys.argv[1])' "$d/models"
 
 ln -fs ~/dotfiles/.local/bin/voice-input ~/.local/bin/voice-input
-ln -sfn ~/dotfiles/.config/voice-input ~/.config/voice-input
+# Skip this link if ~/.config/voice-input is your own folder (the installer keeps it)
+[ -d ~/.config/voice-input ] && [ ! -L ~/.config/voice-input ] ||
+  ln -sfn ~/dotfiles/.config/voice-input ~/.config/voice-input
 mkdir -p ~/.config/systemd/user
 ln -fs ~/dotfiles/voice-input/voice-input.service ~/.config/systemd/user/
 systemctl --user daemon-reload
