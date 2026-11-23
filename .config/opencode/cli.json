@@ -36,5 +36,5 @@
   },
   "animations": true,
   "highlights": true,
-  "plugins": [{ "package": "./tui-plugins/voice-input" }]
+  "plugins": [{ "package": "./tui-plugins/voice-input" }, { "package": "./tui-plugins/notify" }]
 }
