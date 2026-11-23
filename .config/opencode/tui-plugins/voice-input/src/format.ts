@@ -24,8 +24,8 @@ export function pushLevel(history: number[], status: Status | null, prev: Status
   return [...base, status.level_dbfs].slice(-WIDTH)
 }
 
-export function render(status: Status | null, history: number[]): string {
-  if (status === null) return "🎙 off"
+export function render(status: Status | null, history: number[], seen: boolean): string {
+  if (status === null) return seen ? "🎙 off" : ""
   if (status.state === "recording") return `🔴 ${bar(history)} ${(status.elapsed_s ?? 0).toFixed(1)}s`
   if (status.state === "stopped") return "⏹ recording stopped – release Ctrl+Q"
   if (status.state === "transcribing") return "… transcribing"

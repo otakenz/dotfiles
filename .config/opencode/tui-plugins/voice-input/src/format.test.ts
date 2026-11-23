@@ -5,17 +5,18 @@ const idle: Status = { state: "idle", level_dbfs: null, elapsed_s: null, warning
 const recording: Status = { ...idle, state: "recording", level_dbfs: -30, elapsed_s: 4.24 }
 
 describe("render", () => {
-  test("off when unreachable", () => expect(render(null, [])).toBe("🎙 off"))
-  test("ready when idle", () => expect(render(idle, [])).toBe("🎙 ready"))
+  test("hidden until the service has answered", () => expect(render(null, [], false)).toBe(""))
+  test("off when unreachable after it answered", () => expect(render(null, [], true)).toBe("🎙 off"))
+  test("ready when idle", () => expect(render(idle, [], true)).toBe("🎙 ready"))
   test("recording shows bar and time", () =>
-    expect(render(recording, [-60, 0])).toBe("🔴 ▁▁▁▁▁▁█ 4.2s"))
+    expect(render(recording, [-60, 0], true)).toBe("🔴 ▁▁▁▁▁▁█ 4.2s"))
   test("capture stopped", () =>
-    expect(render({ ...idle, state: "stopped" }, [])).toBe("⏹ recording stopped – release Ctrl+Q"))
-  test("transcribing", () => expect(render({ ...idle, state: "transcribing" }, [])).toBe("… transcribing"))
+    expect(render({ ...idle, state: "stopped" }, [], true)).toBe("⏹ recording stopped – release Ctrl+Q"))
+  test("transcribing", () => expect(render({ ...idle, state: "transcribing" }, [], true)).toBe("… transcribing"))
   test("recent warning", () =>
-    expect(render({ ...idle, warning: "no audio – check mic", warning_age_s: 3 }, [])).toBe("⚠ no audio – check mic"))
+    expect(render({ ...idle, warning: "no audio – check mic", warning_age_s: 3 }, [], true)).toBe("⚠ no audio – check mic"))
   test("old warning falls back to ready", () =>
-    expect(render({ ...idle, warning: "no speech", warning_age_s: 10 }, [])).toBe("🎙 ready"))
+    expect(render({ ...idle, warning: "no speech", warning_age_s: 10 }, [], true)).toBe("🎙 ready"))
 })
 
 describe("bar", () => {

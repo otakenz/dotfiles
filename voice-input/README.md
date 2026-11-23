@@ -101,7 +101,8 @@ The TUI plugin `.config/opencode/tui-plugins/voice-input` (registered in
 | `⏹ recording stopped – release Ctrl+Q` | 120 s limit reached or recording failed; release to transcribe what was caught |
 | `… transcribing` | text comes next |
 | `⚠ no audio – check mic` | last clip's warning, for 10 s |
-| `🎙 off` | service not running |
+| `🎙 off` | service stopped answering after it had answered in this session |
+| (nothing) | service has not answered yet in this session (also on machines without voice input) |
 
 It polls `GET /status` every 0.2 s while recording, every 2 s otherwise.
 Tests: `cd ~/dotfiles/.config/opencode/tui-plugins/voice-input && bun test`

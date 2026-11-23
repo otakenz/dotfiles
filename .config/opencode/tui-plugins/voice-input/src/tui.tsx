@@ -19,18 +19,20 @@ async function fetchStatus(): Promise<Status | null> {
 export default Plugin.define({
   id: "voice-input.indicator",
   setup(context) {
-    const [line, setLine] = createSignal(render(null, []))
+    const [line, setLine] = createSignal(render(null, [], false))
     let history: number[] = []
     let prev: Status["state"] | null = null
+    let seen = false
     let timer: ReturnType<typeof setTimeout> | undefined
     let stopped = false
 
     const tick = async () => {
       const status = await fetchStatus()
       if (stopped) return
+      seen ||= status !== null
       history = pushLevel(history, status, prev)
       prev = status?.state ?? null
-      setLine(render(status, history))
+      setLine(render(status, history, seen))
       timer = setTimeout(tick, pollDelay(status))
     }
     void tick()
