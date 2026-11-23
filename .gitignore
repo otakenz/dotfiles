@@ -28,8 +28,6 @@ tags
 etc/pacman.d/02-ignore.conf.example
 .env
 node_modules/
-.config/opencode/skills/*
-!.config/opencode/skills/upstream.conf
 __pycache__/
 *.bk*
 *.bak*

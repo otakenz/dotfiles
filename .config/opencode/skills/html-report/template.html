@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{PROJECT}}: {{MILESTONE_ID}} {{MILESTONE_TITLE}}</title>
+<style>
+  :root { --ink:#1f2933; --muted:#616e7c; --line:#d9e2ec; --bg:#f5f7fa; --card:#fff;
+          --done:#2f9e44; --next:#1971c2; --plan:#adb5bd; --warn:#e67700; --bad:#c92a2a; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); background:var(--bg); }
+  main { max-width:1100px; margin:0 auto; padding:24px; }
+  header.banner { display:flex; justify-content:space-between; align-items:center; gap:16px;
+                  background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 20px; }
+  header.banner h1 { margin:0; font-size:22px; }
+  header.banner .sub { color:var(--muted); font-size:13px; }
+  .badge { padding:4px 12px; border-radius:999px; color:#fff; font-weight:600; font-size:13px; white-space:nowrap; }
+  .badge.done { background:var(--done); } .badge.next, .badge.progress { background:var(--next); }
+  .badge.planned { background:var(--plan); } .badge.blocked { background:var(--bad); }
+  nav.roadmap { display:flex; margin:16px 0; gap:6px; }
+  nav.roadmap a { flex:1; text-decoration:none; color:var(--ink); background:var(--card); border:1px solid var(--line);
+                  border-top:5px solid var(--plan); border-radius:6px; padding:8px 10px; font-size:13px; }
+  nav.roadmap a.done { border-top-color:var(--done); } nav.roadmap a.next, nav.roadmap a.progress { border-top-color:var(--next); }
+  nav.roadmap a.current { outline:2px solid var(--next); font-weight:600; }
+  nav.roadmap b { display:block; font-size:12px; color:var(--muted); }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin:16px 0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px 16px; }
+  .card .num { font-size:28px; font-weight:700; line-height:1.1; }
+  .card .lbl { color:var(--muted); font-size:13px; }
+  .card .ok { color:var(--done); } .card .warn { color:var(--warn); }
+  section { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 20px; margin:16px 0; }
+  section h2 { margin:0 0 10px; font-size:17px; }
+  .diagrams { display:grid; grid-template-columns:1fr; gap:20px; }
+  figure { margin:0; overflow-x:auto; } figure svg { display:block; margin:0 auto; max-width:100%; height:auto; }
+  @media (max-width:800px) { figure svg { max-width:none; } }
+  figcaption { color:var(--muted); font-size:13px; text-align:center; margin-top:4px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:13px; }
+  td.ok { color:var(--done); font-weight:600; } td.warn { color:var(--warn); font-weight:600; } td.bad { color:var(--bad); font-weight:600; }
+  ul { margin:0; padding-left:20px; } li { margin:3px 0; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .two section { margin:0; }
+  details { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 20px; margin:16px 0; }
+  summary { cursor:pointer; font-weight:600; }
+  code { background:var(--bg); padding:1px 5px; border-radius:4px; font-size:13px; }
+  a { color:var(--next); }
+  footer { color:var(--muted); font-size:12px; text-align:center; margin:24px 0 8px; }
+  @media (max-width:800px) { .two, .diagrams { grid-template-columns:1fr; } nav.roadmap { flex-wrap:wrap; } nav.roadmap a { flex:1 1 45%; } }
+  @media print { body { background:#fff; } main { padding:0; } details { display:block; } details > * { display:block; }
+                 section, .card, details, figure { break-inside:avoid; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="banner">
+    <div>
+      <h1>{{MILESTONE_ID}} · {{MILESTONE_TITLE}}</h1>
+      <div class="sub">{{PROJECT}} · {{DATE}} · {{ONE_LINE_OUTCOME}}</div>
+    </div>
+    <span class="badge {{STATUS_CLASS}}">{{STATUS_TEXT}}</span>
+  </header>
+
+  <!-- one <a> per milestone; classes: done | next | progress | planned, plus "current" on this report's milestone -->
+  <nav class="roadmap">
+    <a class="done current" href="M1-....html"><b>M1</b>Title</a>
+  </nav>
+
+  <!-- 3 to 5 cards; each number must be in the facts -->
+  <div class="cards">
+    <div class="card"><div class="num ok">1.4 MB</div><div class="lbl">label</div></div>
+  </div>
+
+  <section>
+    <h2>At a glance</h2>
+    <div class="diagrams">
+      <figure><!-- inline SVG from dot --><figcaption>caption</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <h2>Goal → result</h2>
+    <table>
+      <tr><th>Goal</th><th>Result</th><th>Status</th></tr>
+      <tr><td>…</td><td>…</td><td class="ok">✔</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Key decisions → why</h2>
+    <table>
+      <tr><th>Decision</th><th>Why</th><th>Cost / enables</th></tr>
+      <tr><td>…</td><td>…</td><td>…</td></tr>
+    </table>
+  </section>
+
+  <div class="two">
+    <section><h2>Open issues</h2><ul><li>…</li></ul></section>
+    <section><h2>Next</h2><ul><li>…</li></ul></section>
+  </div>
+
+  <details>
+    <summary>Details</summary>
+    <!-- how it was done, decisions, links; short bullets -->
+  </details>
+
+  <footer>Generated from verified facts · {{DATE}}</footer>
+</main>
+</body>
+</html>

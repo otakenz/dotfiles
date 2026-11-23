@@ -7,6 +7,8 @@ include = [
 	"**/pyproject.toml",
 	".local/bin/set-theme",
 ]
+# Vendored from anthropics/skills (refreshed by ./install --only skills).
+extend-exclude = [".config/opencode/skills"]
 
 [tool.ruff.lint]
 extend-select = ["I", "SIM"]
