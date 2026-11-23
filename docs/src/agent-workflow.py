@@ -253,7 +253,7 @@ D_OVERVIEW = (
   }
   subgraph cluster_son { label="Sonnet 5.5: authors, research"; fontcolor="#2e7d32"; color="#2e7d32"; style=rounded;
     general; investigator; }
-  subgraph cluster_sol { label="GPT-6.1 Sol: review"; fontcolor="#c2571a"; color="#c2571a"; style=rounded;
+  subgraph cluster_sol { label="GPT-6.2 Sol: review"; fontcolor="#c2571a"; color="#c2571a"; style=rounded;
     "cpp-reviewer"; reviewer; }
   subgraph cluster_ses { label="session model"; fontcolor="#6a4c93"; color="#6a4c93"; style=rounded;
     "release-mapper"; }
@@ -631,14 +631,14 @@ def story():
                 ],
                 [
                     "cpp-reviewer",
-                    "GPT-6.1 Sol",
+                    "GPT-6.2 Sol",
                     "limits",
                     "Read-only C++ code review incl. memory safety, by severity, file:line",
                     "Review this branch against main",
                 ],
                 [
                     "reviewer",
-                    "GPT-6.1 Sol",
+                    "GPT-6.2 Sol",
                     "limits",
                     "Read-only review of specs, plans, non-C++ code, and security reviews in any language (checklist); follows the skill's review prompt. Completeness check: reads ~ except hidden entries and .env (best effort)",
                     "Review this spec / plan; skill-requested branch reviews; completeness check before a PR",
@@ -728,7 +728,7 @@ def story():
                 ],
                 [
                     chip("Review", SOL),
-                    "GPT-6.1 Sol",
+                    "GPT-6.2 Sol",
                     "$2 / $10",
                     "cpp-reviewer, reviewer",
                     "agent file",

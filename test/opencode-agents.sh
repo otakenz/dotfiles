@@ -58,7 +58,7 @@ CHEAP_MODEL = {"providerID": "opencode-go", "id": "deepseek-v4.1-flash"}
 # At work the reviewer runs on a different model family than the Opus author.
 FREE = {"providerID": "opencode", "id": "big-pickle"}
 SONNET = {"providerID": "github-copilot", "id": "claude-sonnet-5.5"} if WORK else FREE
-SOL = {"providerID": "github-copilot", "id": "gpt-6.1-sol"} if WORK else FREE
+SOL = {"providerID": "github-copilot", "id": "gpt-6.2-sol"} if WORK else FREE
 PINNED = {"cpp-reviewer": SOL, "reviewer": SOL,
           "investigator": SONNET}
 

@@ -24,10 +24,10 @@
 			"model": "github-copilot/claude-sonnet-5.5"
 		},
 		"reviewer": {
-			"model": "github-copilot/gpt-6.1-sol"
+			"model": "github-copilot/gpt-6.2-sol"
 		},
 		"cpp-reviewer": {
-			"model": "github-copilot/gpt-6.1-sol"
+			"model": "github-copilot/gpt-6.2-sol"
 		}
 	},
 	"mcp": {
