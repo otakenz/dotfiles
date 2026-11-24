@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Checks the installed OpenCode agents and skills against the inventory in
-# the private notes wiki (see `./install --wiki`): every installed item needs
-# a row, every row an installed item, and counts stay under the limits the
+# the private notes wiki (see `./install --wiki`; its skills/ folder counts as
+# installed): every installed item needs a row, every row an installed item,
+# and counts stay under the limits the
 # inventory states. Also checks that reviewers run on another model family
 # than the authors (opencode.json, agent files), and the starting context
 # budget (instructions, skills, agents, session total; chars // 4). The plain
@@ -75,6 +76,11 @@ installed = {
               if (cfg / "skills").is_dir() else set(),
     "Plugins": {p for p in os.environ["PLUGINS"].split(",") if p},
 }
+# Private skills live in the wiki (`skills` path in opencode.json).
+wiki_skills = Path(os.environ["WIKI"]) / "skills"
+if wiki_skills.is_dir():
+    installed["Skills"] |= {p.name for p in wiki_skills.iterdir()
+                            if (p / "SKILL.md").is_file()}
 
 listed, section = {k: set() for k in installed}, None
 for line in text.splitlines():
@@ -714,6 +720,19 @@ EOS
   fixture hidden_skill_dir_ignored "alpha beta" "one .git"
   good_inventory | inventory hidden_skill_dir_ignored
   expect hidden_skill_dir_ignored 0 "Skills: 1 installed"
+
+  fixture wiki_skill_unlisted_fails "alpha beta" "one"
+  mkdir -p "${root}/wiki_skill_unlisted_fails/wiki/skills/private" "${root}/wiki_skill_unlisted_fails/wiki/skills/no-skill-md"
+  echo "---" >"${root}/wiki_skill_unlisted_fails/wiki/skills/private/SKILL.md"
+  good_inventory | inventory wiki_skill_unlisted_fails
+  expect wiki_skill_unlisted_fails 1 "'private' is installed but not in the inventory"
+
+  fixture wiki_skill_listed_passes "alpha beta" "one"
+  mkdir -p "${root}/wiki_skill_listed_passes/wiki/skills/private"
+  echo "---" >"${root}/wiki_skill_listed_passes/wiki/skills/private/SKILL.md"
+  # shellcheck disable=SC2016 # literal backticks
+  good_inventory | sed 's/^| `one` |.*/&\n| `private` | p | 2026-11-24 | 2026-11-24 |/' | inventory wiki_skill_listed_passes
+  expect wiki_skill_listed_passes 0 "Skills: 2 installed"
 
   fixture row_without_backticks_counts "alpha beta" "one"
   # shellcheck disable=SC2016 # literal backticks

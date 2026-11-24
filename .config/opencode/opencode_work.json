@@ -3,6 +3,7 @@
 	"update": "disable",
 	"share": "disabled",
 	"instructions": ["~/wiki/ai-workflow/instructions.md"],
+	"skills": ["~/wiki/ai-workflow/skills"],
 	"model": "opencode/big-pickle",
 	"compaction": {
 		"auto": true
