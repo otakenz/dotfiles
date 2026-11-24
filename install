@@ -925,6 +925,13 @@ EOF
   echo "It has been configured in '${HOME}/.config/zsh/'"
 }
 
+# Puts mise (installed to ~/.local/bin by mise.run) and its shims on PATH. A
+# fresh login shell lacks ~/.local/bin: Ubuntu's ~/.profile only adds it if it
+# existed at login. Without this, `command -v nvim/bat` fails as well.
+_mise_path() {
+  export PATH="${HOME}/.local/bin:${HOME}/.local/share/mise/shims:${PATH}"
+}
+
 install_mise_packages() {
   _info "INSTALL MISE PACKAGES"
   # Install Mise packages.
@@ -933,9 +940,7 @@ install_mise_packages() {
   # stable distros. In most cases the version included is fine but we do want
   # the latest and greatest versions for certain tools.
   echo
-  # Ensure mise shims are on PATH for non-interactive shells. Without this,
-  # `command -v nvim/bat` fails even when mise has the tools installed.
-  export PATH="${HOME}/.local/bin:${HOME}/.local/share/mise/shims:${PATH}"
+  _mise_path
   # shellcheck disable=SC2086
   if [ "${OS_TYPE}" == "linux" ]; then
     if [ "${OS_DISTRO}" == "arch" ]; then
@@ -1001,6 +1006,7 @@ install_mise_packages() {
 
 install_programming_languages() {
   _info "INSTALL PROGRAMMING LANGUAGES"
+  _mise_path
 
   # Install each language at the specified version
   for lang in "${!MISE_LANGUAGES[@]}"; do
