@@ -246,9 +246,11 @@ The install script will setup the following on your system:
 
 #### [Window/WSL2]
 
-- You have to install Nerd Fonts manually
-- Unzip the installed NerdFonts to %USERPROFILE%/.local/share/fonts
-- Choose the fonts style and click "install"
+- Done by the install (font and wezterm steps): the fonts `wezterm.lua` uses
+  are copied from `~/.local/share/fonts` to
+  `%LOCALAPPDATA%\Microsoft\Windows\Fonts` and registered for the current
+  Windows user (no admin). Restart WezTerm afterwards
+- Redo it with `./install --only wezterm`
 
 ### 4. zsh (Modern Terminal Shell)
 

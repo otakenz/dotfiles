@@ -1365,6 +1365,47 @@ install_nerdfont() {
   if [ "${OS_TYPE}" == "linux" ]; then
     fc-cache -fv
   fi
+  if [ -n "${OS_IN_WSL}" ]; then
+    _nerdfont_wsl
+  fi
+}
+
+# Windows WezTerm cannot see fonts inside WSL: copy the ones wezterm.lua uses
+# into the per-user Windows font folder and register them (no admin needed).
+_nerdfont_wsl() {
+  local src="${HOME}/.local/share/fonts"
+  local dst="${WIN_USER_PATH}/AppData/Local/Microsoft/Windows/Fonts"
+  local key='HKCU\Software\Microsoft\Windows NT\CurrentVersion\Fonts'
+  local fonts=(
+    "MesloLGSNerdFontMono-Regular.ttf:MesloLGS Nerd Font Mono"
+    "MesloLGSNerdFontMono-Bold.ttf:MesloLGS Nerd Font Mono Bold"
+    "MesloLGSNerdFontMono-Italic.ttf:MesloLGS Nerd Font Mono Italic"
+    "MesloLGSNerdFontMono-BoldItalic.ttf:MesloLGS Nerd Font Mono Bold Italic"
+    "SymbolsNerdFontMono-Regular.ttf:Symbols Nerd Font Mono"
+  )
+  local entry file changed=""
+
+  if [ ! -d "${WIN_USER_PATH}" ]; then
+    echo "Skipping Windows fonts: Windows home '${WIN_USER_PATH}' not found."
+    return 0
+  fi
+  mkdir -p "${dst}"
+  for entry in "${fonts[@]}"; do
+    file="${entry%%:*}"
+    [ -f "${src}/${file}" ] || continue
+    if ! cmp -s "${src}/${file}" "${dst}/${file}"; then
+      if ! cp "${src}/${file}" "${dst}/${file}"; then
+        echo "Could not copy ${file} (in use?). Close WezTerm and run: ./install --only wezterm"
+        continue
+      fi
+      echo "Copied ${file} to ${dst}"
+      changed=1
+    fi
+    reg.exe add "${key}" /v "${entry#*:} (TrueType)" /t REG_SZ /d "$(wslpath -w "${dst}/${file}")" /f </dev/null >/dev/null
+  done
+  if [ -n "${changed}" ]; then
+    echo "Restart WezTerm to use the new fonts."
+  fi
 }
 
 WEZTERM_NIGHTLY_URL="https://github.com/wezterm/wezterm/releases/download/nightly"
@@ -1500,6 +1541,7 @@ install_wezterm() {
     _wezterm_macos
   elif [ -n "${OS_IN_WSL}" ]; then
     _wezterm_wsl_config
+    _nerdfont_wsl
     _wezterm_wsl
   elif [ "${OS_DISTRO}" = "arch" ]; then
     _wezterm_arch
@@ -2341,7 +2383,8 @@ LOCAL=1 ./install
 
 # Re-run single pieces (comma separated, always in this order):
 #   zsh      zsh plugins and powerlevel10k
-#   wezterm  install or update WezTerm nightly
+#   wezterm  install or update WezTerm nightly (WSL: also its config
+#            and fonts on Windows)
 #   tmux     tmux plugins
 #   skills   refresh the Anthropic OpenCode skills listed in
 #            .config/opencode/skills/upstream.conf (review, then commit)

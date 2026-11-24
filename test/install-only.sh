@@ -88,6 +88,8 @@ exit 0'
   write_fake tasklist.exe '[ -z "${FAKE_EXIT_TASKLIST_EXE:-}" ] || exit "$FAKE_EXIT_TASKLIST_EXE"
 [ "${FAKE_WEZTERM_RUNNING:-}" = 1 ] && echo "wezterm-gui.exe 123 Console 1 10 K"
 exit 0'
+  write_fake reg.exe
+  write_fake wslpath 'echo "C:\\win\\${2##*/}"'
   write_fake dpkg 'if [ "$1 ${2:-}" = "-s wezterm" ]; then [ "${FAKE_STABLE:-}" = 1 ]; exit; fi
 exit 0'
   # FAKE_PULSE: missing | residual (removed, config kept) | unset = installed
@@ -329,6 +331,54 @@ t_wsl_config_current_untouched() {
   cp "${REPO}/.config/wezterm/wezterm.lua" "${WIN_USER_PATH}/.wezterm.lua"
   run_install c3 --only wezterm || fail "exit"
   [ ! -e "${WIN_USER_PATH}/.wezterm.lua.bak" ] || fail "backed up an identical copy"
+}
+WEZTERM_FONTS="MesloLGSNerdFontMono-Regular.ttf MesloLGSNerdFontMono-Bold.ttf MesloLGSNerdFontMono-Italic.ttf MesloLGSNerdFontMono-BoldItalic.ttf SymbolsNerdFontMono-Regular.ttf"
+pre_fonts() {
+  local f
+  mkdir -p "${1}/.local/share/fonts"
+  for f in ${WEZTERM_FONTS} MesloLGSNerdFont-Regular.ttf; do
+    echo "font ${f}" >"${1}/.local/share/fonts/${f}"
+  done
+}
+win_fonts() { echo "${WIN_USER_PATH}/AppData/Local/Microsoft/Windows/Fonts"; }
+t_wsl_fonts_copied() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  wsl_config f1
+  PRE=pre_fonts run_install f1 --only wezterm || fail "exit"
+  local f
+  for f in ${WEZTERM_FONTS}; do
+    [ "$(cat "$(win_fonts)/${f}")" = "font ${f}" ] || fail "${f} not copied"
+  done
+  [ ! -e "$(win_fonts)/MesloLGSNerdFont-Regular.ttf" ] || fail "unused variant copied"
+  [ "$(grep -c '^reg.exe add ' "${CALLS}")" -eq 5 ] || fail "not 5 registrations"
+  called '^reg.exe add HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts /v MesloLGS Nerd Font Mono Bold Italic \(TrueType\) /t REG_SZ /d C:\\win\\MesloLGSNerdFontMono-BoldItalic.ttf /f$' ||
+    fail "Bold Italic not registered"
+  called '^reg.exe add .* /v Symbols Nerd Font Mono \(TrueType\) /t REG_SZ /d C:\\win\\SymbolsNerdFontMono-Regular.ttf /f$' ||
+    fail "Symbols not registered"
+}
+t_wsl_fonts_current_untouched() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  wsl_config f2
+  local f
+  mkdir -p "$(win_fonts)"
+  for f in ${WEZTERM_FONTS}; do echo "font ${f}" >"$(win_fonts)/${f}"; done
+  PRE=pre_fonts run_install f2 --only wezterm || fail "exit"
+  ! grep -q "Copied .*\.ttf" "${ROOT}/f2.log" || fail "identical font copied again"
+  ! grep -q "Restart WezTerm" "${ROOT}/f2.log" || fail "restart hint without change"
+}
+t_wsl_fonts_missing_in_wsl() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  wsl_config f3
+  run_install f3 --only wezterm || fail "exit"
+  not_called '^reg.exe' || fail "registered fonts that are not there"
+}
+t_wsl_fonts_no_windows_home() {
+  skip_if_root "warn_root would prompt in WSL" || return 0
+  scenario wsl
+  WIN_USER_PATH="${ROOT}/no-such-win"
+  PRE=pre_fonts run_install f4 --only wezterm || fail "exit"
+  not_called '^reg.exe' || fail "registered without a Windows home"
+  [ ! -e "$(win_fonts)" ] || fail "created the Windows font folder"
 }
 t_debian_stable_migrates() {
   scenario debian
