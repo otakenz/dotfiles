@@ -17,7 +17,7 @@ section() { printf '\n## %s\n' "$1"; }
 survey() {  # survey DIR: children >= min with size and newest-file date
   local d s sz newest
   for d in "$1"/*/ "$1"/.[!.]*/; do
-    [ -d "${d}" ] && [ ! -L "${d%/}" ] || continue
+    [[ -d "${d}" && ! -L "${d%/}" ]] || continue
     s=$(du -xsb "${d}" 2>/dev/null | cut -f1)
     [ "${s:-0}" -ge "${min_bytes}" ] || continue
     sz=$(numfmt --to=iec "${s}")
