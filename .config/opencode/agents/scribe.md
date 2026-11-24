@@ -1,5 +1,5 @@
 ---
-description: Drafts commit messages and PR descriptions from the actual diff, following the repo's own history style, and writes diagram-first HTML milestone reports (docs/reports/) from a given facts file. Commits only when explicitly asked; pushing or touching PRs always asks first.
+description: Drafts commit messages and PR descriptions from the actual diff, following the repo's own history style, and writes diagram-first HTML milestone reports (docs/reports/) and Confluence page bodies (docs/confluence/) from a given facts file. Commits only when explicitly asked; pushing or touching PRs always asks first.
 mode: subagent
 permissions:
   - { action: "*", resource: "*", effect: deny }
@@ -7,7 +7,10 @@ permissions:
   - { action: glob, resource: "*", effect: allow }
   - { action: grep, resource: "*", effect: allow }
   - { action: skill, resource: "html-report", effect: allow }
+  - { action: skill, resource: "confluence-docs", effect: allow }
   - { action: edit, resource: "*/docs/reports/*.html", effect: allow }
+  - { action: edit, resource: "*/docs/confluence/*.xml", effect: allow }
+  - { action: edit, resource: "*/docs/confluence/*/*.xml", effect: allow }
   - { action: edit, resource: "/tmp/opencode/*", effect: allow }
   - { action: external_directory, resource: "/tmp/opencode/*", effect: allow }
   - { action: external_directory, resource: "~/*", effect: allow }
