@@ -87,12 +87,14 @@ for line in text.splitlines():
             listed[section].add(first)
 
 # Plugin skills live under .../node_modules/<package>/skills/<id>/SKILL.md.
-# Right after the service starts the first list can omit them: ask up to 3 times.
+# Right after the service starts the first lists can omit them for tens of
+# seconds (cold boot, plugin reconciliation still running): ask up to 15 times.
+# The daily run is unattended background, so a generous wait is cheap.
 # Without an answer the plugins are unknown and only their comparison is skipped.
 plugins_known = True
 if os.environ.get("DISCOVER"):
     wanted = listed["Plugins"]
-    for attempt in range(3):
+    for attempt in range(15):
         data = api("/api/skill?location[directory]=" + os.path.expanduser("~"))
         if not isinstance(data, list):
             plugins_known = False
@@ -101,7 +103,7 @@ if os.environ.get("DISCOVER"):
                                 for m in [re.search(r"/node_modules/((?:@[^/]+/)?[^/]+)/skills/", str(s.get("path", "")))] if m}
         if wanted <= installed["Plugins"]:
             break
-        if attempt < 2:
+        if attempt < 14:
             time.sleep(float(os.environ.get("AI_INVENTORY_RETRY_DELAY", "2")))
     if not plugins_known:
         installed["Plugins"] = set(listed["Plugins"])
@@ -659,7 +661,8 @@ EOF
     failures=$((failures + 1))
   fi
 
-  # flaky_plugins NAME ALWAYS_OMIT: opencode whose first skill list omits the plugin.
+  # flaky_plugins NAME FIRST_GOOD_CALL: opencode whose skill lists omit the
+  # plugin until call FIRST_GOOD_CALL (a slow cold start; 99 = never).
   flaky_plugins() {
     local d="${root}/${1}/flaky"
     fixture "${1}" "alpha beta" "one"
@@ -670,7 +673,7 @@ EOF
 case "\$3" in
 */api/skill*)
   echo x >>"${d}/skill-calls"
-  if [ "${2}" = 1 ] || [ "\$(wc -l <"${d}/skill-calls")" -lt 2 ]; then
+  if [ "\$(wc -l <"${d}/skill-calls")" -lt "${2}" ]; then
     echo '{"data":[{"id":"b","path":"skill://b"}]}'
   else
     echo '{"data":[{"id":"x","path":"/c/node_modules/superpowers/skills/x/SKILL.md"}]}'
@@ -685,14 +688,21 @@ EOS
       OPENCODE_CONFIG_DIR_CHECK="${root}/${1}/cfg" \
       bash "${BASH_SOURCE[0]}" >"${root}/${1}.log" 2>&1 || got=$?
   }
-  flaky_plugins plugin_list_retried_passes 0
+  flaky_plugins plugin_list_retried_passes 2
   if [ "${got}" -eq 0 ] && grep -q "inventory matches" "${root}/plugin_list_retried_passes.log"; then
     echo "ok:   plugin_list_retried_passes"
   else
     echo "FAIL: plugin_list_retried_passes: exit ${got}" >&2
     failures=$((failures + 1))
   fi
-  flaky_plugins plugin_always_missing_fails 1
+  flaky_plugins plugin_late_appears_passes 5
+  if [ "${got}" -eq 0 ] && grep -q "inventory matches" "${root}/plugin_late_appears_passes.log"; then
+    echo "ok:   plugin_late_appears_passes"
+  else
+    echo "FAIL: plugin_late_appears_passes: exit ${got}" >&2
+    failures=$((failures + 1))
+  fi
+  flaky_plugins plugin_always_missing_fails 99
   if [ "${got}" -eq 1 ] && grep -q "'superpowers' is in the inventory but not installed" "${root}/plugin_always_missing_fails.log" &&
     [ "$(wc -l <"${root}/plugin_always_missing_fails/flaky/skill-calls")" -ge 3 ]; then
     echo "ok:   plugin_always_missing_fails"
