@@ -84,7 +84,11 @@ _fzf_comprun() {
 # ---- FZF ---- #
 
 # ---- Mise (better asdf) ---- #
-eval "$("${HOME}"/.local/bin/mise activate zsh)"
+# Arch installs mise to /usr/bin (pacman), Debian/Ubuntu to ~/.local/bin
+# (mise.run). Both are on PATH by this point, so resolve it dynamically.
+if command -v mise &>/dev/null; then
+	eval "$(mise activate zsh)"
+fi
 
 # ---- Bat (better cat) ---- #
 export BAT_THEME=tokyonight_night
