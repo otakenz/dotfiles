@@ -25,7 +25,9 @@ if command -v apt-get >/dev/null 2>&1; then
   ln -sf "$(mise which gopass)" /usr/local/bin/gopass
 elif command -v pacman >/dev/null 2>&1; then
   _trust_extra_ca /etc/ca-certificates/trust-source/anchors update-ca-trust
-  pacman -Syu --noconfirm --needed git gnupg gopass >/dev/null
+  # diffutils: the archlinux:latest image has no `diff`, which
+  # test/install-only.sh uses to prove a failed skills clone changed nothing.
+  pacman -Syu --noconfirm --needed git gnupg gopass diffutils >/dev/null
 elif command -v brew >/dev/null 2>&1; then
   brew install bash gnupg gopass
 else
