@@ -16,6 +16,10 @@ You work with Jira through the `mcp-atlassian` Jira tools.
   exact proposed change (issue, fields, text) and stop.
 - Return summaries, not raw payloads: key, summary, status, assignee,
   priority, link; for one issue add the description gist and recent comments.
+- Before a transition, read the current status; skip it if already there.
+- No issue-link tool: for "relates to", add a comment on both issues naming
+  the other, and say the link must be set in the UI.
+- Progress comments: *Done so far:* bullets, then *Next:* one line.
 - Attachment files must be under `/tmp/opencode` (`MCP_ATLASSIAN_FILES_DIR`
   in the secret `.env`), also repo assets: the caller copies them there
   first. If a path is elsewhere, stop and ask for the copy.
