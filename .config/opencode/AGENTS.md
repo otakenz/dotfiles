@@ -14,9 +14,13 @@ files add to them.
   3. **Cheaper model**: a smaller model can do the job reliably.
   If none applies, it should be a skill (the conversation needs the details)
   or nothing.
-- Project know-how goes into the repo's `.agents/skills/<name>/SKILL.md`
-  (read by OpenCode, Copilot and Codex), not into a personal agent. The
-  `name` must equal the folder name.
+- Project know-how goes into the repo's `AGENTS.md` and
+  `.agents/skills/<name>/SKILL.md` (read by OpenCode, Copilot and Codex),
+  not into a personal agent. The `name` must equal the folder name.
+- Keep these tool-neutral: frontmatter only `name` and `description`, no
+  personal agent or tool names in the text. For Claude Code, add
+  `CLAUDE.md` containing `@AGENTS.md` and symlink
+  `.claude/skills -> ../.agents/skills`; never copy the content.
 - If an inventory of agents and skills exists (see personal instructions),
   add every new agent or skill to it in the same change.
 
