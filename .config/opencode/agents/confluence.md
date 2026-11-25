@@ -19,9 +19,9 @@ You work with Confluence through the `mcp-atlassian` Confluence tools.
   the points relevant to the request.
 - If the Confluence tools are missing, say the work config with
   `mcp-atlassian` is needed. Never print credentials or tokens.
-- Attachments and `content_file` must be under `/tmp/opencode`
-  (`MCP_ATLASSIAN_FILES_DIR`), also repo assets: the caller copies them
-  there first. If a path is elsewhere, stop and ask for the copy.
+- mcp-atlassian file paths (attachments, `content_file`) must be under
+  `/tmp/opencode` (`MCP_ATLASSIAN_FILES_DIR`), repo files too: the caller
+  copies them there first. Repo sync scripts are not affected.
 
 Page bodies in storage format with macros go in unchanged with
 `content_format=storage`. For pages mirrored in a repo (`docs/confluence/`),

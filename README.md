@@ -161,6 +161,11 @@ fresh tokens and `gopass insert work-unattended/<name>` each one, as the script 
 Rotating a token is `gopass edit work-unattended/<name>`; revoke a machine's tokens when you
 retire it. Anything running as you can read this store, so keep everything else in `work`.
 
+The rest of mcp-atlassian's settings live in `~/.config/secret/mcp-atlassian/.env`
+(not committed; start from `.env.example`). Besides the URLs and token commands it sets
+`TOOLSETS=default,jira_links,jira_agile` and `MCP_ATLASSIAN_FILES_DIR=/tmp/opencode`, the only
+folder it uploads from. Changes take effect when the server restarts (restart OpenCode).
+
 > **Ubuntu 26.04:** its libgcrypt 1.12.0 randomly rejects valid imported cv25519 keys with
 > "Bad passphrase" ([LP #2174038](https://bugs.launchpad.net/bugs/2174038)). The keys pass warns
 > about it. Update `libgcrypt20` to 1.12.1 or newer before importing.
