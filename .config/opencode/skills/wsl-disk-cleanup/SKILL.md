@@ -1,6 +1,6 @@
 ---
 name: wsl-disk-cleanup
-description: Use when WSL or a Linux home feels bloated, the disk is filling up, or the user asks what can be removed to free space (caches, Docker images, old projects, toolchains, apt packages).
+description: Use when WSL or a Linux home feels bloated, the disk is filling up, the user asks what can be removed to free space (caches, Docker images, old projects, toolchains, apt packages), Windows does not get the space back, or a WSL distro should be backed up (export, OneDrive).
 ---
 
 # WSL disk cleanup
@@ -57,7 +57,13 @@ Leave out empty classes. End with the total for 1 and 2; for Docker use
 - Measure with `df -h /` before and after; report freed space from that.
 - Windows gets the space back only when the VHDX shrinks: once
   `wsl --manage <distro> --set-sparse true` (WSL shut down), or
-  `Optimize-VHD`.
+  `Optimize-VHD`. Sparse does not return space freed before the switch,
+  so it finishes at once: run `sudo fstrim -av` in WSL afterwards, and
+  after big deletions. Check with the VHDX "Size on disk", not "Size".
+
+## Backup
+
+Export, formats, C: space and OneDrive: see `backup.md` in this folder.
 
 ## Recovering an accidental `rm -rf`
 
