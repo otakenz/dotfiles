@@ -247,7 +247,7 @@ if WORK:
     if any(s in k.lower() for k in opts for s in ("key", "auth", "token", "secret")):
         fail("llmi plugin options carry a credential")
     cmd = cfg.get("mcp", {}).get("servers", {}).get("mcp-atlassian", {}).get("command", [])
-    if cmd[:2] != ["uvx", "mcp-atlassian==0.24.6"] or "--env-file" not in cmd:
+    if cmd[:2] != ["uvx", "mcp-atlassian==0.24.8"] or "--env-file" not in cmd:
         fail(f"mcp-atlassian command is {cmd}")
 
 sys.exit(status)

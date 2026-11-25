@@ -44,7 +44,7 @@
 				"type": "local",
 				"command": [
 					"uvx",
-					"mcp-atlassian==0.24.6",
+					"mcp-atlassian==0.24.8",
 					"--env-file",
 					"{env:HOME}/.config/secret/mcp-atlassian/.env"
 				]

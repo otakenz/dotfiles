@@ -295,7 +295,7 @@ t1_work_pc_fresh() {
   for e in jira-pat confluence-pat llmi-api-token; do
     grep -q -F "gopass insert work-unattended/${e}" "${ROOT}/m2.log" || fail "no insert step for ${e}"
   done
-  grep -q -F "uvx mcp-atlassian==0.24.6 --version" "${ROOT}/m2.log" || fail "no uvx pre-warm step"
+  grep -q -F "uvx mcp-atlassian==0.24.8 --version" "${ROOT}/m2.log" || fail "no uvx pre-warm step"
 
   printf 'tok-123\n' | on m2 gopass insert -f work-unattended/jira-pat >/dev/null 2>&1 ||
     fail "insert into the unattended store failed"

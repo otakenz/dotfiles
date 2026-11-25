@@ -2189,7 +2189,7 @@ fresh tokens for this machine and insert them (revoke them when you retire it):
     aumovio-llmi, and paste it (the llmi plugin then loads models and prices)
       gopass insert ${mount}/llmi-api-token
 Download mcp-atlassian once, so its first start fits the MCP timeout:
-  uvx mcp-atlassian==0.24.6 --version
+  uvx mcp-atlassian==0.24.8 --version
 EOF
 }
 
