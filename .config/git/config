@@ -28,6 +28,12 @@
   tool = nvimdiff
   conflictstyle = zdiff3
 
+# Remember how a conflict was resolved and replay it when the same conflict
+# comes back, e.g. when rebasing a long-lived branch onto master again.
+# The result stays unstaged so it can be checked before `git add`.
+[rerere]
+  enabled = true
+
 [mergetool]
   keepBackup = false
   prompt = false
