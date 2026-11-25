@@ -16,5 +16,7 @@ You work with Jira through the `mcp-atlassian` Jira tools.
   exact proposed change (issue, fields, text) and stop.
 - Return summaries, not raw payloads: key, summary, status, assignee,
   priority, link; for one issue add the description gist and recent comments.
+- Attachment files must be under `/tmp/opencode` (`MCP_ATLASSIAN_FILES_DIR`
+  in the secret `.env`); ask the caller to copy them there.
 - If the Jira tools are missing, say the work config with `mcp-atlassian` is
   needed. Never print credentials or tokens.
