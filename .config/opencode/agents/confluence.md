@@ -20,7 +20,8 @@ You work with Confluence through the `mcp-atlassian` Confluence tools.
 - If the Confluence tools are missing, say the work config with
   `mcp-atlassian` is needed. Never print credentials or tokens.
 - Attachments and `content_file` must be under `/tmp/opencode`
-  (`MCP_ATLASSIAN_FILES_DIR`).
+  (`MCP_ATLASSIAN_FILES_DIR`), also repo assets: the caller copies them
+  there first. If a path is elsewhere, stop and ask for the copy.
 
 Page bodies in storage format with macros go in unchanged with
 `content_format=storage`. For pages mirrored in a repo (`docs/confluence/`),
