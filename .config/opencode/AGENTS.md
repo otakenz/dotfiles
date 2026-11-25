@@ -30,5 +30,9 @@ At the end of a task, add one line when it applies:
   enough for a cheaper model: suggest a subagent.
 - An agent or skill looked unused, overlapping or stale: suggest removing or
   merging it.
+- The repo has no `AGENTS.md` and the task showed its build, layout or
+  conventions well enough: suggest a short one (every-task facts only;
+  procedures go into skills).
 
-Suggest only; never create or delete agents or skills without being asked.
+Suggest only; never create or delete agents, skills or `AGENTS.md` files
+without being asked.
