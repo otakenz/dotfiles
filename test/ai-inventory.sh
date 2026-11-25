@@ -137,7 +137,8 @@ else:
 # agents.<id>.model in opencode.json, else the agent file's `model:`.
 AUTHORS, REVIEWERS = ("general", "coder"), ("reviewer", "cpp-reviewer")
 FAMILIES = (("claude", r"claude|anthropic"), ("gpt", r"gpt|openai|\bo\d"),
-            ("gemini", r"gemini"), ("deepseek", r"deepseek"), ("qwen", r"qwen"))
+            ("gemini", r"gemini"), ("deepseek", r"deepseek"), ("qwen", r"qwen"),
+            ("hunyuan", r"hy4|hunyuan"))
 conf = cfg / "opencode.json"
 if not conf.is_file():
     print(f"WARN: no {conf}; model families not checked", file=sys.stderr)

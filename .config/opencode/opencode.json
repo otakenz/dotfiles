@@ -16,22 +16,22 @@
 			"model": "opencode-go/deepseek-v4.1-flash"
 		},
 		"general": {
-			"model": "opencode/big-pickle"
+			"model": "opencode-go/hy4"
 		},
 		"coder": {
-			"model": "opencode/big-pickle"
+			"model": "opencode-go/hy4"
 		},
 		"investigator": {
-			"model": "opencode/big-pickle"
+			"model": "opencode-go/deepseek-v4.1-flash"
 		},
 		"scribe": {
 			"model": "opencode-go/deepseek-v4.1-flash"
 		},
 		"reviewer": {
-			"model": "opencode/big-pickle"
+			"model": "opencode-go/qwen4-max"
 		},
 		"cpp-reviewer": {
-			"model": "opencode/big-pickle"
+			"model": "opencode-go/qwen4-max"
 		}
 	},
 	"mcp": {
