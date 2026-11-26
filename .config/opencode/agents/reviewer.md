@@ -11,6 +11,9 @@ permissions:
   - { action: external_directory, resource: "~/*", effect: allow }
   - { action: external_directory, resource: "~/.*", effect: deny }
   - { action: read, resource: "~/.*", effect: deny }
+  - { action: external_directory, resource: "~/.local/share/opencode/worktree/*", effect: allow }
+  - { action: read, resource: "~/.local/share/opencode/worktree/*", effect: allow }
+  - { action: external_directory, resource: "/tmp/opencode/*", effect: allow }
   - { action: read, resource: "*.env", effect: deny }
   - { action: read, resource: "*.env.*", effect: deny }
   - { action: read, resource: "*.env.example", effect: allow }

@@ -173,6 +173,12 @@ if rv:
         ("read", f"{H}/.ssh/id_ed25519", "not allow"),
         ("read", f"{H}/.config/gnupg/pubring.kbx", "not allow"),
         ("read", f"{H}/.local/share/opencode/auth.json", "not allow"),
+        ("read", f"{H}/.local/share/opencode/opencode.db", "not allow"),
+        ("external_directory", f"{H}/.local/share/opencode/worktree/x/y/*", "allow"),
+        ("read", f"{H}/.local/share/opencode/worktree/x/y/docs/a.md", "allow"),
+        ("read", f"{H}/.local/share/opencode/worktree/x/y/.env", "not allow"),
+        ("external_directory", "/tmp/opencode/check/*", "allow"),
+        ("read", "/tmp/opencode/check/a.md", "allow"),
         ("read", "src/.env", "not allow"),
         ("read", "cfg/.env.local", "not allow"),
         ("read", "cfg/.env.example", "allow"),
@@ -187,6 +193,17 @@ if rv:
         expect("reviewer", cmd, "not allow")
     for cmd in ["rg -n foo src/x-util", "fd -e md"]:
         expect("reviewer", cmd, "allow")
+cr = agents.get("cpp-reviewer")
+if cr:
+    for action, res, want in [
+        ("external_directory", f"{H}/.local/share/opencode/worktree/x/y/*", "allow"),
+        ("read", f"{H}/.local/share/opencode/worktree/x/y/src/a.cpp", "allow"),
+        ("read", f"{H}/.local/share/opencode/auth.json", "not allow"),
+        ("external_directory", "/tmp/opencode/check/*", "allow"),
+    ]:
+        got = effect(cr, action, res)
+        if (got == "allow") != (want == "allow"):
+            fail(f"cpp-reviewer: {action} '{res}' is {got}, want {want}")
 expect("release-mapper", "tar -tf sdk.tar.gz", "allow")
 expect("release-mapper", "tar -xzf sdk.tar.gz -C /tmp/opencode/sdk-0.3.0", "allow")
 expect("release-mapper", "tar -xf sdk.tar -C src", "not allow")

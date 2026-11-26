@@ -10,6 +10,9 @@ permissions:
   - { action: external_directory, resource: "~/*", effect: allow }
   - { action: external_directory, resource: "~/.*", effect: deny }
   - { action: read, resource: "~/.*", effect: deny }
+  - { action: external_directory, resource: "~/.local/share/opencode/worktree/*", effect: allow }
+  - { action: read, resource: "~/.local/share/opencode/worktree/*", effect: allow }
+  - { action: external_directory, resource: "/tmp/opencode/*", effect: allow }
   - { action: shell, resource: "git diff *", effect: allow }
   - { action: shell, resource: "git log *", effect: allow }
   - { action: shell, resource: "git show *", effect: allow }
