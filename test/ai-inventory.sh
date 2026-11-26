@@ -5,7 +5,7 @@
 # and counts stay under the limits the
 # inventory states. Also checks that reviewers run on another model family
 # than the authors (opencode.json, agent files), and the starting context
-# budget (instructions, skills, agents, session total, taken from the first step of recent sessions; chars // 4). The plain
+# budget (instructions, skills, agents, session total, taken from the first step of recent sessions; own parts via count_tokens, else chars / 3.2). The plain
 # check warns and passes without the wiki; --record needs it.
 #
 #   test/ai-inventory.sh              check this machine
@@ -21,6 +21,10 @@
 # ~/wiki/ai-workflow), OPENCODE_CONFIG_DIR_CHECK (default ~/.config/opencode), AI_TODAY (record/daily
 # date, default today), AI_INVENTORY_RETRY_DELAY (seconds between service API retries, default 2),
 # AI_INVENTORY_PLUGINS (comma list; default: asked from the running OpenCode service).
+# Token counting (all optional): AI_COUNT_URL (default: baseURL in <cfg>/plugins/llmi/index.ts; none
+# = estimate silently), AI_COUNT_KEY_CMD (default gopass show -o work-unattended/llmi-api-token),
+# AI_COUNT_MODEL (default claude-opus-5-5). The URL must be https. AI_COUNT_KEY_CMD must print the key
+# (e.g. gopass show -o ..., cat <file>); never put the key itself in it.
 
 set -o nounset
 
@@ -174,10 +178,90 @@ else:
             print(f"ok:   model families: authors {', '.join(sorted(authors))}, reviewers {', '.join(revs)}")
 
 # Starting context: what a new session carries before the first prompt.
-# Tokens are estimated as chars // 4.
+# Own parts are counted with the LLMi gateway (count_tokens); without it, estimated as chars / 3.2.
 
-def tok(s):
-    return len(s) // 4
+class Counter:
+    def __init__(self):
+        self.url = os.environ.get("AI_COUNT_URL") or self.plugin_url()
+        self.model = os.environ.get("AI_COUNT_MODEL") or "claude-opus-5-5"
+        self.key = ""
+        self.base = 0
+        self.exact = False
+        self.warned = False
+        if self.url:
+            self.exact = self.start()
+
+    def plugin_url(self):
+        try:
+            m = re.search(r'const baseURL = "([^"]+)"', (cfg / "plugins" / "llmi" / "index.ts").read_text())
+            return m.group(1) if m else None
+        except (OSError, ValueError):
+            return None
+
+    def start(self):
+        if not self.url.lower().startswith("https://"):
+            return self.give_up()
+        try:
+            cmd = os.environ.get("AI_COUNT_KEY_CMD") or "gopass show -o work-unattended/llmi-api-token"
+            r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=10)
+            self.key = r.stdout.strip() if r.returncode == 0 else ""
+            if self.key:
+                self.base = self.ask("x")
+                if self.base is not None:
+                    return True
+        except Exception:
+            pass
+        return self.give_up()
+
+    def give_up(self):
+        self.exact = False
+        if not self.warned:
+            self.warned = True
+            print("WARN: context: gateway count unavailable; estimate (chars / 3.2)", file=sys.stderr)
+        return False
+
+    def ask(self, text):
+        import tempfile
+        path = None
+        n = None
+        try:
+            fd, path = tempfile.mkstemp()
+            with os.fdopen(fd, "w") as f:
+                json.dump({"model": self.model, "messages": [{"role": "user", "content": text}]}, f)
+            headers = (f"Authorization: Bearer {self.key}\nx-api-key: {self.key}\n"
+                       "anthropic-version: 2023-06-01\ncontent-type: application/json\n")
+            r = subprocess.run(["curl", "--disable", "-sS", "--proto", "=https", "--max-time", "20",
+                                "-w", "\n%{http_code}", "-X", "POST",
+                                self.url.rstrip("/") + "/v1/messages/count_tokens",
+                                "-H", "@-", "--data-binary", "@" + path],
+                               input=headers, capture_output=True, text=True, timeout=25)
+            body, _, status = r.stdout.rpartition("\n")
+            n = json.loads(body)["input_tokens"] if r.returncode == 0 and status == "200" else None
+            n = n if type(n) is int and n >= 0 else None
+        except Exception:
+            n = None
+        finally:
+            if path:
+                try:
+                    os.unlink(path)
+                except FileNotFoundError:
+                    pass
+                except Exception:
+                    n = None
+        return n
+
+    def count_all(self, parts):
+        if self.exact:
+            res = {}
+            for k, t in parts.items():
+                n = self.ask(t) if t else self.base
+                if n is None:
+                    self.give_up()
+                    break
+                res[k] = max(0, n - self.base)
+            else:
+                return res
+        return {k: round(len(t) / 3.2) for k, t in parts.items()}
 
 def hidden_skill(path):
     if not path or path.startswith("skill://") or not os.path.isfile(path):
@@ -189,9 +273,13 @@ def hidden_skill(path):
 
 def measure():
     home = os.path.expanduser("~")
+    global counter
+    counter = Counter()
+    parts = {}
     out = dict(instructions=0, skills=None, agents=None, bootstrap=0, own=None,
                total=None, sessions=0, rest=None, projects=[], missing=[])
     files = []
+    texts = []
     conf = cfg / "opencode.json"
     if conf.is_file():
         try:
@@ -201,9 +289,10 @@ def measure():
     files.append(cfg / "AGENTS.md")
     for f in files:
         if f.is_file():
-            out["instructions"] += tok(f.read_text(errors="replace"))
+            texts.append(f.read_text(errors="replace"))
         else:
             out["missing"].append(str(f))
+    parts["instructions"] = "\n\n".join(texts)
     skills = api("/api/skill?location[directory]=" + home)
     agents = api("/api/agent?location[directory]=" + home)
     def dicts(x):
@@ -213,15 +302,21 @@ def measure():
         return v if isinstance(v, str) else ""
     skills, agents = dicts(skills), dicts(agents)
     if skills is not None and agents is not None:
-        out["skills"] = sum(
-            len(sval(s, "id")) + len(sval(s, "description")) + 40
-            for s in skills if not hidden_skill(sval(s, "path"))) // 4
-        out["agents"] = sum(
-            len(sval(a, "name") or sval(a, "id")) + len(sval(a, "description")) + 10
-            for a in agents if a.get("mode") in ("subagent", "all") and not a.get("hidden")) // 4
+        parts["skills"] = "\n".join(
+            f"<skill><id>{sval(s, 'id')}</id><name>{sval(s, 'id')}</name>"
+            f"<description>{sval(s, 'description')}</description></skill>"
+            for s in skills if not hidden_skill(sval(s, "path")))
+        parts["agents"] = "\n".join(
+            f"- {sval(a, 'name') or sval(a, 'id')}: {sval(a, 'description')}"
+            for a in agents if a.get("mode") in ("subagent", "all") and not a.get("hidden"))
         boot = next((sval(s, "path") for s in skills if s.get("id") == "using-superpowers"), "")
         if boot and os.path.isfile(boot):
-            out["bootstrap"] = tok(Path(boot).read_text(errors="replace"))
+            parts["bootstrap"] = Path(boot).read_text(errors="replace")
+    counts = counter.count_all(parts)
+    out["instructions"] = counts["instructions"]
+    if "skills" in parts:
+        out["skills"], out["agents"] = counts["skills"], counts["agents"]
+        out["bootstrap"] = counts.get("bootstrap", 0)
         out["own"] = out["instructions"] + out["skills"] + out["agents"] + out["bootstrap"]
     sess = api("/api/session?limit=200")
     sess = dicts(sess)
@@ -274,6 +369,7 @@ else:
     budgets = dict(zip(("total", "target", "own", "instructions", "skills", "agents"),
                        map(int, bm.groups())))
     ms = measure()
+    ms["method"] = "count_tokens" if counter.exact else "estimate"
     for f in ms["missing"]:
         print(f"WARN: context: instruction file {f} not found", file=sys.stderr)
     parts = [("instructions", ms["instructions"])]
@@ -309,10 +405,11 @@ if status == 0 and os.environ.get("RECORD") == "--record":
     else:
         def cell(n):
             return "n/a" if n is None else str(n)
-        rows = [("Instructions", ms["instructions"], budgets["instructions"], "files in opencode.json + AGENTS.md, chars // 4"),
-                ("Skill list", ms["skills"], budgets["skills"], "id + description + 40 per visible skill, chars // 4"),
-                ("Agent descriptions", ms["agents"], budgets["agents"], "name + description + 10 per subagent, chars // 4"),
-                ("Superpowers bootstrap", ms["bootstrap"], "", "using-superpowers SKILL.md, chars // 4"),
+        how = "count_tokens" if ms["method"] == "count_tokens" else "estimate, chars / 3.2"
+        rows = [("Instructions", ms["instructions"], budgets["instructions"], f"files in opencode.json + AGENTS.md, {how}"),
+                ("Skill list", ms["skills"], budgets["skills"], f"id + name + description per visible skill, {how}"),
+                ("Agent descriptions", ms["agents"], budgets["agents"], f"name + description per subagent, {how}"),
+                ("Superpowers bootstrap", ms["bootstrap"], "", f"using-superpowers SKILL.md, {how}"),
                 ("Own (sum)", ms["own"], budgets["own"], "instructions + skills + agents + bootstrap"),
                 ("Session total (median of %d)" % ms["sessions"], ms["total"], budgets["total"], "first step of recent Claude sessions"),
                 ("OpenCode + memory + plugins", ms["rest"], "", "derived: total - own")]
@@ -464,8 +561,9 @@ status() {
 }
 
 self_test() {
-  local root failures=0 RUN_ARG=
+  local root failures=0 RUN_ARG='' CASE_COUNT_KEY_CMD='' CASE_COUNT_URL=''
   root="$(mktemp -d /tmp/ai-inventory.XXXXXX)"
+  export AI_COUNT_KEY_CMD=false AI_COUNT_URL=
   # shellcheck disable=SC2064 # expand now: root is local
   trap "rm -rf '${root}'" RETURN
 
@@ -482,9 +580,17 @@ self_test() {
   run() {
     local fake="${OC_FAKE_DIR:-${root}/bin-down}"
     [ -d "${root}/${1}/fake" ] && fake="${root}/${1}/fake"
+    if [ -n "${CASE_COUNT_KEY_CMD}" ] || [ -n "${CASE_COUNT_URL}" ]; then
+      if [ ! -f "${root}/${1}/fake/bin/curl" ] || [ ! -x "${root}/${1}/fake/bin/curl" ]; then
+        echo "run ${1}: gateway override without a fixture fake curl" >"${root}/${1}.log"
+        return 1
+      fi
+      fake="${root}/${1}/fake"
+    fi
     PATH="${fake}/bin:${PATH}" \
       AI_WIKI_DIR="${root}/${1}/wiki" OPENCODE_CONFIG_DIR_CHECK="${root}/${1}/cfg" \
       AI_TODAY=2026-11-20 AI_STATE_DIR="${root}/${1}/state" \
+      AI_COUNT_KEY_CMD="${CASE_COUNT_KEY_CMD:-false}" AI_COUNT_URL="${CASE_COUNT_URL-}" \
       AI_INVENTORY_PLUGINS="superpowers" bash "${BASH_SOURCE[0]}" ${RUN_ARG:+"${RUN_ARG}"} >"${root}/${1}.log" 2>&1
   }
   expect() { # NAME WANT_EXIT GREP
@@ -540,6 +646,70 @@ EOS
     text="$(printf '%*s' "${4}" '' | tr ' ' x)"
     printf '{"data":[{"type":"user","text":"%s"},{"type":"assistant","model":{"id":"%s","providerID":"p"},"tokens":{"input":%s,"output":0,"reasoning":0,"cache":{"read":0,"write":0}}}]}' \
       "${text}" "${5}" "${3}" >"${root}/${1}/fake/ctx-${2}.json"
+  }
+  # fake_gateway NAME [MODE]: a curl that logs its argv (never the key) and
+  # answers input_tokens = 10 + len(content) // 5 only for a valid request:
+  # POST to https://.../v1/messages/count_tokens, --disable first, --proto =https,
+  # Authorization/x-api-key/anthropic-version headers on stdin with the key from
+  # NAME/key, model claude-opus-5-5, one user message. A bad request answers 400.
+  # MODE: down (exit 7), timeout (exit 28), bad (no input_tokens), late (fails
+  # after two calls), status201, str ("12"), float (1.5).
+  fake_gateway() {
+    local d="${root}/${1}/fake"
+    mkdir -p "${d}/bin"
+    (umask 077 && printf 'SECRETKEY123' >"${root}/${1}/key")
+    printf '%s' "${2:-}" >"${d}/mode"
+    cat >"${d}/bin/curl" <<'EOS'
+#!/usr/bin/env python3
+import json, os, sys
+d = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "..")
+args = sys.argv[1:]
+with open(os.path.join(d, "curl.log"), "a") as f:
+    f.write(" ".join(args).replace("\n", "\\n") + "\n")
+headers = sys.stdin.read()
+mode = open(os.path.join(d, "mode")).read()
+key = open(os.path.join(d, "..", "key")).read()
+if args[:1] != ["--disable"]:
+    sys.exit(2)
+if mode == "down":
+    sys.exit(7)
+if mode == "timeout":
+    sys.exit(28)
+if mode == "late" and len(open(os.path.join(d, "curl.log")).read().splitlines()) > 2:
+    sys.exit(7)
+def out(body, status="200"):
+    print(body + "\n" + status, end="")
+    sys.exit(0)
+if mode == "bad":
+    out('{"x":1}')
+ok = ("-X" in args and args[args.index("-X") + 1] == "POST"
+      and "--proto" in args and args[args.index("--proto") + 1] == "=https"
+      and any(a.startswith("https://") and a.endswith("/v1/messages/count_tokens") for a in args)
+      and f"Authorization: Bearer {key}" in headers.splitlines()
+      and f"x-api-key: {key}" in headers.splitlines()
+      and "anthropic-version: 2023-06-01" in headers.splitlines())
+body = None
+for a in args:
+    if a.startswith("@/"):
+        body = json.load(open(a[1:]))
+ok = ok and isinstance(body, dict) and body.get("model") == "claude-opus-5-5" \
+    and isinstance(body.get("messages"), list) and len(body["messages"]) == 1 \
+    and body["messages"][0].get("role") == "user"
+if not ok:
+    out('{"error":"bad request"}', "400")
+n = 10 + len(body["messages"][0]["content"]) // 5
+if mode == "str":
+    n = str(n)
+elif mode == "float":
+    n = 1.5
+out(json.dumps({"input_tokens": n}), "201" if mode == "status201" else "200")
+EOS
+    chmod +x "${d}/bin/curl"
+  }
+  # gw_expect NAME WANT_EXIT GREP [URL]: expect with the fixture's fake gateway;
+  # the key is read from NAME/key, never written on a command line.
+  gw_expect() {
+    CASE_COUNT_URL="${4:-https://gw.test}" CASE_COUNT_KEY_CMD="cat '${root}/${1}/key'" expect "${1}" "${2}" "${3}"
   }
   # sessions_json N: root sessions s1..sN, newest last id first.
   sessions_json() {
@@ -840,6 +1010,117 @@ EOF
   ctx_case context_no_claude_warns 400 "${small_skills}" big-pickle 20000 20000
   expect context_no_claude_warns 0 "WARN: context: no Claude sessions"
 
+  ctx_case count_exact 400 "${small_skills}" claude-x 20000
+  fake_gateway count_exact
+  gw_expect count_exact 0 "ok:   context: instructions 80 <"
+  if [ -s "${root}/count_exact/fake/curl.log" ] && [ -s "${root}/count_exact.log" ] &&
+    ! grep -q SECRETKEY123 "${root}/count_exact/fake/curl.log" "${root}/count_exact.log"; then
+    echo "ok:   count_key_not_logged"
+  else
+    echo "FAIL: count_key_not_logged: key found in curl argv or run log" >&2
+    failures=$((failures + 1))
+  fi
+
+  ctx_case count_gateway_down_estimates 400 "${small_skills}" claude-x 20000
+  fake_gateway count_gateway_down_estimates down
+  gw_expect count_gateway_down_estimates 0 "instructions 125 <"
+  if [ "$(grep -c 'WARN: context: gateway count unavailable' "${root}/count_gateway_down_estimates.log")" -eq 1 ]; then
+    echo "ok:   count_gateway_down_estimates one warn"
+  else
+    echo "FAIL: count_gateway_down_estimates: want exactly one gateway WARN" >&2
+    failures=$((failures + 1))
+  fi
+
+  ctx_case count_bad_answer_estimates 400 "${small_skills}" claude-x 20000
+  fake_gateway count_bad_answer_estimates bad
+  gw_expect count_bad_answer_estimates 0 "instructions 125 <"
+  if [ "$(grep -c 'WARN: context: gateway count unavailable' "${root}/count_bad_answer_estimates.log")" -eq 1 ] &&
+    ! grep -q Traceback "${root}/count_bad_answer_estimates.log"; then
+    echo "ok:   count_bad_answer_estimates one warn, no traceback"
+  else
+    echo "FAIL: count_bad_answer_estimates: want one WARN and no Traceback" >&2
+    failures=$((failures + 1))
+  fi
+
+  if [ "$(grep -vc '^--disable ' "${root}/count_exact/fake/curl.log")" -eq 0 ]; then
+    echo "ok:   count_curl_disables_config"
+  else
+    echo "FAIL: count_curl_disables_config: curl first argument is not --disable" >&2
+    failures=$((failures + 1))
+  fi
+
+  # one_warn_case NAME MODE: the fake gateway in MODE leads to an all-estimate run with one WARN.
+  one_warn_case() {
+    ctx_case "${1}" 400 "${small_skills}" claude-x 20000
+    fake_gateway "${1}" "${2}"
+    gw_expect "${1}" 0 "instructions 125 <"
+    if [ "$(grep -c 'WARN: context: gateway count unavailable' "${root}/${1}.log")" -eq 1 ]; then
+      echo "ok:   ${1} one warn"
+    else
+      echo "FAIL: ${1}: want exactly one gateway WARN" >&2
+      failures=$((failures + 1))
+    fi
+  }
+  one_warn_case count_status_201_estimates status201
+  one_warn_case count_string_count_estimates str
+  one_warn_case count_float_count_estimates float
+  one_warn_case count_timeout_estimates timeout
+
+  ctx_case count_http_url_estimates 400 "${small_skills}" claude-x 20000
+  fake_gateway count_http_url_estimates
+  CASE_COUNT_URL=http://gw.test CASE_COUNT_KEY_CMD="touch '${root}/count_http_url_estimates/marker'; cat '${root}/count_http_url_estimates/key'" \
+    expect count_http_url_estimates 0 "instructions 125 <"
+  if [ "$(grep -c 'WARN: context: gateway count unavailable' "${root}/count_http_url_estimates.log")" -eq 1 ] &&
+    [ ! -e "${root}/count_http_url_estimates/marker" ] && [ ! -e "${root}/count_http_url_estimates/fake/curl.log" ]; then
+    echo "ok:   count_http_url_estimates key not fetched"
+  else
+    echo "FAIL: count_http_url_estimates: want one WARN, no key command, no curl" >&2
+    failures=$((failures + 1))
+  fi
+
+  ctx_case count_plugin_undecodable_silent 400 "${small_skills}" claude-x 20000
+  fake_gateway count_plugin_undecodable_silent
+  mkdir -p "${root}/count_plugin_undecodable_silent/cfg/plugins/llmi"
+  printf '\377\376 const baseURL = "https://gw.test"\n' >"${root}/count_plugin_undecodable_silent/cfg/plugins/llmi/index.ts"
+  expect count_plugin_undecodable_silent 0 "instructions 125 <"
+  if ! grep -q 'gateway\|Traceback' "${root}/count_plugin_undecodable_silent.log"; then
+    echo "ok:   count_plugin_undecodable_silent"
+  else
+    echo "FAIL: count_plugin_undecodable_silent: unexpected message" >&2
+    failures=$((failures + 1))
+  fi
+
+  ctx_case count_late_failure_all_estimate 400 "${small_skills}" claude-x 20000
+  fake_gateway count_late_failure_all_estimate late
+  gw_expect count_late_failure_all_estimate 0 "instructions 125 <"
+  if [ "$(grep -c 'WARN: context: gateway count unavailable' "${root}/count_late_failure_all_estimate.log")" -eq 1 ]; then
+    echo "ok:   count_late_failure_all_estimate one warn"
+  else
+    echo "FAIL: count_late_failure_all_estimate: want exactly one gateway WARN" >&2
+    failures=$((failures + 1))
+  fi
+
+  ctx_case count_no_plugin_silent 400 "${small_skills}" claude-x 20000
+  expect count_no_plugin_silent 0 "instructions 125 <"
+  if ! grep -q gateway "${root}/count_no_plugin_silent.log"; then
+    echo "ok:   count_no_plugin_silent"
+  else
+    echo "FAIL: count_no_plugin_silent: unexpected gateway message" >&2
+    failures=$((failures + 1))
+  fi
+
+  ctx_case count_url_from_plugin 400 "${small_skills}" claude-x 20000
+  fake_gateway count_url_from_plugin
+  mkdir -p "${root}/count_url_from_plugin/cfg/plugins/llmi"
+  echo 'const baseURL = "https://gw.test"' >"${root}/count_url_from_plugin/cfg/plugins/llmi/index.ts"
+  CASE_COUNT_KEY_CMD="cat '${root}/count_url_from_plugin/key'" expect count_url_from_plugin 0 "instructions 80 <"
+  if grep -q 'https://gw.test/v1/messages/count_tokens' "${root}/count_url_from_plugin/fake/curl.log"; then
+    echo "ok:   count_url_from_plugin url"
+  else
+    echo "FAIL: count_url_from_plugin: url not used" >&2
+    failures=$((failures + 1))
+  fi
+
   fixture context_service_down_warns "alpha beta" "one"
   good_inventory | inventory context_service_down_warns
   expect context_service_down_warns 0 "WARN: context: OpenCode service unavailable"
@@ -873,12 +1154,56 @@ EOF
   record_case record_writes_table $'# P\n<!-- context:begin -->\n<!-- context:end -->\nafter'
   expect record_writes_table 0 "recorded"
   if grep -q "Recorded: 2026-11-20" "${root}/record_writes_table/wiki/concepts/starting-context.md" &&
-    grep -q "^| Instructions | 100 |" "${root}/record_writes_table/wiki/concepts/starting-context.md" &&
+    grep -q "^| Instructions | 125 |.*estimate, chars / 3.2 |" "${root}/record_writes_table/wiki/concepts/starting-context.md" &&
     grep -q "^Per project: proj 20000 (3)" "${root}/record_writes_table/wiki/concepts/starting-context.md" &&
     grep -q "^after" "${root}/record_writes_table/wiki/concepts/starting-context.md"; then
     echo "ok:   record_writes_table page"
   else
     echo "FAIL: record_writes_table page" >&2
+    failures=$((failures + 1))
+  fi
+
+  record_case record_exact_table $'# P\n<!-- context:begin -->\n<!-- context:end -->\nafter'
+  fake_gateway record_exact_table
+  gw_expect record_exact_table 0 "recorded"
+  if grep -q "^| Instructions | 80 |.*count_tokens |" "${root}/record_exact_table/wiki/concepts/starting-context.md" &&
+    [ -s "${root}/record_exact_table/wiki/concepts/starting-context.md" ] &&
+    ! grep -rq SECRETKEY123 "${root}/record_exact_table/wiki" "${root}/record_exact_table.log"; then
+    echo "ok:   record_exact_table page"
+  else
+    echo "FAIL: record_exact_table page" >&2
+    failures=$((failures + 1))
+  fi
+
+  d=$(printf '%*s' 100 '' | tr ' ' d)
+  l1="<skill><id>using-superpowers</id><name>using-superpowers</name><description>${d}</description></skill>"
+  l2="<skill><id>two</id><name>two</name><description>d</description></skill>"
+  ctx_case count_parts_exact 400 '[{"id":"using-superpowers","description":"'"${d}"'","path":"'"${root}"'/count_parts_exact/boot.md"},{"id":"two","description":"d"}]' claude-x 20000
+  printf '%*s' 1000 '' | tr ' ' x >"${root}/count_parts_exact/boot.md"
+  mkdir -p "${root}/count_parts_exact/wiki/concepts"
+  printf '<!-- context:begin -->\n<!-- context:end -->\n' >"${root}/count_parts_exact/wiki/concepts/starting-context.md"
+  fake_gateway count_parts_exact
+  gw_expect count_parts_exact 0 "recorded"
+  page="${root}/count_parts_exact/wiki/concepts/starting-context.md"
+  if grep -q "^| Instructions | 80 |" "${page}" &&
+    grep -q "^| Skill list | $(((${#l1} + 1 + ${#l2}) / 5)) |" "${page}" &&
+    grep -q "^| Agent descriptions | 2 |" "${page}" &&
+    grep -q "^| Superpowers bootstrap | 200 |" "${page}"; then
+    echo "ok:   count_parts_exact page"
+  else
+    echo "FAIL: count_parts_exact page" >&2
+    sed 's/^/      /' "${page}" >&2
+    failures=$((failures + 1))
+  fi
+
+  record_case record_late_failure_all_estimate $'# P\n<!-- context:begin -->\n<!-- context:end -->\nafter'
+  fake_gateway record_late_failure_all_estimate late
+  gw_expect record_late_failure_all_estimate 0 "recorded"
+  page="${root}/record_late_failure_all_estimate/wiki/concepts/starting-context.md"
+  if grep -q "^| Instructions | 125 |.*estimate, chars / 3.2 |" "${page}" && ! grep -q count_tokens "${page}"; then
+    echo "ok:   record_late_failure_all_estimate page"
+  else
+    echo "FAIL: record_late_failure_all_estimate page" >&2
     failures=$((failures + 1))
   fi
 
@@ -945,6 +1270,22 @@ EOF
     failures=$((failures + 1))
   fi
   rm -f "${root}/daily_runs_once/fake/calls.log"
+  record_case daily_gateway_timeout_estimates $'# P\n<!-- context:begin -->\n<!-- context:end -->\nafter'
+  fake_gateway daily_gateway_timeout_estimates timeout
+  gw_expect daily_gateway_timeout_estimates 0 ""
+  page="${root}/daily_gateway_timeout_estimates/wiki/concepts/starting-context.md"
+  last="${root}/daily_gateway_timeout_estimates/state/last"
+  if [ -s "${page}" ] && [ -s "${last}" ] &&
+    grep -q "^| Instructions | 125 |.*estimate, chars / 3.2 |" "${page}" &&
+    [ "$(grep -c 'WARN: context: gateway count unavailable' "${last}")" -eq 1 ] &&
+    ! grep -q '^FAIL' "${last}" &&
+    ! grep -q SECRETKEY123 "${page}" "${last}" "${root}/daily_gateway_timeout_estimates.log"; then
+    echo "ok:   daily_gateway_timeout_estimates"
+  else
+    echo "FAIL: daily_gateway_timeout_estimates" >&2
+    sed 's/^/      /' "${last}" >&2
+    failures=$((failures + 1))
+  fi
   expect daily_runs_once 0 ""
   if [ ! -e "${root}/daily_runs_once/fake/calls.log" ]; then
     echo "ok:   daily_runs_once second"
