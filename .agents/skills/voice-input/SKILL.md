@@ -1,6 +1,6 @@
 ---
 name: voice-input
-description: Use when working on or troubleshooting the local voice input (hold Ctrl+Q in WezTerm to dictate, Whisper on the GPU in WSL): the voice-input service, its /status API, the AutoHotkey script, the OpenCode footer indicator, vocab/replacement files, a new or silent microphone, or poor transcription accuracy.
+description: "Use when working on or troubleshooting voice input (hold Ctrl+Q in WezTerm, Whisper in WSL): the service, AutoHotkey script, OpenCode footer indicator, microphone or transcription accuracy."
 ---
 
 # Voice input

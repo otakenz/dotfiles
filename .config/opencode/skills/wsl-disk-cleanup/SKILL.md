@@ -1,6 +1,6 @@
 ---
 name: wsl-disk-cleanup
-description: Use when WSL or a Linux home feels bloated, the disk is filling up, the user asks what can be removed to free space (caches, Docker images, old projects, toolchains, apt packages), Windows does not get the space back, or a WSL distro should be backed up (export, OneDrive).
+description: Use when WSL or the Linux home is filling up, Windows does not get freed space back, files were lost to an accidental rm -rf, or a WSL distro should be backed up (export, OneDrive).
 ---
 
 # WSL disk cleanup

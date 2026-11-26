@@ -1,6 +1,6 @@
 ---
 name: dotfiles-ci
-description: Use when CI fails in the dotfiles repo, or before pushing changes to shell scripts, test/*.sh, ./install or ./run, to reproduce the GitHub Actions lint and keys jobs locally, or when writing tests in test/install-only.sh (fakes, FAKE_* switches, root skips), or when refreshing the OpenCode skills from anthropics/skills. Covers shellcheck findings that appear only in CI, macOS-only test failures, the known Ubuntu 26.04 libgcrypt failure, the pre-commit hook, and './run ci:test' being blocked.
+description: Use when CI fails in the dotfiles repo (shellcheck, macOS job), before pushing changes to shell scripts, ./install, ./run or test/*.sh, when writing tests in test/install-only.sh, or refreshing the OpenCode skills from anthropics/skills.
 ---
 
 # Dotfiles CI

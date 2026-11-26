@@ -1,6 +1,6 @@
 ---
 name: llm-wiki
-description: "Karpathy's LLM Wiki: build/query interlinked markdown KB."
+description: Use when ingesting a source into a markdown wiki under ~/wiki, answering a question from it, or linting it (broken links, contradictions, orphan pages).
 version: 2.1.0-opencode
 author: Hermes Agent (adapted for OpenCode)
 license: MIT

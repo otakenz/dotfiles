@@ -1,6 +1,6 @@
 ---
 name: html-report
-description: Use when writing a milestone, status or progress report as an HTML page, or updating a project's report overview (docs/reports/index.html).
+description: Use when writing a milestone, status or progress report (for a manager or a review) as an HTML page, or updating a project's report overview page (docs/reports/index.html).
 ---
 
 # HTML milestone report

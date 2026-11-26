@@ -1,6 +1,6 @@
 ---
 name: away-mode
-description: Use when the user says they will be away for a while (hours, overnight, days) and wants work to continue without them - decide instead of asking, keep a checkpoint file with decisions, checkpoints and blockers, and stop only for dangerous or truly blocking steps.
+description: Use when the user will be away for a while (a meeting, hours, overnight, days) and wants the work to continue without them.
 ---
 
 # Away mode
