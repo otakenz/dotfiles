@@ -115,5 +115,6 @@ Fakes model reality, not convenience:
 | `A && B \|\| fail` (SC2015) | `[[ A && B ]] \|\| fail` |
 | Backticks inside single-quoted `sed` (SC2016) | `# shellcheck disable=SC2016 # literal backticks` above the line |
 | GNU-only flags (`sed -i`, `date -d`, `readlink -f`) | portable form or a helper |
+| A FIFO left in a test dir: BSD `grep`/`cat` over a glob blocks forever (the job hits its 10 min timeout) | `rm` the FIFO in the case that made it |
 
 macOS cannot be run here; push and watch the macOS job to confirm.
