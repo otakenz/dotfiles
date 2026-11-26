@@ -5,7 +5,7 @@
 # and counts stay under the limits the
 # inventory states. Also checks that reviewers run on another model family
 # than the authors (opencode.json, agent files), and the starting context
-# budget (instructions, skills, agents, session total; chars // 4). The plain
+# budget (instructions, skills, agents, session total, taken from the first step of recent sessions; chars // 4). The plain
 # check warns and passes without the wiki; --record needs it.
 #
 #   test/ai-inventory.sh              check this machine
@@ -190,7 +190,7 @@ def hidden_skill(path):
 def measure():
     home = os.path.expanduser("~")
     out = dict(instructions=0, skills=None, agents=None, bootstrap=0, own=None,
-               total=None, sessions=0, rest=None, missing=[])
+               total=None, sessions=0, rest=None, projects=[], missing=[])
     files = []
     conf = cfg / "opencode.json"
     if conf.is_file():
@@ -223,24 +223,24 @@ def measure():
         if boot and os.path.isfile(boot):
             out["bootstrap"] = tok(Path(boot).read_text(errors="replace"))
         out["own"] = out["instructions"] + out["skills"] + out["agents"] + out["bootstrap"]
-    sess = api("/api/session?limit=40")
+    sess = api("/api/session?limit=200")
     sess = dicts(sess)
     out["sessions_ok"] = sess is not None
     def num(d, k):
         v = d.get(k) if isinstance(d, dict) else None
         return v if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
     vals = []
+    projs = {}
     roots = [s for s in sess or [] if isinstance(s.get("id"), str) and not s.get("parentID")]
     for s in sorted(roots, key=lambda s: num(s.get("time"), "created"), reverse=True):
-        if len(vals) >= 5:
+        if len(vals) >= 10:
             break
-        msgs = dicts(api(f"/api/session/{s['id']}/context"))
+        msgs = dicts(api(f"/api/session/{s['id']}/message?order=asc&limit=5"))
         if msgs is None:
             continue
         user = next((m for m in msgs if m.get("type") == "user"), {})
-        asst = next((m for m in msgs if m.get("type") == "assistant"
-                     and isinstance(m.get("tokens"), dict)), None)
-        if len(sval(user, "text")) > 500 or not asst:
+        asst = next((m for m in msgs if m.get("type") == "assistant"), None)
+        if len(sval(user, "text")) > 500 or not asst or not isinstance(asst.get("tokens"), dict):
             continue
         mid = (asst.get("model") or {}).get("id") if isinstance(asst.get("model"), dict) else None
         if not isinstance(mid, str) or "claude" not in mid:
@@ -253,6 +253,12 @@ def measure():
         v = sum(parts)
         if v:
             vals.append(v)
+            loc = s.get("location")
+            d = loc.get("directory") if isinstance(loc, dict) else None
+            name = os.path.basename(d.rstrip("/")) if isinstance(d, str) and d.strip("/") else "?"
+            projs.setdefault(name, []).append(v)
+    out["projects"] = sorted(((k, int(statistics.median(v)), len(v)) for k, v in projs.items()),
+                             key=lambda p: -p[2])
     out["sessions"] = len(vals)
     if vals:
         out["total"] = int(statistics.median(vals))
@@ -288,7 +294,7 @@ else:
               f"(median of {ms['sessions']} sessions, target {budgets['target']})", file=sys.stderr)
     else:
         print(f"ok:   context: total {ms['total']} (median of {ms['sessions']} sessions, "
-              f"target {budgets['target']})")
+              f"{'over target' if ms['total'] >= budgets['target'] else 'target'} {budgets['target']})")
 
 if status == 0 and os.environ.get("RECORD") == "--record":
     import datetime
@@ -308,10 +314,12 @@ if status == 0 and os.environ.get("RECORD") == "--record":
                 ("Agent descriptions", ms["agents"], budgets["agents"], "name + description + 10 per subagent, chars // 4"),
                 ("Superpowers bootstrap", ms["bootstrap"], "", "using-superpowers SKILL.md, chars // 4"),
                 ("Own (sum)", ms["own"], budgets["own"], "instructions + skills + agents + bootstrap"),
-                ("Session total (median of %d)" % ms["sessions"], ms["total"], budgets["total"], "first assistant message of recent Claude sessions"),
+                ("Session total (median of %d)" % ms["sessions"], ms["total"], budgets["total"], "first step of recent Claude sessions"),
                 ("OpenCode + memory + plugins", ms["rest"], "", "derived: total - own")]
         lines = [f"Recorded: {today}", "", "| Part | Tokens | Budget | How measured |", "|---|---|---|---|"]
         lines += [f"| {a} | {cell(b)} | {c} | {d} |" for a, b, c, d in rows]
+        if ms["projects"]:
+            lines += ["", "Per project: " + ", ".join(f"{k} {m} ({n})" for k, m, n in ms["projects"])]
         out = body[:pm.start(2)] + "\n".join(lines) + "\n" + body[pm.start(3):]
         out = re.sub(r"\A(---\n.*?^)updated:[^\n]*", lambda m: f"{m.group(1)}updated: {today}", out, count=1, flags=re.S | re.M)
         data = out.encode()
@@ -508,11 +516,11 @@ echo "$*" >>"$d/calls.log"
 case "$3" in
 */api/skill*) cat "$d/skills.json" ;;
 */api/agent*) cat "$d/agents.json" ;;
-*/api/session/*/context)
+*/api/session/*/message\?order=asc\&limit=5)
   id="${3#*/api/session/}"
-  cat "$d/ctx-${id%/context}.json"
+  cat "$d/ctx-${id%%/message*}.json"
   ;;
-*/api/session?*)
+*/api/session\?*)
   [ -n "${FAKE_TOUCH:-}" ] && echo "edit during run" >>"$FAKE_TOUCH"
   if [ -n "${FAKE_COMMIT:-}" ]; then
     echo x >"${FAKE_COMMIT}/unrelated-run.md"
@@ -536,7 +544,7 @@ EOS
   # sessions_json N: root sessions s1..sN, newest last id first.
   sessions_json() {
     local i out=""
-    for i in $(seq 1 "${1}"); do out="${out:+${out},}{\"id\":\"s${i}\",\"time\":{\"created\":${i}}}"; done
+    for i in $(seq 1 "${1}"); do out="${out:+${out},}{\"id\":\"s${i}\",\"time\":{\"created\":${i}},\"location\":{\"directory\":\"/p/proj\"}}"; done
     echo "[${out}]"
   }
   # ctx_case NAME INSTR_CHARS SKILLS_JSON MODEL TOTAL...: fixture, inventory,
@@ -776,6 +784,32 @@ EOF
 
   ctx_case context_ok 400 "${small_skills}" claude-x 18000 19000 20000 21000 22000
   expect context_ok 0 "ok:   context: total 20000"
+  if grep -q 'api/session?limit=200$' "${root}/context_ok/fake/calls.log"; then
+    echo "ok:   context_lists_200_sessions"
+  else
+    echo "FAIL: context_lists_200_sessions: session list not requested with limit=200" >&2
+    failures=$((failures + 1))
+  fi
+
+  ctx_case context_first_step_not_compacted 400 "${small_skills}" claude-x 20000
+  printf '{"data":[{"type":"user","text":"x"},{"type":"assistant","model":{"id":"claude-x"},"tokens":{"input":15000,"cache":{"read":3000,"write":2000}}},{"type":"compaction"},{"type":"assistant","model":{"id":"claude-x"},"tokens":{"input":55000,"cache":{"read":0,"write":0}}}]}' \
+    >"${root}/context_first_step_not_compacted/fake/ctx-s1.json"
+  expect context_first_step_not_compacted 0 "ok:   context: total 20000"
+
+  ctx_case context_first_reply_tokenless_skipped 400 "${small_skills}" claude-x 20000
+  printf '{"data":[{"type":"user","text":"x"},{"type":"assistant","model":{"id":"big-pickle"}},{"type":"assistant","model":{"id":"claude-x"},"tokens":{"input":20000,"cache":{"read":0,"write":0}}}]}' \
+    >"${root}/context_first_reply_tokenless_skipped/fake/ctx-s1.json"
+  expect context_first_reply_tokenless_skipped 0 "WARN: context: no Claude sessions"
+
+  ctx_case context_samples_ten 400 "${small_skills}" claude-x 1000 2000 3000 4000 5000 6000 7000 8000 9000 10000 11000 12000 99999 99999
+  printf '{"data":[{"id":"s1","time":{"created":1}},{"id":"s2","time":{"created":2}},{"id":"s3","time":{"created":3}},{"id":"s4","time":{"created":4}},{"id":"s5","time":{"created":5}},{"id":"s6","time":{"created":6}},{"id":"s7","time":{"created":7}},{"id":"s8","time":{"created":8}},{"id":"s9","time":{"created":9}},{"id":"s10","time":{"created":10}},{"id":"s11","time":{"created":11}},{"id":"s12","time":{"created":12}},{"id":"s13","time":{"created":13},"parentID":"x"},{"id":"s14","time":{"created":14}}]}' \
+    >"${root}/context_samples_ten/fake/sessions.json"
+  ctx_file context_samples_ten s14 99999 10 big-pickle
+  expect context_samples_ten 0 "median of 10 sessions"
+  expect context_samples_ten 0 "total 7500 "
+
+  ctx_case context_over_target_says_so 400 "${small_skills}" claude-x 21000 21000 21000
+  expect context_over_target_says_so 0 "ok:   context: total 21000 .median of 3 sessions, over target 20000."
 
   ctx_case context_instructions_over_fails 8400 "${small_skills}" claude-x 20000
   expect context_instructions_over_fails 1 "instructions .* >= 2000"
@@ -840,6 +874,7 @@ EOF
   expect record_writes_table 0 "recorded"
   if grep -q "Recorded: 2026-11-20" "${root}/record_writes_table/wiki/concepts/starting-context.md" &&
     grep -q "^| Instructions | 100 |" "${root}/record_writes_table/wiki/concepts/starting-context.md" &&
+    grep -q "^Per project: proj 20000 (3)" "${root}/record_writes_table/wiki/concepts/starting-context.md" &&
     grep -q "^after" "${root}/record_writes_table/wiki/concepts/starting-context.md"; then
     echo "ok:   record_writes_table page"
   else
