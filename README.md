@@ -163,7 +163,7 @@ retire it. Anything running as you can read this store, so keep everything else 
 
 The rest of mcp-atlassian's settings live in `~/.config/secret/mcp-atlassian/.env`
 (not committed; start from `.env.example`). Besides the URLs and token commands it sets
-`TOOLSETS=default,jira_links,jira_agile` and `MCP_ATLASSIAN_FILES_DIR=/tmp/opencode`, the only
+`TOOLSETS=default,jira_links,jira_agile,jira_attachments` and `MCP_ATLASSIAN_FILES_DIR=/tmp/opencode`, the only
 folder it uploads from. Changes take effect when the server restarts (restart OpenCode).
 
 > **Ubuntu 26.04:** its libgcrypt 1.12.0 randomly rejects valid imported cv25519 keys with
