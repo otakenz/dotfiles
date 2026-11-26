@@ -1,22 +1,12 @@
 ---
 name: llm-wiki
 description: Use when ingesting a source into a markdown wiki under ~/wiki, answering a question from it, or linting it (broken links, contradictions, orphan pages).
-version: 2.1.0-opencode
-author: Hermes Agent (adapted for OpenCode)
 license: MIT
-metadata:
-  opencode:
-    tags: [wiki, knowledge-base, research, notes, markdown, rag-alternative]
-    category: research
-    related_skills: [obsidian, arxiv]
 ---
 
-> **OpenCode Compatibility Note:** This skill was originally written for Hermes Agent. Tool names have been adapted for OpenCode:
-> - `read_file` → `read` tool
-> - `search_files` → `grep` tool
-> - `execute_code` → `bash` tool (for scripts)
-> - `web_extract` → `webfetch` tool
-> All logic, workflows, and conventions remain identical.
+> Adapted for OpenCode from the Hermes Agent skill (MIT, version 2.1.0):
+> `read_file` → `read`, `search_files` → `grep`, `execute_code` → `shell`,
+> `web_extract` → `webfetch`.
 
 # Karpathy's LLM Wiki
 

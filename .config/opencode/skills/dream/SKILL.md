@@ -39,6 +39,11 @@ the default window (its page keeps `focus:` set). `window_end` is today
   N = max(1, days since `<start>`, rounded up). Supplemental: its cutoff may
   differ from the digest's, so label it so on the page.
 - `bash ~/dotfiles/test/ai-inventory.sh` (budgets, stale `Reviewed` dates)
+- With focus `skills`, or when own skill descriptions changed since
+  `<start>`: `python3 ~/dotfiles/test/skill-triggers.py --reps 2` (cases in
+  the wiki's `skill-triggers.tsv`; costs model calls). Report the score.
+  Any idea that rewrites a description is checked with it before and after
+  (`--override` for candidates); add a case for each miss found in sessions.
 - `~/wiki/ai-workflow/inventory.md`, the Ideas tables of all pages in
   `dreams/`, the last two pages in full (Numbers, for comparison), the tail of the wiki `log.md`, and the memory profile already
   in context.
