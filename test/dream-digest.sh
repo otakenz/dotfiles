@@ -593,6 +593,62 @@ test_session_args_strict() {
 }
 check session_args_strict test_session_args_strict
 
+test_wiki_gate() {
+  local g="${REPO}/.config/opencode/skills/dream/wiki-gate.sh" w="${ROOT}/wiki" rc
+  rm -rf "${w}" "${ROOT}/wiki-remote.git"
+  git init -q --bare "${ROOT}/wiki-remote.git" && git init -q "${w}" &&
+    git -C "${w}" remote add origin "${ROOT}/wiki-remote.git" || return 1
+  git -C "${w}" config user.email t@t
+  git -C "${w}" config user.name t
+  git -C "${w}" config push.autoSetupRemote true
+  echo ok >"${w}/a.md"
+  WIKI_DIR="${w}" bash "${g}" m a.md >/dev/null 2>&1 || return 1
+  git -C "${w}" log --oneline | grep -q . || return 1
+  printf 'SERVICE_TOKEN=abc\n' >"${w}/b.md"
+  rc=0
+  WIKI_DIR="${w}" bash "${g}" m2 b.md >"${ROOT}/gate.txt" 2>&1 || rc=$?
+  [ "${rc}" -ne 0 ] && ! grep -q abc "${ROOT}/gate.txt" && grep -q 'b.md' "${ROOT}/gate.txt" &&
+    [ -z "$(git -C "${w}" diff --cached --name-only)" ] && [ "$(git -C "${w}" rev-list --count HEAD)" = 1 ] || return 1
+  rc=0
+  WIKI_DIR="${ROOT}/nonexistent" bash "${g}" m3 b.md >/dev/null 2>&1 || rc=$?
+  [ "${rc}" -ne 0 ]
+}
+check wiki_gate test_wiki_gate
+
+test_wiki_gate_edges() {
+  local g="${REPO}/.config/opencode/skills/dream/wiki-gate.sh" w="${ROOT}/wiki2" r="${ROOT}/wiki2-remote.git" rc before
+  rm -rf "${w}" "${r}" "${ROOT}/fakebin"
+  git init -q --bare "${r}" && git init -q "${w}" && git -C "${w}" remote add origin "${r}" || return 1
+  git -C "${w}" config user.email t@t
+  git -C "${w}" config user.name t
+  git -C "${w}" config push.autoSetupRemote true
+  echo base >"${w}/base.md"
+  WIKI_DIR="${w}" bash "${g}" base base.md >/dev/null 2>&1 || return 1
+  echo other >"${w}/other.md"
+  git -C "${w}" add other.md
+  echo page >"${w}/p.md"
+  WIKI_DIR="${w}" bash "${g}" page p.md >/dev/null 2>&1 || return 1
+  [ "$(git -C "${w}" show --name-only --format= HEAD)" = p.md ] &&
+    [ "$(git -C "${w}" diff --cached --name-only)" = other.md ] || return 1
+  git -C "${w}" reset -q other.md
+  printf 'x\0\nSERVICE_TOKEN=x\n' >"${w}/bin.md"
+  rc=0
+  WIKI_DIR="${w}" bash "${g}" bin bin.md >/dev/null 2>&1 || rc=$?
+  [ "${rc}" -ne 0 ] && [ -z "$(git -C "${w}" diff --cached --name-only)" ] || return 1
+  before="$(git -C "${w}" rev-parse HEAD)"
+  mkdir "${ROOT}/fakebin"
+  # shellcheck disable=SC2016
+  printf '#!/bin/sh\nfor a in "$@"; do [ "$a" = diff ] && exit 1; done\nexec %s "$@"\n' "$(command -v git)" >"${ROOT}/fakebin/git"
+  chmod +x "${ROOT}/fakebin/git"
+  echo more >"${w}/m.md"
+  rc=0
+  PATH="${ROOT}/fakebin:${PATH}" WIKI_DIR="${w}" bash "${g}" m m.md >/dev/null 2>&1 || rc=$?
+  [ "${rc}" -ne 0 ] && [ "$(git -C "${w}" rev-parse HEAD)" = "${before}" ] &&
+    [ "$(git --git-dir="${r}" rev-parse HEAD)" = "${before}" ] &&
+    [ -z "$(git -C "${w}" diff --cached --name-only)" ]
+}
+check wiki_gate_edges test_wiki_gate_edges
+
 if [ "${failures}" -ne 0 ]; then
   echo "${failures} failure(s)"
   exit 1
