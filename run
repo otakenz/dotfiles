@@ -21,6 +21,7 @@ lint() {
     ! -path "./.ruff_cache/*" \
     ! -path "./.pytest_cache/*" \
     ! -path "./.config/opencode/skills/*" \
+    ! -path "*/node_modules/*" \
     -exec grep --quiet -E '^(#!.*sh|# shellcheck shell=)' {} \; -exec "${shellcheck_cmd[@]}" {} +
 
   "${ruff_cmd[@]}" check "${@}"
@@ -113,7 +114,7 @@ ci:install:linux() {
   # A normal run takes ~10 minutes; a hang must fail fast, not run all night.
   timeout -k 1m 20m docker container run --rm --init "${ca[@]}" -e CI=true -e IN_CONTAINER=1 \
     -e DEBIAN_FRONTEND=noninteractive -v "${PWD}:/src:ro" "${image}" bash -c \
-    "set -eo pipefail; cp -R /src /app; rm -rf /app/.git; cd /app; bash test/install-prep.sh; { yes || true; } | LOCAL=1 bash install; bash test/install-check.sh"
+    "set -eo pipefail; cp -R /src /app; rm -rf /app/.git /app/vscode-llmi/node_modules /app/vscode-llmi/dist; cd /app; bash test/install-prep.sh; { yes || true; } | LOCAL=1 bash install; bash test/install-check.sh"
 }
 
 help() {

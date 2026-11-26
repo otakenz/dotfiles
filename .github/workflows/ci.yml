@@ -23,6 +23,23 @@ jobs:
         run: |
           ./run ci:test
 
+  vscode-llmi:
+    name: "VS Code LLMi extension"
+    runs-on: "ubuntu-24.04"
+    defaults:
+      run:
+        working-directory: "vscode-llmi"
+
+    steps:
+      - uses: "actions/checkout@v4"
+
+      - uses: "oven-sh/setup-bun@v2"
+
+      - name: "Typecheck and unit tests"
+        run: |
+          bun install --frozen-lockfile
+          bun run check
+
   keys:
     name: "Keys phase (${{ matrix.name }})"
     runs-on: "${{ matrix.runner }}"

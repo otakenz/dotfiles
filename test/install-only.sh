@@ -145,7 +145,7 @@ run_install() {
   : >"${CALLS}"
   mkdir -p "${home}"
   cp -R "${REPO}" "${home}/dotfiles"
-  rm -rf "${home}/dotfiles/.git"
+  rm -rf "${home}/dotfiles/.git" "${home}/dotfiles/vscode-llmi/node_modules" "${home}/dotfiles/vscode-llmi/dist"
   [ -z "${PRE:-}" ] || "${PRE}" "${home}"
   mkdir -p "${home}/dotfiles/.local/bin"
   printf '#!/bin/sh\necho "update-zsh-plugins $*" >>"$CALLS"\n' >"${home}/dotfiles/.local/bin/update-zsh-plugins"
