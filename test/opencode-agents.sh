@@ -51,7 +51,7 @@ def fail(msg):
 def ok(msg):
     print(f"ok:   {msg}")
 
-CHEAP = ["build-runner", "scribe", "jira", "confluence"]
+CHEAP = ["build-runner", "scribe", "jira", "confluence", "dreamer"]
 INHERIT = ["release-mapper"]
 CHEAP_MODEL = {"providerID": "opencode-go", "id": "deepseek-v4.1-flash"}
 # Models are pinned per config: Copilot at work, the free model at home.
@@ -213,6 +213,37 @@ for cmd in ["gh run rerun 1", "gh run cancel 1", "gh workflow run x"]:
     expect("build-runner", cmd, "not allow")
 for cmd in ["gh run view 1 --log-failed", "gh run watch 1"]:
     expect("build-runner", cmd, "allow")
+
+# dreamer: reads sessions only through the digest script's --session mode.
+DIGEST = "python3 ~/.config/opencode/skills/dream/dream-digest.py"
+for cmd, want in [
+    (f"{DIGEST} --session ses_abc", "allow"),
+    (f"{DIGEST} --days 14", "not allow"),
+    (f"{DIGEST} --session ses_a; rm -rf ~", "not allow"),
+    (f"{DIGEST} --session $(id)", "not allow"),
+    (f"{DIGEST} --session ses_a | tee x", "not allow"),
+    (f"{DIGEST} --session ses_a > x", "not allow"),
+    ("python3 /tmp/x/skills/dream/dream-digest.py --session ses_a", "not allow"),
+    ("python3 ./skills/dream/dream-digest.py --session ses_a", "not allow"),
+    (f"{DIGEST} --session ses_a\nrm -rf ~", "not allow"),
+    ("cat ~/.local/share/opencode/auth.json", "not allow"),
+]:
+    expect("dreamer", cmd, want)
+dreamer = agents.get("dreamer")
+if dreamer:
+    # OpenCode expands a leading ~ in loaded resources, so compare expanded paths.
+    for res, want in [("~/.config/opencode/skills/dream/dream-digest.py", "allow"),
+                      ("~/dotfiles/.config/opencode/skills/dream/dream-digest.py", "allow"),
+                      ("~/.config/opencode/skills/other/x", "not allow"),
+                      ("~/.local/share/opencode/opencode.db", "not allow"),
+                      ("/etc/passwd", "not allow")]:
+        res = os.path.expanduser(res)
+        got = effect(dreamer, "external_directory", res)
+        if (got == "allow") != (want == "allow"):
+            fail(f"dreamer: external_directory {res} is {got}, want {want}")
+    for action in ["webfetch", "subagent"]:
+        if effect(dreamer, action, "*") == "allow":
+            fail(f"dreamer: {action} is allowed")
 
 for aid, own, other in [("jira", "jira", "confluence"), ("confluence", "confluence", "jira")]:
     a = agents.get(aid)
