@@ -51,7 +51,7 @@ def fail(msg):
 def ok(msg):
     print(f"ok:   {msg}")
 
-CHEAP = ["build-runner", "scribe", "jira", "confluence", "dreamer"]
+CHEAP = ["build-runner", "scribe", "jira", "confluence", "dreamer", "watcher"]
 INHERIT = ["release-mapper"]
 CHEAP_MODEL = {"providerID": "opencode-go", "id": "deepseek-v4.1-flash"}
 # Models are pinned per config: Copilot at work, the free model at home.
@@ -261,6 +261,40 @@ if dreamer:
     for action in ["webfetch", "subagent"]:
         if effect(dreamer, action, "*") == "allow":
             fail(f"dreamer: {action} is allowed")
+
+# watcher: only the guarded helper (status/interrupt of a ses_ id) plus ps/pgrep.
+RES = "bash ~/.config/opencode/skills/away-mode/away-resolve.sh"
+for cmd, want in [
+    (f"{RES} status ses_a", "allow"),
+    (f"{RES} interrupt ses_a", "allow"),
+    ("ps -ef", "allow"),
+    ("pgrep -fa make", "allow"),
+    ("opencode api post /api/session/ses_m/interrupt", "deny"),
+    ("opencode api get /api/session/ses_a", "deny"),
+    ("find . -fprint x", "deny"),
+    ("git status", "deny"),
+    ("tail -n 5 .env", "deny"),
+    ("kill 1", "deny"),
+    (f"{RES} interrupt ses_a; rm -rf ~", "deny"),
+    ("bash /tmp/away-resolve.sh interrupt ses_a", "deny"),
+    ("pkill -f flash", "deny"),
+    ("ps -ef | grep x", "deny"),
+    ("rm -rf /tmp/x", "deny"),
+    ("relayctl off", "deny"),
+]:
+    w = agents.get("watcher")
+    if w and want == "deny" and effect(w, "shell", cmd) != "deny":
+        fail(f"watcher: shell '{cmd}' is not explicitly denied")
+    expect("watcher", cmd, want)
+watcher = agents.get("watcher")
+if watcher:
+    if effect(watcher, "subagent", "*") == "allow":
+        fail("watcher: subagent is allowed")
+    for res, want in [(f"{H}/.local/share/opencode/auth.json", "not allow"),
+                      (f"{H}/.local/share/opencode/worktree/x/a.log", "allow")]:
+        got = effect(watcher, "read", res)
+        if (got == "allow") != (want == "allow"):
+            fail(f"watcher: read '{res}' is {got}, want {want}")
 
 for aid, own, other in [("jira", "jira", "confluence"), ("confluence", "confluence", "jira")]:
     a = agents.get(aid)

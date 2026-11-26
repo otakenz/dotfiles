@@ -208,10 +208,6 @@ if [[ -n "${RESOLVER}" && ! "${RESOLVER}" =~ ^ses_[A-Za-z0-9]+$ ]]; then
   exit 0
 fi
 
-if [[ -z "${RESOLVER}" && -n "$(get_key resolver_pending)" ]]; then
-  blocker "resolver create unconfirmed"
-fi
-
 session_state "${WORKER}"
 case $? in
 1) blocker "session gone" "${RESOLVER}" ;;
@@ -220,6 +216,10 @@ esac
 WJSON="${SES_JSON}"
 
 finished "${WJSON}" && done_exit
+
+if [[ -z "${RESOLVER}" && -n "$(get_key resolver_pending)" ]]; then
+  blocker "resolver create unconfirmed"
+fi
 
 # Activity in epoch seconds; ignore updates caused by our own messages.
 activity=0
@@ -261,10 +261,16 @@ else
 fi
 
 resolver_prompt() {
-  local child="${1}" text out
+  local child="${1}" text out g
   text="worker: ${WORKER}"$'\n'"main: ${MAIN}"$'\n'"checkpoint: ${CHECKPOINT}"$'\n'"stop: ${STOP}"$'\n'"quiet for: ${QUIET} min"
   [[ -n "${REPO}" ]] && text="${text}"$'\n'"repo: ${REPO}"
-  [[ "${#WATCH[@]}" -gt 0 ]] && text="${text}"$'\n'"watch: ${WATCH[*]}"
+  if [[ "${#WATCH[@]}" -gt 0 ]]; then
+    for g in "${WATCH[@]}"; do text="${text}"$'\n'"watch: ${g}"; done
+  fi
+  if ! set_key stop "${STOP}" || [[ "$(get_key stop)" != "${STOP}" ]]; then
+    log_err "cannot write stop state; resolver not prompted"
+    return 1
+  fi
   if ! out="$(opencode api post "/api/session/${child}/prompt" -d "$(json_body text "${text}")" 2>&1)"; then
     log_err "resolver prompt failed: ${out}"
     return 1

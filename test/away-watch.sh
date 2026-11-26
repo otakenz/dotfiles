@@ -57,6 +57,10 @@ if [[ "${method}" == "get" ]]; then
     echo "HTTP 404 Not Found"
     exit 1
   fi
+elif [[ "${path}" == */interrupt && -f "${root}/after-$(basename "${path%/interrupt}").json" ]]; then
+  cp "${root}/after-$(basename "${path%/interrupt}").json" "${root}/sess-$(basename "${path%/interrupt}").json"
+  if grep -q GONE "${root}/sess-$(basename "${path%/interrupt}").json"; then rm "${root}/sess-$(basename "${path%/interrupt}").json"; fi
+  echo '{"data":{}}'
 elif [[ "${path}" == "/api/session" ]]; then
   echo '{"data":{"id":"ses_child1"}}'
 else
@@ -84,7 +88,7 @@ newcase() {
   CASE="${1}"
   rm -rf "${ROOT:?}/${CASE}"
   mkdir -p "${ROOT}/${CASE}"
-  rm -f "${ROOT}"/sess-*.json "${ROOT}/calls.log" "${ROOT}/down" "${ROOT}/warn" "${ROOT}/failpath"
+  rm -f "${ROOT}"/sess-*.json "${ROOT}"/after-*.json "${ROOT}/calls.log" "${ROOT}/down" "${ROOT}/warn" "${ROOT}/failpath"
   SD="${ROOT}/${CASE}/state"
   CP="${ROOT}/${CASE}/cp/checkpoint.md"
   mkdir -p "${SD}"
@@ -271,6 +275,13 @@ check pending_fresh_blocker call_with '^post /api/session/ses_m/prompt' 'resolve
 check pending_fresh_done state_have '^done='
 check pending_fresh_one_post [ "$(posts)" -eq 1 ]
 
+newcase pending_finished_worker
+sess ses_w $((NOW - 60)) $((NOW - 3000)) $((NOW - 30))
+printf 'steered=%s\nresolver_pending=%s\n' $((NOW - 660)) $((NOW - 60)) >"${SD}/ses_w.state"
+run_at "${NOW}" "${W[@]}"
+check pending_finished_done state_have '^done='
+check pending_finished_noposts [ "$(posts)" -eq 0 ]
+
 newcase idle_null
 echo "{\"data\":{\"id\":\"ses_w\",\"time\":{\"updated\":$(((NOW - 1200) * 1000)),\"busy\":5000,\"idle\":null}}}" >"${ROOT}/sess-ses_w.json"
 run_at "${NOW}" "${W[@]}"
@@ -425,7 +436,155 @@ newcase stop_passed
 sess ses_w $((NOW - 630)) $((NOW - 3000))
 echo "steered=$((NOW - 660))" >"${SD}/ses_w.state"
 run_at "${NOW}" "${W[@]}" --stop interrupt --repo "${ROOT}/${CASE}" --watch '/x/*.log'
+check stop_state state_have '^stop=interrupt$'
 check stop_passed call_with '^post /api/session/ses_child1/prompt' 'stop: interrupt' 'repo: ' 'watch: /x/\*\.log'
+
+newcase watch_lines
+sess ses_w $((NOW - 630)) $((NOW - 3000))
+echo "steered=$((NOW - 660))" >"${SD}/ses_w.state"
+run_at "${NOW}" "${W[@]}" --watch '/x/a b/*.log' --watch '/y/*.txt'
+check watch_line1 call_with '^post /api/session/ses_child1/prompt' 'watch: /x/a b/\*\.log\\n'
+check watch_line2 call_with '^post /api/session/ses_child1/prompt' 'watch: /y/\*\.txt'
+
+# away-resolve.sh helper
+RESOLVE="${REPO}/.config/opencode/skills/away-mode/away-resolve.sh"
+RESOLVE_OUT=""
+resolve() {
+  RC=0
+  RESOLVE_OUT="$(PATH="${ROOT}/bin:${PATH}" AWAY_WATCH_NOW="${NOW}" bash "${RESOLVE}" --state-dir "${SD}" "${@}" 2>&1)" || RC=$?
+}
+out_have() { grep -qE -- "${1}" <<<"${RESOLVE_OUT}"; }
+no_calls() { [[ ! -e "${ROOT}/calls.log" ]]; }
+rstate() { printf 'resolver=ses_child1\nstop=%s\n%s' "${1}" "${2:-}" >"${SD}/ses_w.state"; }
+
+newcase resolve_status_busy
+sess ses_w $((NOW - 100)) $((NOW - 300)) $((NOW - 400))
+resolve status ses_w
+check status_busy_rc [ "${RC}" -eq 0 ]
+check status_busy_lines out_have '^busy_age_s: 300$'
+check status_busy_idle out_have '^idle_age_s: 400$'
+check status_busy_upd out_have '^updated_age_s: 100$'
+check status_busy_fin out_have '^finished: no$'
+
+newcase resolve_status_finished
+sess ses_w $((NOW - 100)) $((NOW - 300)) $((NOW - 200))
+resolve status ses_w
+check status_finished out_have '^finished: yes$'
+
+newcase resolve_status_noidle
+sess ses_w $((NOW - 100)) $((NOW - 300))
+resolve status ses_w
+check status_noidle out_have '^idle_age_s: none$'
+
+newcase resolve_status_error
+resolve status ses_w
+check status_error_rc [ "${RC}" -eq 1 ]
+check status_error_msg out_have '^error:'
+
+newcase resolve_bad_id
+resolve interrupt 'ses_x/../y'
+check bad_id_rc3 [ "${RC}" -eq 2 ]
+check bad_id_calls no_calls
+resolve status ses_w extra
+check extra_arg_rc [ "${RC}" -eq 2 ]
+
+newcase resolve_no_state
+sess ses_w $((NOW - 100)) $((NOW - 300))
+resolve interrupt ses_w
+check no_state_rc [ "${RC}" -eq 3 ]
+check no_state_msg out_have '^refused:'
+check no_state_calls no_calls
+
+newcase resolve_stop_never
+sess ses_w $((NOW - 100)) $((NOW - 300))
+rstate never
+resolve interrupt ses_w
+check stop_never_rc [ "${RC}" -eq 3 ]
+check stop_never_calls no_calls
+
+newcase resolve_done
+sess ses_w $((NOW - 100)) $((NOW - 300))
+rstate interrupt "done=1\n"
+resolve interrupt ses_w
+check done_rc [ "${RC}" -eq 3 ]
+check done_calls no_calls
+
+newcase resolve_no_resolver
+sess ses_w $((NOW - 100)) $((NOW - 300))
+echo "stop=interrupt" >"${SD}/ses_w.state"
+resolve interrupt ses_w
+check no_resolver_rc [ "${RC}" -eq 3 ]
+check no_resolver_calls no_calls
+
+newcase resolve_done_empty
+sess ses_w $((NOW - 100)) $((NOW - 300))
+rstate interrupt "done=\n"
+resolve interrupt ses_w
+check done_empty_rc [ "${RC}" -eq 3 ]
+check done_empty_calls no_calls
+
+newcase resolve_unreadable
+sess ses_w $((NOW - 100)) $((NOW - 300))
+rstate interrupt
+chmod 000 "${SD}/ses_w.state"
+if [[ -r "${SD}/ses_w.state" ]]; then
+  echo "  skipped (root): state file stays readable after chmod 000"
+else
+  resolve interrupt ses_w
+  check unreadable_rc [ "${RC}" -eq 3 ]
+  check unreadable_calls no_calls
+fi
+chmod 600 "${SD}/ses_w.state"
+
+newcase resolve_fifo_state
+sess ses_w $((NOW - 100)) $((NOW - 300))
+mkfifo "${SD}/ses_w.state"
+RC=0
+RESOLVE_OUT="$(PATH="${ROOT}/bin:${PATH}" AWAY_WATCH_NOW="${NOW}" python3 -c 'import subprocess,sys; r=subprocess.run(sys.argv[1:],timeout=5); sys.exit(r.returncode)' bash "${RESOLVE}" --state-dir "${SD}" interrupt ses_w 2>&1)" || RC=$?
+check fifo_rc [ "${RC}" -eq 3 ]
+check fifo_calls no_calls
+
+newcase resolve_finished_worker
+sess ses_w $((NOW - 100)) $((NOW - 300)) $((NOW - 200))
+rstate interrupt
+resolve interrupt ses_w
+check finished_rc [ "${RC}" -eq 3 ]
+check finished_msg out_have '^refused: worker finished'
+check finished_noposts [ "$(posts)" -eq 0 ]
+
+newcase resolve_confirmed
+sess ses_w $((NOW - 100)) $((NOW - 300))
+sed 's/}}}$/,"idle":'$((NOW * 1000))'}}}/' "${ROOT}/sess-ses_w.json" >"${ROOT}/after-ses_w.json"
+rstate interrupt
+resolve interrupt ses_w
+check confirmed_rc [ "${RC}" -eq 0 ]
+check confirmed_yes out_have '^confirmed: yes$'
+check confirmed_post calls_have '^post /api/session/ses_w/interrupt'
+
+newcase resolve_still_busy
+sess ses_w $((NOW - 100)) $((NOW - 300))
+rstate interrupt
+resolve interrupt ses_w
+check busy_rc [ "${RC}" -eq 0 ]
+check busy_no out_have '^confirmed: no$'
+
+newcase resolve_post_fail
+sess ses_w $((NOW - 100)) $((NOW - 300))
+rstate interrupt
+echo /api/session/ses_w/interrupt >"${ROOT}/failpath"
+resolve interrupt ses_w
+check post_fail_rc [ "${RC}" -eq 1 ]
+check post_fail_msg out_have '^error:'
+
+newcase resolve_confirm_get_fails
+sess ses_w $((NOW - 100)) $((NOW - 300))
+echo GONE >"${ROOT}/after-ses_w.json"
+rstate interrupt
+resolve interrupt ses_w
+check confirm_get_rc [ "${RC}" -eq 1 ]
+check confirm_get_no out_have '^confirmed: no$'
+check confirm_get_err out_have '^error:'
+check confirm_get_post calls_have '^post /api/session/ses_w/interrupt'
 
 if [[ "${failures}" -gt 0 ]]; then
   echo "${failures} failure(s)"

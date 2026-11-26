@@ -59,6 +59,10 @@ jobs:
         run: |
           bash test/deps.sh
 
+      - name: "Test away-watch"
+        run: |
+          bash test/away-watch.sh
+
       - name: "Test ./install --keys"
         run: |
           bash test/keys.sh
@@ -74,7 +78,3 @@ jobs:
       - name: "Test opencode-cli-sync"
         run: |
           bash test/opencode-cli-sync.sh
-
-      - name: "Test away-watch"
-        run: |
-          bash test/away-watch.sh
