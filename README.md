@@ -469,7 +469,7 @@ Here are some additional tools that I use in my development environment:
   `inventory.md` against the installed agents and skills, that reviewers run on another model family
   than the authors, and the starting context budget (own parts counted with the LLMi gateway
   `count_tokens` when available, else estimated as chars / 3.2). The inventory states the budget on one line:
-  `Context: total < 25000 (target 20000), own < 10000, instructions < 2000, skills < 3000, agents < 1000`.
+  `Context: total < 25000 (target 20000), own < 10000, instructions < 3000, skills < 3500, agents < 1200`.
   `test/ai-inventory.sh --record` writes the marked block in `concepts/starting-context.md`;
   `--daily` does it once a day and `--status` prints the problems the last daily run found. Launching
   `opencode` through the zsh wrapper (`.config/zsh/.aliases`) runs both: `--status` first, then
