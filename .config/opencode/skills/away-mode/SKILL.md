@@ -73,5 +73,41 @@ run only if nothing independent is left.
   need it meanwhile.
 - Long runs: background them; do not poll. Use timers or automations for
   checks at a later time.
+
+## Delegated work: watchdog
+
+When the first subagent starts long work (hardware sessions, builds, test
+matrices, deploys), create one watchdog automation for this session:
+
+- Trigger every 10 minutes, `expires` within 3 days; a prompt to this
+  session. One per session, not one per subagent.
+- The prompt checks activity with one shell call: newest commit, files
+  changed in the last 15 minutes under the work folder, the task ledger and
+  `/tmp/opencode`, and running build, test or hardware processes. Add the
+  project's own signs if its skill names them.
+- Stale (nothing changed for 15 minutes and no such process): send the
+  subagent (by sessionID) a ping for a 3-line status, continue or report
+  BLOCKED; log a line in the checkpoint file. Otherwise reply only
+  `watchdog: ok`. The watchdog never starts new work.
+- The work folder is the repo or worktree the subagent works in. A ping
+  joins the subagent's current run; it does not interrupt it.
+- Delete it when no delegated work is left or the user is back; note its id
+  in the checkpoint file. `expires` cleans up if this session dies.
+
+## Delegated work: fail fast and timeouts
+
+Every brief for long or repeated runs includes:
+
+- Precondition errors (missing input, wrong deployed version, unreachable
+  host, broken environment) stop the whole run at once.
+- The same error on two consecutive items stops the run. Retry only
+  infrastructure errors (network, host), once, after a pause.
+- Timeouts as named constants derived from measured durations (typical time
+  times 2, at least 30 s extra), with the measurement in a comment; a budget
+  for the whole run as well as per item.
+- Integrity checks hash an explicit allowlist of inputs, never files the run
+  itself writes.
+- After a stop, keep the finished items' results, list the stopped and
+  remaining ones, and record which can resume without a rerun.
 - Context: before the conversation gets compacted, make sure the checkpoint
   file and the repo's plan or ledger hold everything needed to resume.
