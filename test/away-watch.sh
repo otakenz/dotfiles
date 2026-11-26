@@ -543,6 +543,8 @@ RC=0
 RESOLVE_OUT="$(PATH="${ROOT}/bin:${PATH}" AWAY_WATCH_NOW="${NOW}" python3 -c 'import subprocess,sys; r=subprocess.run(sys.argv[1:],timeout=5); sys.exit(r.returncode)' bash "${RESOLVE}" --state-dir "${SD}" interrupt ses_w 2>&1)" || RC=$?
 check fifo_rc [ "${RC}" -eq 3 ]
 check fifo_calls no_calls
+# BSD grep in the fake opencode would block on this FIFO in later cases.
+rm -f "${SD}/ses_w.state"
 
 newcase resolve_finished_worker
 sess ses_w $((NOW - 100)) $((NOW - 300)) $((NOW - 200))

@@ -310,7 +310,7 @@ test_size_cap() {
   local out n h
   out="$(DREAM_DB="${BIG}/fixture.db" python3 "${SCRIPT}" --days 14)" || return 1
   n="$(printf '%s\n' "${out}" | wc -c)"
-  [ "${n}" -le 8192 ] && [ "${n}" -gt 500 ] || {
+  [[ "${n}" -le 8192 && "${n}" -gt 500 ]] || {
     echo "     (500 sessions: ${n} bytes)"
     return 1
   }
