@@ -1,8 +1,8 @@
-# AUMOVIO LLMi models for GitHub Copilot in VS Code
+# LLMi models in VS Code
 
 The VS Code counterpart of the OpenCode `llmi` plugin
-(`.config/opencode/plugins/llmi/`): the LLMi models in Copilot chat follow the
-gateway on their own.
+(`.config/opencode/plugins/llmi/`): LLMi is its own model provider in VS Code
+chat (next to GitHub Copilot), and its models follow the gateway on their own.
 
 - Every 15 minutes (and on **LLMi: Refresh Models**) it reads `/v1/models` and
   `/v1/model/info` and rewrites the models of the Custom Endpoint group

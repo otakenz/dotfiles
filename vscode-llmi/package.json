@@ -1,7 +1,7 @@
 {
   "name": "llmi-models",
   "displayName": "AUMOVIO LLMi models",
-  "description": "Keeps the AUMOVIO LLMi models for GitHub Copilot chat in sync with the LLMi gateway and shows the LLMi budget.",
+  "description": "Keeps the LLMi models in VS Code chat in sync with the LLMi gateway and shows the LLMi budget.",
   "version": "0.1.0",
   "publisher": "aumovio-local",
   "private": true,

@@ -390,7 +390,7 @@ Context management uses V2's built-in compaction (`compaction.auto: true`), not 
   `/quota_settings`: `opencode service set env LLMI_QUOTA_TOKEN "$(openssl rand -hex 32)"`,
   then `opencode service restart`. Without the token the bridge rejects every request.
 - Key: `/connect` → Other, ID `aumovio-llmi`. Tests: `bun test ./.config/opencode/plugins/llmi/`
-- VS Code counterpart for GitHub Copilot chat: [`vscode-llmi/`](vscode-llmi/README.md), an
+- VS Code counterpart (LLMi as its own provider in VS Code chat): [`vscode-llmi/`](vscode-llmi/README.md), an
   extension that keeps the LLMi models in `chatLanguageModels.json` in sync. Built and
   installed separately (`bun run package`, then `code --install-extension`), not by `./install`.
 
