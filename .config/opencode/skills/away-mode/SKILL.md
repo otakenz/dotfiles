@@ -74,25 +74,23 @@ run only if nothing independent is left.
 - Long runs: background them; do not poll. Use timers or automations for
   checks at a later time.
 
-## Delegated work: watchdog
+## Delegated work: deadline check
 
-When the first subagent starts long work (hardware sessions, builds, test
-matrices, deploys), create one watchdog automation for this session:
+A periodic watchdog that prompts this session costs a full turn on a cold
+cache every time and fills the conversation. Use one deadline per job
+instead:
 
-- Trigger every 10 minutes, `expires` within 3 days; a prompt to this
-  session. One per session, not one per subagent.
-- The prompt checks activity with one shell call: newest commit, files
-  changed in the last 15 minutes under the work folder, the task ledger and
-  `/tmp/opencode`, and running build, test or hardware processes. Add the
-  project's own signs if its skill names them.
-- Stale (nothing changed for 15 minutes and no such process): send the
-  subagent (by sessionID) a ping for a 3-line status, continue or report
-  BLOCKED; log a line in the checkpoint file. Otherwise reply only
-  `watchdog: ok`. The watchdog never starts new work.
-- The work folder is the repo or worktree the subagent works in. A ping
-  joins the subagent's current run; it does not interrupt it.
-- Delete it when no delegated work is left or the user is back; note its id
-  in the checkpoint file. `expires` cleans up if this session dies.
+- When a subagent starts long work (hardware sessions, builds, test
+  matrices, deploys), estimate its duration from earlier runs and create one
+  `at` automation (a prompt to this session) at estimate x 2.
+- At the deadline: one shell call for activity (newest commit, files changed
+  in the last 15 minutes in its repo or worktree, the task ledger and
+  `/tmp/opencode`, running build, test or hardware processes). Fresh: set one
+  more deadline at half the first interval. Stale: ping the subagent (by
+  sessionID; the ping joins its run, it does not interrupt) for a 3-line
+  status, continue or report BLOCKED, and log a line in the checkpoint file.
+- Delete the automation as soon as the subagent reports back; note its id in
+  the checkpoint file.
 
 ## Delegated work: fail fast and timeouts
 
