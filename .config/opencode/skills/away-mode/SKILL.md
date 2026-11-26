@@ -74,23 +74,32 @@ run only if nothing independent is left.
 - Long runs: background them; do not poll. Use timers or automations for
   checks at a later time.
 
-## Delegated work: deadline check
+## Delegated work: watcher
 
-A periodic watchdog that prompts this session costs a full turn on a cold
-cache every time and fills the conversation. Use one deadline per job
-instead:
+Never prompt this session on a timer (a cold-cache turn each time). Only the
+worker's report or one blocker note wakes it.
 
-- When a subagent starts long work (hardware sessions, builds, test
-  matrices, deploys), estimate its duration from earlier runs and create one
-  `at` automation (a prompt to this session) at estimate x 2.
-- At the deadline: one shell call for activity (newest commit, files changed
-  in the last 15 minutes in its repo or worktree, the task ledger and
-  `/tmp/opencode`, running build, test or hardware processes). Fresh: set one
-  more deadline at half the first interval. Stale: ping the subagent (by
-  sessionID; the ping joins its run, it does not interrupt) for a 3-line
-  status, continue or report BLOCKED, and log a line in the checkpoint file.
-- Delete the automation as soon as the subagent reports back; note its id in
-  the checkpoint file.
+- Per long job (hardware sessions, builds, test matrices, deploys) create one
+  `automation.create` with `trigger {type:"every", every:"10 minutes"}` and
+  `action {type:"shell", command:"bash ~/.config/opencode/skills/away-mode/away-watch.sh --worker ses_<worker> --main ses_<this session, $OPENCODE_SESSION_ID> --checkpoint '<abs file>' --stale 15 --interval 10 --watch '<abs dir>/*.log' --repo '<abs worktree>' --stop never"}`.
+  One line, real ids, single-quoted absolute paths; the script expands globs
+  itself. `--interval` is integer minutes and must equal `every`.
+  `expires` = max(estimate x 3, estimate + stale + 60) min: 60 min estimate,
+  stale 15 gives `"in 180 minutes"`. Note the automation id in the
+  checkpoint file; delete it when the worker reports.
+- `--stale`: longest quiet step x 2 min (default 15). `--watch` is repeatable
+  and must be the progress log named in the worker brief. `--repo` only the
+  worker's own worktree. `--stop interrupt` lets the watcher interrupt a hung
+  worker (via `away-resolve.sh`); `never` (default) for hardware, flashing,
+  relay, deploys.
+- Flow, one `WATCH`/`BLOCKER` line each in the checkpoint file: worker quiet
+  for `--stale` min gets a `Watcher:` steer; still quiet, a cheap `watcher`
+  child investigates (interrupts only with `--stop interrupt`); still stale
+  one interval after the watcher went idle, one `Watcher BLOCKER` note to this
+  session.
+- Worker reports: with interventions, read the `WATCH`/`BLOCKER` lines and
+  review as any report (accept, or fix and redo per the plan's loop); an
+  intervention never closes a task.
 
 ## Delegated work: fail fast and timeouts
 
@@ -109,3 +118,7 @@ Every brief for long or repeated runs includes:
   remaining ones, and record which can resume without a rerun.
 - Context: before the conversation gets compacted, make sure the checkpoint
   file and the repo's plan or ledger hold everything needed to resume.
+- Watched jobs: answer `Watcher:` steers in 3 lines, then continue; write a
+  progress line to <log> at least every <stale/2> min during long silent
+  steps; state `watcher-stop: interrupt|never`; the report lists `watcher
+  interventions: none` or what was said or done.
