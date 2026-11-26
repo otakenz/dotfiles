@@ -85,6 +85,11 @@ wiki_skills = Path(os.environ["WIKI"]) / "skills"
 if wiki_skills.is_dir():
     installed["Skills"] |= {p.name for p in wiki_skills.iterdir()
                             if (p / "SKILL.md").is_file()}
+# Team skills shared across projects are a clone in ~/.agents/skills.
+team_skills = Path(os.environ.get("TEAM_SKILLS", Path.home() / ".agents" / "skills"))
+if team_skills.is_dir():
+    installed["Skills"] |= {p.name for p in team_skills.iterdir()
+                            if (p / "SKILL.md").is_file()}
 
 listed, section = {k: set() for k in installed}, None
 for line in text.splitlines():
